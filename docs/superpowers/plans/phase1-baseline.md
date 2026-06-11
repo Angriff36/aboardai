@@ -1,6 +1,6 @@
 # Phase 1 Baseline — Stock automaker on Windows
 
-**Date:** 2026-06-11
+**Date:** 2026-06-11 (E2E baseline revised same day at reduced workers)
 **Branch:** main (commit d192a10 import, stock automaker source pre-rename)
 **Platform:** Windows 11 Home 10.0.26200
 **Shell:** git-bash
@@ -91,20 +91,115 @@ Note: Both failing files are in the `server` project. All lib workspaces and app
 
 ---
 
-## Step 2.4 — E2E Tests (Playwright)
+## Step 2.4 — E2E Tests (Playwright) — OFFICIAL BASELINE
 
-**Playwright version:** from apps/ui/node_modules
-**Browser:** Chromium (installed via `npx playwright install chromium`)
+**Worker count: 2** (`npx playwright test --workers=2`). This is the OFFICIAL baseline for
+rename-regression comparison. The default 8-worker local config produced ~70% failures from
+machine resource contention (see Appendix A) and is NOT a usable baseline on this machine.
+
+**Playwright browser:** Chromium (installed via `npx playwright install chromium`)
 **Test ports:** 3107 (UI/Vite dev), 3108 (Express server)
 **Mock agent:** enabled (AUTOMAKER_MOCK_AGENT=true, hardcoded in playwright.config.ts)
-**Workers:** 8 (local mode)
+**Retries:** 0 (local mode — Playwright reports no "flaky" category; flakiness inferred from re-runs)
 
+### Official Totals (workers=2, full suite)
+
+**8 failed | 64 passed | 2 skipped | 0 flaky-as-reported** out of 74 tests in 25 spec files (apps/ui)
+**Duration:** ~4.7 minutes
+
+### Worker-Contention Hypothesis — CONFIRMED
+
+| Workers | Failed | Passed | Skipped | Failure rate |
+| ------- | ------ | ------ | ------- | ------------ |
+| 8       | 52–53  | 18–20  | 2       | ~70%         |
+| 2       | 8      | 64     | 2       | ~11%         |
+
+Dropping from 8 to 2 workers eliminated 44+ failures. The mass TimeoutError failures at 8
+workers were machine resource contention (single Windows machine, shared Vite + Express test
+servers), not code defects.
+
+### Failing Tests (official workers=2 run) — 8 total
+
+Classification from follow-up runs (focused re-run at workers=2; persistent specs re-run at workers=1):
+
+**Deterministic failures (fail at any worker count) — 3 tests:**
+
+1. `tests/projects/board-background-persistence.spec.ts:41` — "should load board background settings when switching projects" — AssertionError: `expect(projectASettingsCalls.length).toBeGreaterThanOrEqual(1)` — expected settings API call never observed. Fails at workers=1 too.
+2. `tests/projects/board-background-persistence.spec.ts:444` — "should load background settings on app restart" — AssertionError: `expect(calls.length).toBeGreaterThanOrEqual(1)` after 10s predicate timeout — settings fetch on restart never observed. Fails at workers=1 too.
+3. `tests/utils/project/fixtures.spec.ts:51` — "should handle Windows-style path traversal attempt ..\ (platform-dependent)" — throws `Invalid memory filename: ..\..\..\windows\system32\config` where the test expects no-throw; on Windows the backslash IS a path separator so the traversal guard fires. Deterministic Windows-only behavior difference (test title acknowledges platform dependence).
+
+**Timing-flaky failures (failed in official run; passed on focused re-run or at workers=1) — 5 tests:**
+
+4. `tests/features/opus-thinking-level-none.spec.ts:55` — "persists thinkingLevel none when selected for Claude Opus" — TimeoutError: locator.waitFor exceeded. Passed on focused re-run.
+5. `tests/features/running-task-card-display.spec.ts:71` — "should show Logs/Stop buttons for in_progress features, not Make button" — TimeoutError. Passed at workers=1.
+6. `tests/features/success-log-contrast.spec.ts:209` — "should have consistent badge styling with improved contrast" — TimeoutError. Passed on focused re-run.
+7. `tests/settings/event-hooks-settings.spec.ts:59` — "should load event hooks settings section without errors" — TimeoutError: locator.waitFor 10000ms waiting for `[data-testid="settings-view"]`.
+8. `tests/settings/event-hooks-settings.spec.ts:76` — "should open add ntfy endpoint dialog and verify useEffect resets form" — TimeoutError, same settings-view locator pattern.
+
+Note on event-hooks-settings.spec.ts: 1–2 tests in this file fail on every workers=2 run, but
+WHICH tests varies between runs (e.g. :205/:253 failed on the focused re-run instead of :59/:76).
+Treat "1–2 failures somewhere in event-hooks-settings.spec.ts, settings-view locator timeout" as
+the baseline expectation for this file.
+
+### Skipped Tests (2)
+
+- `tests/features/feature-skip-tests-toggle.spec.ts` — 1 test skipped (condition-gated)
+- (One other test marked skip)
+
+### Regression-comparison guidance for later tasks
+
+- Run E2E with `--workers=2` on this machine.
+- Expected green floor: >= 64 passed.
+- Expected failures: the 3 deterministic ones above, plus 1–2 in event-hooks-settings.spec.ts;
+  occasional one-off timeout flakes in opus-thinking-level-none / running-task-card-display /
+  success-log-contrast are within baseline noise.
+- Anything failing OUTSIDE this set after the rename is a rename regression.
+
+---
+
+## The 26th Spec File — tests/e2e/multi-project-dashboard.spec.ts (repo root)
+
+The repo contains 26 `.spec.ts` E2E files, but only 25 (under `apps/ui/tests/`) are runnable:
+
+- `tests/e2e/multi-project-dashboard.spec.ts` at the REPO ROOT ("Multi-Project Dashboard" tests,
+  imports `@playwright/test`) is **not wired into any runner**:
+  - `apps/ui/playwright.config.ts` has `testDir: './tests'` (apps/ui/tests only) — does not reach repo root
+  - No root-level playwright.config.\* exists
+  - Root `vitest.config.ts` only references `libs/*`, `apps/server`, `apps/ui` vitest projects
+  - No package.json script and no `.github/workflows/*` (incl. e2e-tests.yml, which runs
+    `npx playwright test` from apps/ui) references `tests/e2e/` or this file
+- Conclusion: orphaned/dead spec file in stock automaker. Recorded as-is; not fixed per baseline rules.
+
+---
+
+## Environment Quirks / Concerns
+
+1. **Windows path separator in unit tests:** `execution-service.test.ts` fails because the code path uses OS-native backslashes but the test hardcodes forward slashes. Pre-existing Windows compatibility gap — not related to rename.
+
+2. **Detached HEAD worktree recovery not implemented:** `list-detached-head.test.ts` has 5 failures testing a feature that parses rebase-merge/rebase-apply state files to recover branch names. Logic is absent from the implementation.
+
+3. **E2E parallelism on Windows (CONFIRMED):** The default 8 local workers in playwright.config.ts overload this machine and produce ~70% timeout failures. `--workers=2` brings failures down to ~11%. All E2E runs on this machine must use `--workers=2` (or the config's worker count must eventually be made machine-aware — out of scope for baseline).
+
+4. **E2E cascade failures (8-worker mode only):** Several tests fail with "Target page/context/browser has been closed" — secondary failures caused by a prior test exhausting resources or timing out while holding state. Not observed at workers=2.
+
+5. **fixtures.spec.ts Windows-specific failure:** Test `should handle Windows-style path traversal attempt ..\` is explicitly marked "platform-dependent" in the test title. On Windows, the backslash path IS interpreted as directory traversal, causing the function to throw. Deterministic Windows-only behavior difference.
+
+6. **package-lock.json drift:** The postinstall script (`fix-lockfile-urls.mjs`) rewrites git+ssh:// URLs in package-lock.json on every install. This means package-lock.json may differ from the checked-in version after install on Windows.
+
+7. **Audit vulnerabilities:** 37 npm audit vulnerabilities present in stock code. Not blocking but should be tracked.
+
+8. **Husky pre-commit broken on Windows + nvm-windows:** `.husky/pre-commit` sources `~/.nvm/nvm.sh`, which exits with code 3 on this machine; husky runs hooks via `sh -e`, so the whole hook aborts with "pre-commit script failed (code 3)" BEFORE lint-staged output is shown. The hook body itself is fine — `npx lint-staged` succeeds when run directly. Workaround for commits on this machine: run `npx lint-staged` manually, then commit with `HUSKY=0`. Pre-existing stock issue; do not silently bypass without running prettier.
+
+---
+
+## Appendix A — Initial 8-Worker E2E Run (SUPERSEDED, kept for reference)
+
+**Workers:** 8 (playwright.config.ts local default)
 **Summary:** 52 failed | 2 skipped | 20 passed out of 74 tests in 25 spec files
 **Duration:** ~3.8 minutes
+**Status:** NOT the baseline — failure profile dominated by machine resource contention. Totals varied ±2 between runs.
 
-Note: Totals vary by ±2 between runs due to race conditions/flakiness in parallel workers.
-
-### Passing Spec Files (25 total — 7 spec files fully passed)
+### Passing Spec Files (7 spec files fully passed)
 
 - `tests/features/add-feature-to-backlog.spec.ts` — passed
 - `tests/features/feature-skip-tests-toggle.spec.ts` — passed
@@ -233,29 +328,6 @@ Note: Totals vary by ±2 between runs due to race conditions/flakiness in parall
 #### tests/utils/project/fixtures.spec.ts
 
 55. `should handle Windows-style path traversal attempt ..\ (platform-dependent)` — AssertionError: `memoryFileExistsOnDisk` threw on Windows when test expected it not to throw; backslash path traversal treated differently on Windows filesystem
-
-### Skipped Tests (2)
-
-- `tests/features/feature-skip-tests-toggle.spec.ts` — 1 test skipped (condition-gated)
-- (One other test marked skip)
-
----
-
-## Environment Quirks / Concerns
-
-1. **Windows path separator in unit tests:** `execution-service.test.ts` fails because the code path uses OS-native backslashes but the test hardcodes forward slashes. Pre-existing Windows compatibility gap — not related to rename.
-
-2. **Detached HEAD worktree recovery not implemented:** `list-detached-head.test.ts` has 5 failures testing a feature that parses rebase-merge/rebase-apply state files to recover branch names. Logic is absent from the implementation.
-
-3. **E2E flakiness pattern — dominant failure is TimeoutError:** The majority (~80%) of E2E failures are locator.waitFor or APIRequestContext timeouts. The app loads (sidebar, navigation visible per error snapshots), but specific UI elements fail to appear within 10-15s. Possible causes: Windows I/O slower than Linux test baselines; mock agent response timing; 8-worker parallelism on a single Windows machine causing port/process contention.
-
-4. **E2E cascade failures:** Several tests fail with "Target page/context/browser has been closed" — these are secondary failures caused by a prior test exhausting resources or timing out while holding state.
-
-5. **fixtures.spec.ts Windows-specific failure:** Test `should handle Windows-style path traversal attempt ..\` is explicitly marked "platform-dependent" in the test title. On Windows, the backslash path IS interpreted as directory traversal, causing the function to throw. This is a known platform gap in the fixture utility's path sanitization, confirmed as a Windows-only behavior difference.
-
-6. **package-lock.json drift:** The postinstall script (`fix-lockfile-urls.mjs`) rewrites git+ssh:// URLs in package-lock.json on every install. This means package-lock.json may differ from the checked-in version after install on Windows.
-
-7. **Audit vulnerabilities:** 37 npm audit vulnerabilities present in stock code. Not blocking but should be tracked.
 
 ---
 
