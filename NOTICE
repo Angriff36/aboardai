@@ -1,0 +1,8 @@
+AboardAI is a fork of automaker (https://github.com/AutoMaker-Org/automaker),
+imported at commit 5888d2e6f3618e06762803687ea7b181c10edcbd (2026-05-22), MIT License,
+Copyright (c) 2025 Automaker Core Contributors.
+
+Design ideas (no code) adapted from:
+- vibe-kanban (https://github.com/BloopAI/vibe-kanban, Apache-2.0): provider adapter
+  pattern, log normalization, worktree race-safety.
+- OpenHands (MIT) and ai-agent-board (MIT): availability probing, task-group patterns.

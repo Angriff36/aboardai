@@ -2,11 +2,12 @@
   "name": "@aboardai/ui",
   "version": "1.0.0",
   "description": "An autonomous AI development studio that helps you build software faster using AI-powered agents",
-  "homepage": "https://github.com/AboardAI-Org/aboardai",
+  "homepage": "https://github.com/Angriff36/aboardai",
   "repository": {
     "type": "git",
-    "url": "https://github.com/AboardAI-Org/aboardai.git"
+    "url": "https://github.com/Angriff36/aboardai.git"
   },
+  "bugs": "https://github.com/Angriff36/aboardai/issues",
   "author": "AboardAI Team",
   "license": "SEE LICENSE IN LICENSE",
   "desktopName": "aboardai.desktop",

@@ -1,8 +1,9 @@
 {
   "name": "aboardai",
-  "version": "1.0.0",
+  "version": "0.1.0",
   "license": "MIT",
   "private": true,
+  "repository": "https://github.com/Angriff36/aboardai",
   "engines": {
     "node": ">=22.0.0 <23.0.0"
   },

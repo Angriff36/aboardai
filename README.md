@@ -1,70 +1,8 @@
-<p align="center">
-  <img src="apps/ui/public/readme_logo.svg" alt="AboardAI Logo" height="80" />
-</p>
-
-> **[!TIP]**
->
-> **Learn more about Agentic Coding!**
->
-> AboardAI itself was built by a group of engineers using AI and agentic coding techniques to build features faster than ever. By leveraging tools like Cursor IDE and Claude Code CLI, the team orchestrated AI agents to implement complex functionality in days instead of weeks.
->
-> **Learn how:** Master these same techniques and workflows in the [Agentic Jumpstart course](https://agenticjumpstart.com/?utm=aboardai-gh).
-
 # AboardAI
 
-**Stop typing code. Start directing AI agents.**
+AboardAI is an autonomous AI development studio—AI agents plan, implement, and verify features for your projects in isolated git worktrees, with a kanban board, ideation engine, and multi-provider agent support.
 
-> **[!IMPORTANT]**
->
-> **Claude Agent SDK billing changes on June 15, 2026.** If you use AboardAI's **Claude** provider, agent usage moves to a separate monthly credit pool (no longer your subscription limits) that you must claim once. Other providers (Codex, Copilot, Cursor, Gemini, OpenCode) are unaffected. → [See details](#powered-by-claude-agent-sdk)
-
-<details open>
-<summary><h2>Table of Contents</h2></summary>
-
-- [What Makes AboardAI Different?](#what-makes-aboardai-different)
-  - [The Workflow](#the-workflow)
-  - [Powered by Claude Agent SDK](#powered-by-claude-agent-sdk)
-  - [Why This Matters](#why-this-matters)
-- [Security Disclaimer](#security-disclaimer)
-- [Community & Support](#community--support)
-- [Getting Started](#getting-started)
-  - [Prerequisites](#prerequisites)
-  - [Quick Start](#quick-start)
-- [How to Run](#how-to-run)
-  - [Development Mode](#development-mode)
-  - [Interactive TUI Launcher](#interactive-tui-launcher-recommended-for-new-users)
-  - [Building for Production](#building-for-production)
-  - [Testing](#testing)
-  - [Linting](#linting)
-  - [Environment Configuration](#environment-configuration)
-  - [Authentication Setup](#authentication-setup)
-- [Features](#features)
-  - [Core Workflow](#core-workflow)
-  - [AI & Planning](#ai--planning)
-  - [Project Management](#project-management)
-  - [Collaboration & Review](#collaboration--review)
-  - [Developer Tools](#developer-tools)
-  - [Advanced Features](#advanced-features)
-- [Tech Stack](#tech-stack)
-  - [Frontend](#frontend)
-  - [Backend](#backend)
-  - [Testing & Quality](#testing--quality)
-  - [Shared Libraries](#shared-libraries)
-- [Available Views](#available-views)
-- [Architecture](#architecture)
-  - [Monorepo Structure](#monorepo-structure)
-  - [How It Works](#how-it-works)
-  - [Key Architectural Patterns](#key-architectural-patterns)
-  - [Security & Isolation](#security--isolation)
-  - [Data Storage](#data-storage)
-- [Learn More](#learn-more)
-- [License](#license)
-
-</details>
-
-AboardAI is an autonomous AI development studio that transforms how you build software. Instead of manually writing every line of code, you describe features on a Kanban board and watch as AI agents powered by Claude Agent SDK automatically implement them. Built with React, Vite, Electron, and Express, AboardAI provides a complete workflow for managing AI agents through a desktop application (or web browser), with features like real-time streaming, git worktree isolation, plan approval, and multi-agent task execution.
-
-![AboardAI UI](https://i.imgur.com/jdwKydM.png)
+AboardAI is a fork of [automaker](https://github.com/AutoMaker-Org/automaker) — see [NOTICE](NOTICE) for attribution.
 
 ## What Makes AboardAI Different?
 
@@ -126,7 +64,7 @@ In the Discord, you can:
 
 ```bash
 # 1. Clone the repository
-git clone https://github.com/AboardAI-Org/aboardai.git
+git clone https://github.com/Angriff36/aboardai.git
 cd aboardai
 
 # 2. Install dependencies
