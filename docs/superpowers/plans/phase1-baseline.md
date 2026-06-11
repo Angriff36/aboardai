@@ -335,3 +335,45 @@ The repo contains 26 `.spec.ts` E2E files, but only 25 (under `apps/ui/tests/`) 
 
 - `package-lock.json` (potentially modified by fix-lockfile-urls postinstall hook)
 - `docs/superpowers/plans/phase1-baseline.md` (this file)
+
+---
+
+## Post-rename E2E Parity (Task 6 — 2026-06-11)
+
+**Branch:** main (post-rename; env vars ABOARDAI_*, data dir .aboardai, localStorage keys aboardai-storage/aboardai-setup)
+**Run 1 totals (workers=2):** 7 failed | 65 passed | 2 skipped — duration ~3.8 min
+**Run 2 totals (workers=2):** 4 failed | 68 passed | 2 skipped — duration ~4.3 min
+
+### Rename regressions found: NONE
+
+No test that was green at baseline failed due to the rename. All failures fall within the
+documented baseline set (3 deterministic + timing-flaky pool).
+
+### Known flakes that appeared
+
+**Run 1 flakes (all confirmed known baseline flakes, cleared on run 2):**
+- `tests/features/running-task-card-display.spec.ts:71` — timing flake (baseline flaky #5)
+- `tests/settings/event-hooks-settings.spec.ts:59` — settings-view locator timeout (baseline flaky #4a)
+- `tests/settings/event-hooks-settings.spec.ts:76` — settings-view locator timeout (baseline flaky #4b)
+- `tests/projects/open-existing-project.spec.ts:38` — Windows EBUSY cascade: the `opus-thinking-level-none` test's afterAll cleanup failed (EBUSY), leaving a stale temp directory; the global setup cleanup removes it on the NEXT run start. On run 2 (clean state) this test passed. Pre-existing Windows cleanup behavior, not a rename regression.
+
+**Run 1 deterministic failures (all known baseline):**
+- `tests/projects/board-background-persistence.spec.ts:41` (baseline deterministic #1)
+- `tests/projects/board-background-persistence.spec.ts:444` (baseline deterministic #2)
+- `tests/utils/project/fixtures.spec.ts:51` (baseline deterministic #3 — Windows path traversal)
+
+**Run 2 flakes:**
+- `tests/features/opus-thinking-level-none.spec.ts:55` — EBUSY rmdir on temp dir cleanup (baseline timing-flaky #1); test itself passed, afterAll cleanup error is the only artifact
+
+### Fixes made: NONE
+
+Zero code changes required. The playwright.config.ts was already correctly renamed to
+`ABOARDAI_MOCK_AGENT`, `ABOARDAI_API_KEY`, `ABOARDAI_HIDE_API_KEY`, `ABOARDAI_WEB_PORT`,
+`ABOARDAI_SERVER_PORT` during the prior rename task. The localStorage keys (`aboardai-storage`,
+`aboardai-setup`, `aboardai-disable-splash`) are already consistent throughout the test
+utilities (worktree.ts). No asset-path or window-title assertions were found to be broken.
+
+### Parity verdict: CONFIRMED
+
+Both runs exceeded the baseline green floor of >=64 passed (65 and 68 respectively).
+All observed failures are within the documented baseline failure set.
