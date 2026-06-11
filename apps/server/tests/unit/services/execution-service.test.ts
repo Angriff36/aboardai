@@ -1842,11 +1842,13 @@ describe('execution-service.ts', () => {
       const svc = createServiceWithMocks();
       await svc.executeFeature('/test/project', 'feature-1');
 
-      // Verify readFile was called with the correct path derived from getFeatureDir
-      expect(secureFs.readFile).toHaveBeenCalledWith(
-        '/test/project/.aboardai/features/feature-1/agent-output.md',
-        'utf-8'
-      );
+      // Verify readFile was called with the correct path derived from getFeatureDir.
+      // Normalize both sides to forward slashes so the assertion is platform-agnostic
+      // (path.join produces backslashes on Windows).
+      const actualPath = String(vi.mocked(secureFs.readFile).mock.calls[0]?.[0] ?? '');
+      const normalizedActual = actualPath.replace(/\\/g, '/');
+      expect(normalizedActual).toBe('/test/project/.aboardai/features/feature-1/agent-output.md');
+      expect(secureFs.readFile).toHaveBeenCalledWith(expect.anything(), 'utf-8');
     });
 
     it('completion message includes auto-verified when status is verified', async () => {

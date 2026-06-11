@@ -51,18 +51,20 @@ test.describe('Memory Fixture Utilities', () => {
   test('should handle Windows-style path traversal attempt ..\\ (platform-dependent)', () => {
     const maliciousFilename = '..\\..\\..\\windows\\system32\\config';
 
-    // On Unix/macOS, backslash is treated as a literal character in filenames,
-    // not as a path separator, so path.resolve doesn't traverse directories.
-    // This test documents that behavior - the guard works for Unix paths,
-    // but Windows-style backslashes are handled differently per platform.
-    // On macOS/Linux: backslash is a valid filename character
-    // On Windows: would need additional normalization to prevent traversal
-    expect(() => {
-      memoryFileExistsOnDisk(maliciousFilename);
-    }).not.toThrow();
-
-    // The file gets created with backslashes in the name (which is valid on Unix)
-    // but won't escape the directory
+    // Platform-dependent behavior:
+    // - On Unix/macOS: backslash is a valid filename character (not a path separator),
+    //   so path.resolve does NOT traverse directories and the guard does NOT throw.
+    // - On Windows: backslash IS a path separator, so path.resolve WILL traverse directories
+    //   and the guard correctly throws 'Invalid memory filename'.
+    if (process.platform === 'win32') {
+      expect(() => {
+        memoryFileExistsOnDisk(maliciousFilename);
+      }).toThrow('Invalid memory filename');
+    } else {
+      expect(() => {
+        memoryFileExistsOnDisk(maliciousFilename);
+      }).not.toThrow();
+    }
   });
 
   test('should reject absolute path attempt', () => {

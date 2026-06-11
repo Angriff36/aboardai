@@ -11,8 +11,10 @@ if [ -z "$NVM_DIR" ]; then
   fi
 fi
 
-# Source nvm if found (silently skip if not available)
-[ -n "$NVM_DIR" ] && [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh" 2>/dev/null
+# Source nvm if found (silently skip if not available).
+# The `|| true` prevents `sh -e` from aborting when nvm.sh itself exits non-zero
+# (e.g. nvm exits 3 on Windows git-bash when the .nvmrc version is already active).
+[ -n "$NVM_DIR" ] && [ -s "$NVM_DIR/nvm.sh" ] && { \. "$NVM_DIR/nvm.sh" 2>/dev/null || true; }
 
 # Load node version from .nvmrc if using nvm (silently skip if nvm not available or fails)
 if [ -f .nvmrc ] && command -v nvm >/dev/null 2>&1; then

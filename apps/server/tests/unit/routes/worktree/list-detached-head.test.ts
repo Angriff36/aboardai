@@ -56,7 +56,7 @@ vi.mock('@/routes/worktree/common.js', async (importOriginal) => {
     ...actual,
     getErrorMessage: vi.fn((e: Error) => e?.message || 'Unknown error'),
     logError: vi.fn(),
-    normalizePath: vi.fn((p: string) => p),
+    normalizePath: vi.fn((p: string) => p.replace(/\\/g, '/')),
     execEnv: {},
     isGhCliAvailable: vi.fn().mockResolvedValue(false),
   };
@@ -132,7 +132,7 @@ describe('worktree list - detached HEAD handling', () => {
     vi.mocked(readAllWorktreeMetadata).mockResolvedValue(new Map());
     vi.mocked(isGhCliAvailable).mockResolvedValue(false);
     vi.mocked(checkGitHubRemote).mockResolvedValue({ hasGitHubRemote: false });
-    vi.mocked(normalizePath).mockImplementation((p: string) => p);
+    vi.mocked(normalizePath).mockImplementation((p: string) => p.replace(/\\/g, '/'));
     vi.mocked(getErrorMessage).mockImplementation(
       (e: unknown) => (e as Error)?.message || 'Unknown error'
     );
@@ -243,7 +243,7 @@ describe('worktree list - detached HEAD handling', () => {
 
       // rebase-merge/head-name returns the branch being rebased
       vi.mocked(secureFs.readFile).mockImplementation(async (filePath) => {
-        const pathStr = String(filePath);
+        const pathStr = String(filePath).replace(/\\/g, '/');
         if (pathStr.includes('rebase-merge/head-name')) {
           return 'refs/heads/feature/my-rebasing-branch\n' as any;
         }
@@ -288,7 +288,7 @@ describe('worktree list - detached HEAD handling', () => {
 
       // rebase-merge doesn't exist, but rebase-apply does
       vi.mocked(secureFs.readFile).mockImplementation(async (filePath) => {
-        const pathStr = String(filePath);
+        const pathStr = String(filePath).replace(/\\/g, '/');
         if (pathStr.includes('rebase-apply/head-name')) {
           return 'refs/heads/feature/apply-branch\n' as any;
         }
@@ -428,7 +428,7 @@ describe('worktree list - detached HEAD handling', () => {
 
       // Recovery returns the same branch as currentBranch
       vi.mocked(secureFs.readFile).mockImplementation(async (filePath) => {
-        const pathStr = String(filePath);
+        const pathStr = String(filePath).replace(/\\/g, '/');
         if (pathStr.includes('rebase-merge/head-name')) {
           return 'refs/heads/feature/my-branch\n' as any;
         }
@@ -474,7 +474,7 @@ describe('worktree list - detached HEAD handling', () => {
       disableWorktreesScan();
 
       vi.mocked(secureFs.readFile).mockImplementation(async (filePath) => {
-        const pathStr = String(filePath);
+        const pathStr = String(filePath).replace(/\\/g, '/');
         if (pathStr.includes('rebase-merge/head-name')) {
           return 'refs/heads/feature/rebasing\n' as any;
         }
@@ -601,7 +601,7 @@ describe('worktree list - detached HEAD handling', () => {
       disableWorktreesScan();
 
       vi.mocked(secureFs.readFile).mockImplementation(async (filePath) => {
-        const pathStr = String(filePath);
+        const pathStr = String(filePath).replace(/\\/g, '/');
         if (pathStr.includes('rebase-merge/head-name')) {
           return 'refs/heads/my-branch\n' as any;
         }
@@ -653,7 +653,7 @@ describe('worktree list - detached HEAD handling', () => {
 
       // readFile returns branch from rebase-merge/head-name
       vi.mocked(secureFs.readFile).mockImplementation(async (filePath) => {
-        const pathStr = String(filePath);
+        const pathStr = String(filePath).replace(/\\/g, '/');
         if (pathStr.includes('rebase-merge/head-name')) {
           return 'refs/heads/feature/orphan-branch\n' as any;
         }
