@@ -26,7 +26,7 @@ AboardAI is a hard-fork of [automaker](c:/Projects/referencerepos/automaker) (MI
 
 ## Foundation decision
 
-**Hard-fork automaker** rather than greenfield or hybrid. Rationale: it is MIT-licensed TypeScript containing exactly the valued features (~209k LOC, 78 Playwright E2E tests, clean monorepo with 8 shared libs); rebuilding the working 80% would add weeks of agent-hours and regression risk for no benefit. The weak 20% (providers, half-finished auto-mode refactor) is replaced surgically.
+**Hard-fork automaker** rather than greenfield or hybrid. Rationale: it is MIT-licensed TypeScript containing exactly the valued features (~209k LOC, ~163 Playwright E2E tests across 26 spec files, clean monorepo with 8 shared libs); rebuilding the working 80% would add weeks of agent-hours and regression risk for no benefit. The weak 20% (providers, half-finished auto-mode refactor) is replaced surgically.
 
 License compliance: automaker is MIT — we retain its copyright notice in `LICENSE`/`NOTICE` and license AboardAI under MIT. vibe-kanban is Apache-2.0 and Rust; we borrow *ideas* (adapter pattern, log normalization, worktree race-safety), not code. ai-agent-board and OpenHands are MIT.
 
@@ -50,7 +50,7 @@ Per-project data lives in `{project}/.aboardai/` (features, ideation, spec); glo
 A single `AgentProvider` interface (inspired by vibe-kanban's `StandardCodingAgentExecutor` trait):
 
 - `executeQuery(opts): AsyncGenerator<ProviderEvent>` — streaming execution
-- `resumeSession(sessionId, opts)` — continue an interrupted session
+- `resumeSession(sessionId, opts)` — continue an interrupted session. **Net-new capability** (no equivalent in automaker's `BaseProvider`); Phase 2 must first research what the current Claude Agent SDK and Codex SDK expose for session continuity rather than assume a port.
 - `detectAvailability()` — CLI/auth probe at startup (ai-agent-board pattern)
 - `listModels()` — current model catalog per provider
 
@@ -100,7 +100,7 @@ From ai-agent-board: a `TaskGroup` holds 2–20 features, `maxConcurrency` (1–
 
 ## Testing
 
-- Inherit and keep green automaker's 78 Playwright E2E tests (renamed paths) and 23 Vitest lib suites.
+- Inherit and keep green automaker's Playwright E2E suite (~163 tests in 26 spec files; exact count established as the Phase 1 baseline) and its Vitest unit suites.
 - New unit suites: provider supervisor (stall/reconnect/resume via fake provider), normalizers (golden raw→normalized fixtures per provider), GroupQueue (concurrency/retry/advance), worktree mutex.
 - Phase gates: each build phase ends with `lint + typecheck + test + build` green before the next phase starts.
 
@@ -108,7 +108,7 @@ From ai-agent-board: a `TaskGroup` holds 2–20 features, `maxConcurrency` (1–
 
 Five phases, each gated by verification:
 1. **Fork & rebrand** — copy source, rename packages/dirs/brand, git init, prove build + dev run on Windows. (Mechanical: Haiku agents.)
-2. **Provider layer** — new interface + supervisor; ClaudeProvider built as competing implementations by parallel Opus agents against a shared fault-injection test harness, winner chosen by adversarial review; Codex/others by Sonnet agents.
+2. **Provider layer** — new interface + supervisor; ClaudeProvider built as competing implementations by parallel Opus agents against a shared fault-injection test harness, winner chosen by adversarial review; Codex/others by Sonnet agents. The Phase 2 task plan must define, before agents launch: the fault-injection harness scenarios (stall, disconnect, rate-limit, auth failure, mid-stream crash) and the winner-selection rubric (harness pass rate, then adversarial review findings, then code clarity).
 3. **Event pipeline** — normalizers + JSONL persistence + engine integration. (Sonnet.)
 4. **Task groups** — model, queue, API, UI. (Sonnet.)
 5. **Polish** — full E2E pass, model catalog, prompt re-tune, README/LICENSE/NOTICE. (Sonnet + Haiku.)
