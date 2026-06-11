@@ -6,8 +6,8 @@ Mode: subagent-driven (orchestrator = Fable, implementers = Haiku/Sonnet per pla
 
 - [x] Task 1: Import automaker source (raw, no rename) — Haiku (commit 9dd5e66, 1589 files, verified)
 - [x] Task 2: Baseline proof on Windows (stock, PRE-rename) — Sonnet (install/build green; units 3413 pass/6 pre-existing fail; OFFICIAL E2E baseline 64/74 pass @ workers=2, commits e70dbd8 + 0c4b2da)
-- [ ] Task 3: Rename brand-named files (git mv) — Haiku
-- [ ] Task 4: Content rename sweep (deterministic script) — Haiku
+- [x] Task 3: Rename brand-named files (git mv) — Haiku (commit 55fcf9d, 6 files)
+- [x] Task 4: Content rename sweep (deterministic script) — Haiku (commit 69f3ddf, 706 files, gate clean, verified)
 - [ ] Task 5: Post-rename reinstall + rebuild + unit tests — Sonnet
 - [ ] Task 6: E2E suite post-rename — Sonnet
 - [ ] Task 7: Identity & attribution files — Haiku
