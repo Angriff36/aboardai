@@ -70,16 +70,16 @@ When memory_search returns a fact marked ⚠ STALE:
 - Commit often, small atomic changes. Format: "[type] what and why"
 - commit = Tier 1 (do it yourself). push = Tier 3 (verify_identity).
 
-## Project DNA: aboardai
+## Project DNA: automaker
 Stack: unknown
 Style: [unknown]
-Structure: ?
+Structure: .github, .husky, .planning, apps, docs, libs, scripts, tests
 Deploy: [NOT SET]
 Active: [new session]
 Last: [first session]
 
 ## Last Session Bridge
 [Emergency bridge — running bridge was not updated]
-No changes or facts in this session.
+Files: apps/server/src/providers/cursor-provider.ts (edit)
 
 # === END COGNILAYER ===
