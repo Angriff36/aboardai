@@ -1,5 +1,5 @@
 #!/bin/bash
-# Automaker TUI Launcher - Interactive menu for launching Automaker in different modes
+# AboardAI TUI Launcher - Interactive menu for launching AboardAI in different modes
 # Supports: Web Browser, Desktop (Electron), Docker Dev, Electron + Docker API
 # Platforms: Linux, macOS, Windows (Git Bash, WSL, MSYS2, Cygwin)
 # Features: Terminal responsiveness, history, pre-flight checks, port management
@@ -14,9 +14,9 @@ if [ -f .env ]; then
     . ./.env
     set +a
 fi
-APP_NAME="Automaker"
+APP_NAME="AboardAI"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-HISTORY_FILE="${HOME}/.automaker_launcher_history"
+HISTORY_FILE="${HOME}/.aboardai_launcher_history"
 MIN_TERM_WIDTH=70
 MIN_TERM_HEIGHT=20
 MENU_BOX_WIDTH=66
@@ -36,24 +36,24 @@ elif [[ "$OSTYPE" == "darwin"* ]]; then
 fi
 
 # Port configuration
-# Defaults can be overridden via AUTOMAKER_WEB_PORT and AUTOMAKER_SERVER_PORT env vars
+# Defaults can be overridden via ABOARDAI_WEB_PORT and ABOARDAI_SERVER_PORT env vars
 
 # Validate env-provided ports early (before colors are available)
-if [ -n "$AUTOMAKER_WEB_PORT" ]; then
-    if ! [[ "$AUTOMAKER_WEB_PORT" =~ ^[0-9]+$ ]] || [ "$AUTOMAKER_WEB_PORT" -lt 1 ] || [ "$AUTOMAKER_WEB_PORT" -gt 65535 ]; then
-        echo "Error: AUTOMAKER_WEB_PORT must be a number between 1-65535, got '$AUTOMAKER_WEB_PORT'"
+if [ -n "$ABOARDAI_WEB_PORT" ]; then
+    if ! [[ "$ABOARDAI_WEB_PORT" =~ ^[0-9]+$ ]] || [ "$ABOARDAI_WEB_PORT" -lt 1 ] || [ "$ABOARDAI_WEB_PORT" -gt 65535 ]; then
+        echo "Error: ABOARDAI_WEB_PORT must be a number between 1-65535, got '$ABOARDAI_WEB_PORT'"
         exit 1
     fi
 fi
-if [ -n "$AUTOMAKER_SERVER_PORT" ]; then
-    if ! [[ "$AUTOMAKER_SERVER_PORT" =~ ^[0-9]+$ ]] || [ "$AUTOMAKER_SERVER_PORT" -lt 1 ] || [ "$AUTOMAKER_SERVER_PORT" -gt 65535 ]; then
-        echo "Error: AUTOMAKER_SERVER_PORT must be a number between 1-65535, got '$AUTOMAKER_SERVER_PORT'"
+if [ -n "$ABOARDAI_SERVER_PORT" ]; then
+    if ! [[ "$ABOARDAI_SERVER_PORT" =~ ^[0-9]+$ ]] || [ "$ABOARDAI_SERVER_PORT" -lt 1 ] || [ "$ABOARDAI_SERVER_PORT" -gt 65535 ]; then
+        echo "Error: ABOARDAI_SERVER_PORT must be a number between 1-65535, got '$ABOARDAI_SERVER_PORT'"
         exit 1
     fi
 fi
 
-DEFAULT_WEB_PORT=${AUTOMAKER_WEB_PORT:-3007}
-DEFAULT_SERVER_PORT=${AUTOMAKER_SERVER_PORT:-3008}
+DEFAULT_WEB_PORT=${ABOARDAI_WEB_PORT:-3007}
+DEFAULT_SERVER_PORT=${ABOARDAI_SERVER_PORT:-3008}
 PORT_SEARCH_MAX_ATTEMPTS=100
 WEB_PORT=$DEFAULT_WEB_PORT
 SERVER_PORT=$DEFAULT_SERVER_PORT
@@ -126,10 +126,10 @@ PRODUCTION_MODE=false
 
 show_help() {
     cat << 'EOF'
-Automaker TUI Launcher - Interactive development environment starter
+AboardAI TUI Launcher - Interactive development environment starter
 
 USAGE:
-  start-automaker.sh [MODE] [OPTIONS]
+  start-aboardai.sh [MODE] [OPTIONS]
 
 MODES:
   web              Launch in web browser (localhost:3007)
@@ -146,15 +146,15 @@ OPTIONS:
   --production     Run in production mode (builds first, faster React)
 
 EXAMPLES:
-  start-automaker.sh              # Interactive menu (development)
-  start-automaker.sh --production # Interactive menu (production)
-  start-automaker.sh web          # Launch web mode directly (dev)
-  start-automaker.sh web --production  # Launch web mode (production)
-  start-automaker.sh electron     # Launch desktop app directly
-  start-automaker.sh docker       # Launch Docker dev container
-  start-automaker.sh --version    # Show version
+  start-aboardai.sh              # Interactive menu (development)
+  start-aboardai.sh --production # Interactive menu (production)
+  start-aboardai.sh web          # Launch web mode directly (dev)
+  start-aboardai.sh web --production  # Launch web mode (production)
+  start-aboardai.sh electron     # Launch desktop app directly
+  start-aboardai.sh docker       # Launch Docker dev container
+  start-aboardai.sh --version    # Show version
 
-  AUTOMAKER_WEB_PORT=4000 AUTOMAKER_SERVER_PORT=4001 start-automaker.sh web
+  ABOARDAI_WEB_PORT=4000 ABOARDAI_SERVER_PORT=4001 start-aboardai.sh web
                                   # Launch web mode on custom ports
 
 KEYBOARD SHORTCUTS (in menu):
@@ -164,12 +164,12 @@ KEYBOARD SHORTCUTS (in menu):
   Q                Exit
 
 HISTORY:
-  Your last selected mode is remembered in: ~/.automaker_launcher_history
+  Your last selected mode is remembered in: ~/.aboardai_launcher_history
   Use --no-history to disable this feature
 
 ENVIRONMENT VARIABLES:
-  AUTOMAKER_WEB_PORT     Override default web/UI port (default: 3007)
-  AUTOMAKER_SERVER_PORT  Override default API server port (default: 3008)
+  ABOARDAI_WEB_PORT     Override default web/UI port (default: 3007)
+  ABOARDAI_SERVER_PORT  Override default API server port (default: 3008)
 
 PLATFORMS:
   Linux, macOS, Windows (Git Bash, WSL, MSYS2, Cygwin)
@@ -178,7 +178,7 @@ EOF
 }
 
 show_version() {
-    echo "Automaker Launcher $VERSION"
+    echo "AboardAI Launcher $VERSION"
     echo "Node.js: $(node -v 2>/dev/null || echo 'not installed')"
     echo "Bash: ${BASH_VERSION%.*}"
 }
@@ -293,11 +293,11 @@ check_running_electron() {
     local electron_pids=""
 
     if [ "$IS_WINDOWS" = true ]; then
-        # Windows: look for electron.exe or Automaker.exe
-        electron_pids=$(tasklist 2>/dev/null | grep -iE "electron|automaker" | awk '{print $2}' | tr '\n' ' ' || true)
+        # Windows: look for electron.exe or AboardAI.exe
+        electron_pids=$(tasklist 2>/dev/null | grep -iE "electron|aboardai" | awk '{print $2}' | tr '\n' ' ' || true)
     else
-        # Unix: look for electron or Automaker processes
-        electron_pids=$(pgrep -f "electron.*automaker|Automaker" 2>/dev/null | tr '\n' ' ' || true)
+        # Unix: look for electron or AboardAI processes
+        electron_pids=$(pgrep -f "electron.*aboardai|AboardAI" 2>/dev/null | tr '\n' ' ' || true)
     fi
 
     if [ -n "$electron_pids" ] && [ "$electron_pids" != " " ]; then
@@ -327,10 +327,10 @@ check_running_electron() {
                     center_print "Killing Electron processes..." "$C_YELLOW"
                     if [ "$IS_WINDOWS" = true ]; then
                         taskkill //F //IM "electron.exe" 2>/dev/null || true
-                        taskkill //F //IM "Automaker.exe" 2>/dev/null || true
+                        taskkill //F //IM "AboardAI.exe" 2>/dev/null || true
                     else
-                        pkill -f "electron.*automaker" 2>/dev/null || true
-                        pkill -f "Automaker" 2>/dev/null || true
+                        pkill -f "electron.*aboardai" 2>/dev/null || true
+                        pkill -f "AboardAI" 2>/dev/null || true
                     fi
                     sleep 1
                     center_print "✓ Electron stopped" "$C_GREEN"
@@ -363,11 +363,11 @@ check_running_containers() {
     local compose_file="$1"
     local running_containers=""
 
-    # Get list of running automaker containers
+    # Get list of running aboardai containers
     if [ "$DOCKER_CMD" = "sg docker -c" ]; then
-        running_containers=$(sg docker -c "docker ps --filter 'name=automaker-dev' --format '{{{{Names}}}}'" 2>/dev/null | tr '\n' ' ' || true)
+        running_containers=$(sg docker -c "docker ps --filter 'name=aboardai-dev' --format '{{{{Names}}}}'" 2>/dev/null | tr '\n' ' ' || true)
     else
-        running_containers=$($DOCKER_CMD ps --filter "name=automaker-dev" --format "{{.Names}}" 2>/dev/null | tr '\n' ' ' || true)
+        running_containers=$($DOCKER_CMD ps --filter "name=aboardai-dev" --format "{{.Names}}" 2>/dev/null | tr '\n' ' ' || true)
     fi
 
     if [ -n "$running_containers" ] && [ "$running_containers" != " " ]; then
@@ -398,10 +398,10 @@ check_running_containers() {
                     center_print "Stopping existing containers..." "$C_YELLOW"
                     if [ "$DOCKER_CMD" = "sg docker -c" ]; then
                         sg docker -c "docker compose -f '$compose_file' down" 2>/dev/null || true
-                        sg docker -c "docker ps --filter 'name=automaker-dev' -q" 2>/dev/null | xargs -r sg docker -c "docker stop" 2>/dev/null || true
+                        sg docker -c "docker ps --filter 'name=aboardai-dev' -q" 2>/dev/null | xargs -r sg docker -c "docker stop" 2>/dev/null || true
                     else
                         $DOCKER_CMD compose -f "$compose_file" down 2>/dev/null || true
-                        $DOCKER_CMD ps --filter "name=automaker-dev" -q 2>/dev/null | xargs -r $DOCKER_CMD stop 2>/dev/null || true
+                        $DOCKER_CMD ps --filter "name=aboardai-dev" -q 2>/dev/null | xargs -r $DOCKER_CMD stop 2>/dev/null || true
                     fi
                     center_print "✓ Containers stopped" "$C_GREEN"
                     echo ""
@@ -674,7 +674,7 @@ show_header() {
     local top_pad=$(( TERM_LINES / 6 ))
     for ((i=0; i<top_pad; i++)); do echo ""; done
 
-    # Automaker ASCII art logo
+    # AboardAI ASCII art logo
     local l1="  █▀▀█ █  █ ▀▀█▀▀ █▀▀█ █▀▄▀█ █▀▀█ █ █ █▀▀ █▀▀█  "
     local l2="  █▄▄█ █  █   █   █  █ █ ▀ █ █▄▄█ █▀▄ █▀▀ █▄▄▀  "
     local l3="  ▀  ▀  ▀▀▀   ▀   ▀▀▀▀ ▀   ▀ ▀  ▀ ▀ ▀ ▀▀▀ ▀ ▀▀  "
@@ -955,7 +955,7 @@ launch_sequence() {
     spinner "Starting $mode_name..."
 
     echo ""
-    local msg="Automaker is ready!"
+    local msg="AboardAI is ready!"
     local pad=$(( (TERM_COLS - ${#msg}) / 2 ))
     printf "%${pad}s${C_GREEN}${BOLD}%s${RESET}\n" "" "$msg"
 

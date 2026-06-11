@@ -5,7 +5,7 @@ import {
   createFeatureMap,
   getBlockingDependenciesFromMap,
   resolveDependencies,
-} from '@automaker/dependency-resolver';
+} from '@aboardai/dependency-resolver';
 
 type ColumnId = Feature['status'];
 

@@ -5,7 +5,7 @@ import { CheckCircle2, AlertCircle, RefreshCw } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { CliStatus } from '../shared/types';
 import { CopilotIcon } from '@/components/ui/provider-icon';
-import type { CopilotAuthStatus } from '@automaker/types';
+import type { CopilotAuthStatus } from '@aboardai/types';
 
 // Re-export for backwards compatibility
 export type { CopilotAuthStatus };

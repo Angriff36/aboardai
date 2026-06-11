@@ -1,15 +1,15 @@
-# @automaker/dependency-resolver
+# @aboardai/dependency-resolver
 
 Feature dependency resolution using topological sorting.
 
 ## Overview
 
-This package provides dependency resolution for AutoMaker features using Kahn's algorithm with priority-aware ordering. It ensures features are executed in the correct order based on their dependencies.
+This package provides dependency resolution for AboardAI features using Kahn's algorithm with priority-aware ordering. It ensures features are executed in the correct order based on their dependencies.
 
 ## Installation
 
 ```bash
-npm install @automaker/dependency-resolver
+npm install @aboardai/dependency-resolver
 ```
 
 ## Exports
@@ -19,8 +19,8 @@ npm install @automaker/dependency-resolver
 Order features based on dependencies and priorities.
 
 ```typescript
-import { resolveDependencies } from '@automaker/dependency-resolver';
-import type { Feature } from '@automaker/types';
+import { resolveDependencies } from '@aboardai/dependency-resolver';
+import type { Feature } from '@aboardai/types';
 
 const features: Feature[] = [
   {
@@ -61,7 +61,7 @@ if (result.hasCycle) {
 Check if a feature's dependencies are satisfied.
 
 ```typescript
-import { areDependenciesSatisfied } from '@automaker/dependency-resolver';
+import { areDependenciesSatisfied } from '@aboardai/dependency-resolver';
 
 const allFeatures: Feature[] = [
   { id: 'database', status: 'completed', ... },
@@ -82,7 +82,7 @@ if (areDependenciesSatisfied(authFeature, allFeatures)) {
 Get list of incomplete dependencies blocking a feature.
 
 ```typescript
-import { getBlockingDependencies } from '@automaker/dependency-resolver';
+import { getBlockingDependencies } from '@aboardai/dependency-resolver';
 
 const blocking = getBlockingDependencies(feature, allFeatures);
 
@@ -100,8 +100,8 @@ import {
   resolveDependencies,
   areDependenciesSatisfied,
   getBlockingDependencies,
-} from '@automaker/dependency-resolver';
-import type { Feature } from '@automaker/types';
+} from '@aboardai/dependency-resolver';
+import type { Feature } from '@aboardai/types';
 
 async function executeFeatures(features: Feature[]) {
   // Resolve dependency order
@@ -180,9 +180,9 @@ Treated same as no dependencies - feature is ready immediately.
 
 ## Dependencies
 
-- `@automaker/types` - Feature type definition
+- `@aboardai/types` - Feature type definition
 
 ## Used By
 
-- `@automaker/server` - Auto-mode feature execution
-- `@automaker/ui` - Board view feature ordering
+- `@aboardai/server` - Auto-mode feature execution
+- `@aboardai/ui` - Board view feature ordering

@@ -1,15 +1,15 @@
-# @automaker/utils
+# @aboardai/utils
 
-Shared utility functions for AutoMaker.
+Shared utility functions for AboardAI.
 
 ## Overview
 
-This package provides common utility functions used across AutoMaker's server and UI. It includes error handling, logging, conversation utilities, image handling, and prompt building.
+This package provides common utility functions used across AboardAI's server and UI. It includes error handling, logging, conversation utilities, image handling, and prompt building.
 
 ## Installation
 
 ```bash
-npm install @automaker/utils
+npm install @aboardai/utils
 ```
 
 ## Exports
@@ -19,7 +19,7 @@ npm install @automaker/utils
 Structured logging with context.
 
 ```typescript
-import { createLogger, LogLevel } from '@automaker/utils';
+import { createLogger, LogLevel } from '@aboardai/utils';
 
 const logger = createLogger('MyComponent');
 logger.info('Processing request');
@@ -38,7 +38,7 @@ import {
   isAuthenticationError,
   classifyError,
   getUserFriendlyErrorMessage,
-} from '@automaker/utils';
+} from '@aboardai/utils';
 
 try {
   await operation();
@@ -62,7 +62,7 @@ import {
   normalizeContentBlocks,
   formatHistoryAsText,
   convertHistoryToMessages,
-} from '@automaker/utils';
+} from '@aboardai/utils';
 
 const text = extractTextFromContent(contentBlocks);
 const normalized = normalizeContentBlocks(content);
@@ -80,7 +80,7 @@ import {
   readImageAsBase64,
   convertImagesToContentBlocks,
   formatImagePathsForPrompt,
-} from '@automaker/utils';
+} from '@aboardai/utils';
 
 const mimeType = getMimeTypeForImage('screenshot.png');
 const base64 = await readImageAsBase64('/path/to/image.jpg');
@@ -93,7 +93,7 @@ const formatted = formatImagePathsForPrompt(imagePaths);
 Build prompts with images for Claude.
 
 ```typescript
-import { buildPromptWithImages } from '@automaker/utils';
+import { buildPromptWithImages } from '@aboardai/utils';
 
 const result = await buildPromptWithImages({
   basePrompt: 'Analyze this screenshot',
@@ -110,7 +110,7 @@ console.log(result.images); // Image data for Claude
 Common file system operations.
 
 ```typescript
-import { ensureDir, fileExists, readJsonFile, writeJsonFile } from '@automaker/utils';
+import { ensureDir, fileExists, readJsonFile, writeJsonFile } from '@aboardai/utils';
 
 await ensureDir('/path/to/dir');
 const exists = await fileExists('/path/to/file');
@@ -121,7 +121,7 @@ await writeJsonFile('/config.json', data);
 ## Usage Example
 
 ```typescript
-import { createLogger, classifyError, buildPromptWithImages } from '@automaker/utils';
+import { createLogger, classifyError, buildPromptWithImages } from '@aboardai/utils';
 
 const logger = createLogger('FeatureExecutor');
 
@@ -147,9 +147,9 @@ async function executeWithImages(prompt: string, images: string[]) {
 
 ## Dependencies
 
-- `@automaker/types` - Type definitions
+- `@aboardai/types` - Type definitions
 
 ## Used By
 
-- `@automaker/server`
-- `@automaker/ui`
+- `@aboardai/server`
+- `@aboardai/ui`

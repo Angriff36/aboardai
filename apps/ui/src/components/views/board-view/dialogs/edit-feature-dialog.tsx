@@ -26,7 +26,7 @@ import { useNavigate } from '@tanstack/react-router';
 import { toast } from 'sonner';
 import { cn, migrateModelId, normalizeModelEntry } from '@/lib/utils';
 import { Feature, ModelAlias, ThinkingLevel, PlanningMode } from '@/store/app-store';
-import type { ReasoningEffort, PhaseModelEntry, DescriptionHistoryEntry } from '@automaker/types';
+import type { ReasoningEffort, PhaseModelEntry, DescriptionHistoryEntry } from '@aboardai/types';
 import {
   PrioritySelector,
   WorkModeSelector,

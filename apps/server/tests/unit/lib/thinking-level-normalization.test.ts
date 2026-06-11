@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { normalizeThinkingLevelForModel } from '@automaker/types';
+import { normalizeThinkingLevelForModel } from '@aboardai/types';
 
 describe('normalizeThinkingLevelForModel', () => {
   it('preserves explicitly selected none for Opus models', () => {

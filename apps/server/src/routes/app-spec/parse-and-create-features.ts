@@ -5,12 +5,12 @@
 import path from 'path';
 import * as secureFs from '../../lib/secure-fs.js';
 import type { EventEmitter } from '../../lib/events.js';
-import { createLogger, atomicWriteJson, DEFAULT_BACKUP_COUNT } from '@automaker/utils';
-import { getFeaturesDir } from '@automaker/platform';
+import { createLogger, atomicWriteJson, DEFAULT_BACKUP_COUNT } from '@aboardai/utils';
+import { getFeaturesDir } from '@aboardai/platform';
 import { extractJsonWithArray } from '../../lib/json-extractor.js';
 import { getNotificationService } from '../../services/notification-service.js';
 import type { SettingsService } from '../../services/settings-service.js';
-import { resolvePhaseModel } from '@automaker/model-resolver';
+import { resolvePhaseModel } from '@aboardai/model-resolver';
 
 const logger = createLogger('SpecRegeneration');
 

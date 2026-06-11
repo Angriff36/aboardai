@@ -3,11 +3,11 @@
  */
 
 import type { Request, Response } from 'express';
-import { createLogger } from '@automaker/utils';
-import { CODEX_MODEL_MAP } from '@automaker/types';
+import { createLogger } from '@aboardai/utils';
+import { CODEX_MODEL_MAP } from '@aboardai/types';
 import { ProviderFactory } from '../../../providers/provider-factory.js';
 import { getApiKey } from '../common.js';
-import { getCodexAuthIndicators } from '@automaker/platform';
+import { getCodexAuthIndicators } from '@aboardai/platform';
 import {
   createSecureAuthEnv,
   AuthSessionManager,
@@ -83,7 +83,7 @@ function isRateLimitError(text: string): boolean {
 export function createVerifyCodexAuthHandler() {
   return async (req: Request, res: Response): Promise<void> => {
     // In E2E/CI mock mode, skip real API calls
-    if (process.env.AUTOMAKER_MOCK_AGENT === 'true') {
+    if (process.env.ABOARDAI_MOCK_AGENT === 'true') {
       res.json({ success: true, authenticated: true });
       return;
     }

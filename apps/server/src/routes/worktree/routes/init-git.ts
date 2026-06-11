@@ -98,10 +98,10 @@ export function createInitGitHandler() {
         }
 
         if (!userName.trim()) {
-          await execAsync(`git config user.name "Automaker"`, { cwd: projectPath });
+          await execAsync(`git config user.name "AboardAI"`, { cwd: projectPath });
         }
         if (!userEmail.trim()) {
-          await execAsync(`git config user.email "automaker@localhost"`, { cwd: projectPath });
+          await execAsync(`git config user.email "aboardai@localhost"`, { cwd: projectPath });
         }
 
         // Step 3: create the initial empty commit

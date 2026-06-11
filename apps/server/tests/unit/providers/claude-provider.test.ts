@@ -5,7 +5,7 @@ import { collectAsyncGenerator } from '../../utils/helpers.js';
 
 vi.mock('@anthropic-ai/claude-agent-sdk');
 
-vi.mock('@automaker/platform', () => ({
+vi.mock('@aboardai/platform', () => ({
   getClaudeAuthIndicators: vi.fn().mockResolvedValue({
     hasCredentialsFile: false,
     hasSettingsFile: false,

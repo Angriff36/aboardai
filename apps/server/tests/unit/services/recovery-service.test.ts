@@ -11,7 +11,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import path from 'path';
 import { RecoveryService, DEFAULT_EXECUTION_STATE } from '@/services/recovery-service.js';
-import type { Feature } from '@automaker/types';
+import type { Feature } from '@aboardai/types';
 
 /**
  * Helper to normalize paths for cross-platform test compatibility.
@@ -20,7 +20,7 @@ import type { Feature } from '@automaker/types';
 const normalizePath = (p: string): string => path.normalize(p);
 
 // Mock dependencies
-vi.mock('@automaker/utils', () => ({
+vi.mock('@aboardai/utils', () => ({
   createLogger: () => ({
     info: vi.fn(),
     warn: vi.fn(),
@@ -32,12 +32,12 @@ vi.mock('@automaker/utils', () => ({
   DEFAULT_BACKUP_COUNT: 5,
 }));
 
-vi.mock('@automaker/platform', () => ({
+vi.mock('@aboardai/platform', () => ({
   getFeatureDir: (projectPath: string, featureId: string) =>
-    `${projectPath}/.automaker/features/${featureId}`,
-  getFeaturesDir: (projectPath: string) => `${projectPath}/.automaker/features`,
-  getExecutionStatePath: (projectPath: string) => `${projectPath}/.automaker/execution-state.json`,
-  ensureAutomakerDir: vi.fn().mockResolvedValue(undefined),
+    `${projectPath}/.aboardai/features/${featureId}`,
+  getFeaturesDir: (projectPath: string) => `${projectPath}/.aboardai/features`,
+  getExecutionStatePath: (projectPath: string) => `${projectPath}/.aboardai/execution-state.json`,
+  ensureAboardAIDir: vi.fn().mockResolvedValue(undefined),
 }));
 
 vi.mock('@/lib/secure-fs.js', () => ({
@@ -59,7 +59,7 @@ vi.mock('@/lib/settings-helpers.js', () => ({
 describe('recovery-service.ts', () => {
   // Import mocked modules for access in tests
   let secureFs: typeof import('@/lib/secure-fs.js');
-  let utils: typeof import('@automaker/utils');
+  let utils: typeof import('@aboardai/utils');
 
   // Mock dependencies
   const mockEventBus = {
@@ -101,7 +101,7 @@ describe('recovery-service.ts', () => {
 
     // Import mocked modules
     secureFs = await import('@/lib/secure-fs.js');
-    utils = await import('@automaker/utils');
+    utils = await import('@aboardai/utils');
 
     // Reset secure-fs mocks to default behavior
     vi.mocked(secureFs.access).mockRejectedValue(new Error('ENOENT'));
@@ -172,7 +172,7 @@ describe('recovery-service.ts', () => {
       await service.saveExecutionStateForProject('/test/project', 'feature-branch', 3);
 
       expect(secureFs.writeFile).toHaveBeenCalledWith(
-        '/test/project/.automaker/execution-state.json',
+        '/test/project/.aboardai/execution-state.json',
         expect.any(String),
         'utf-8'
       );
@@ -269,7 +269,7 @@ describe('recovery-service.ts', () => {
     it('removes execution state file', async () => {
       await service.clearExecutionState('/test/project');
 
-      expect(secureFs.unlink).toHaveBeenCalledWith('/test/project/.automaker/execution-state.json');
+      expect(secureFs.unlink).toHaveBeenCalledWith('/test/project/.aboardai/execution-state.json');
     });
 
     it('does not throw on ENOENT error', async () => {
@@ -295,7 +295,7 @@ describe('recovery-service.ts', () => {
 
       expect(result).toBe(true);
       expect(secureFs.access).toHaveBeenCalledWith(
-        normalizePath('/test/project/.automaker/features/feature-1/agent-output.md')
+        normalizePath('/test/project/.aboardai/features/feature-1/agent-output.md')
       );
     });
 
@@ -636,7 +636,7 @@ describe('recovery-service.ts', () => {
       await service.resumeInterruptedFeatures('/test/project');
 
       // Should clear execution state after resuming
-      expect(secureFs.unlink).toHaveBeenCalledWith('/test/project/.automaker/execution-state.json');
+      expect(secureFs.unlink).toHaveBeenCalledWith('/test/project/.aboardai/execution-state.json');
     });
 
     it('distinguishes features with/without context', async () => {

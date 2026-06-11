@@ -12,7 +12,7 @@ export function createAuthCursorHandler() {
   return async (_req: Request, res: Response): Promise<void> => {
     try {
       // Remove the disconnected marker file to reconnect the app to the CLI
-      const markerPath = path.join(process.cwd(), '.automaker', '.cursor-disconnected');
+      const markerPath = path.join(process.cwd(), '.aboardai', '.cursor-disconnected');
       if (fs.existsSync(markerPath)) {
         fs.unlinkSync(markerPath);
       }

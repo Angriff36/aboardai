@@ -7,12 +7,12 @@ export function createDeauthOpencodeHandler() {
   return async (_req: Request, res: Response): Promise<void> => {
     try {
       // Create a marker file to indicate the CLI is disconnected from the app
-      const automakerDir = path.join(process.cwd(), '.automaker');
-      const markerPath = path.join(automakerDir, '.opencode-disconnected');
+      const aboardaiDir = path.join(process.cwd(), '.aboardai');
+      const markerPath = path.join(aboardaiDir, '.opencode-disconnected');
 
-      // Ensure .automaker directory exists
-      if (!fs.existsSync(automakerDir)) {
-        fs.mkdirSync(automakerDir, { recursive: true });
+      // Ensure .aboardai directory exists
+      if (!fs.existsSync(aboardaiDir)) {
+        fs.mkdirSync(aboardaiDir, { recursive: true });
       }
 
       // Create the marker file with timestamp

@@ -24,9 +24,9 @@ import type {
   ModelDefinition,
   InstallationStatus,
   ContentBlock,
-} from '@automaker/types';
-import { type SubprocessOptions, getOpenCodeAuthIndicators } from '@automaker/platform';
-import { createLogger } from '@automaker/utils';
+} from '@aboardai/types';
+import { type SubprocessOptions, getOpenCodeAuthIndicators } from '@aboardai/platform';
+import { createLogger } from '@aboardai/utils';
 
 // Create logger for OpenCode operations
 const opencodeLogger = createLogger('OpencodeProvider');

@@ -6,7 +6,7 @@
  * pattern as merge-service.ts.
  */
 
-import { createLogger } from '@automaker/utils';
+import { createLogger } from '@aboardai/utils';
 import { execGitCommand, getCurrentBranch } from '../lib/git.js';
 import { type EventEmitter } from '../lib/events.js';
 

@@ -11,7 +11,7 @@ import { useIdeationStore } from '@/store/ideation-store';
 import { useAppStore } from '@/store/app-store';
 import { useGenerateIdeationSuggestions } from '@/hooks/mutations';
 import { toast } from 'sonner';
-import type { IdeaCategory, IdeationPrompt } from '@automaker/types';
+import type { IdeaCategory, IdeationPrompt } from '@aboardai/types';
 
 interface PromptListProps {
   category: IdeaCategory;

@@ -1,11 +1,11 @@
-import type { ModelProvider, ThinkingLevel, ReasoningEffort } from '@automaker/types';
+import type { ModelProvider, ThinkingLevel, ReasoningEffort } from '@aboardai/types';
 import {
   CURSOR_MODEL_MAP,
   CODEX_MODEL_MAP,
   OPENCODE_MODELS as OPENCODE_MODEL_CONFIGS,
   GEMINI_MODEL_MAP,
   COPILOT_MODEL_MAP,
-} from '@automaker/types';
+} from '@aboardai/types';
 import { Brain, Zap, Scale, Cpu, Rocket, Sparkles } from 'lucide-react';
 import {
   AnthropicIcon,

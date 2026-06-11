@@ -1,13 +1,13 @@
 import { spawn, type ChildProcess } from 'child_process';
 import readline from 'readline';
-import { findCodexCliPath } from '@automaker/platform';
-import { createLogger } from '@automaker/utils';
+import { findCodexCliPath } from '@aboardai/platform';
+import { createLogger } from '@aboardai/utils';
 import type {
   AppServerModelResponse,
   AppServerAccountResponse,
   AppServerRateLimitsResponse,
   JsonRpcRequest,
-} from '@automaker/types';
+} from '@aboardai/types';
 
 const logger = createLogger('CodexAppServer');
 
@@ -182,8 +182,8 @@ export class CodexAppServerService {
       // 1. Initialize the app-server
       await sendRequest('initialize', {
         clientInfo: {
-          name: 'automaker',
-          title: 'AutoMaker',
+          name: 'aboardai',
+          title: 'AboardAI',
           version: '1.0.0',
         },
       });

@@ -52,8 +52,8 @@ interface ProjectSelectorWithOptionsProps {
   setIsProjectPickerOpen: (value: boolean | ((prev: boolean) => boolean)) => void;
   /** Callback to show the delete project confirmation dialog */
   setShowDeleteProjectDialog: (show: boolean) => void;
-  /** Callback to show the remove from automaker confirmation dialog */
-  setShowRemoveFromAutomakerDialog: (show: boolean) => void;
+  /** Callback to show the remove from aboardai confirmation dialog */
+  setShowRemoveFromAboardAIDialog: (show: boolean) => void;
 }
 
 /**
@@ -77,7 +77,7 @@ export function ProjectSelectorWithOptions({
   isProjectPickerOpen,
   setIsProjectPickerOpen,
   setShowDeleteProjectDialog,
-  setShowRemoveFromAutomakerDialog,
+  setShowRemoveFromAboardAIDialog,
 }: ProjectSelectorWithOptionsProps) {
   const projects = useAppStore((s) => s.projects);
   const currentProject = useAppStore((s) => s.currentProject);
@@ -89,17 +89,17 @@ export function ProjectSelectorWithOptions({
   const clearProjectHistory = useAppStore((s) => s.clearProjectHistory);
 
   const shortcuts = useKeyboardShortcutsConfig();
-  // Wrap setCurrentProject to initialize .automaker in background while switching
+  // Wrap setCurrentProject to initialize .aboardai in background while switching
   const setCurrentProjectWithInit = useCallback(
     (p: Project) => {
       if (p.id === currentProject?.id) {
         return;
       }
-      // Fire-and-forget: initialize .automaker directory structure in background
+      // Fire-and-forget: initialize .aboardai directory structure in background
       // so the project switch is not blocked by filesystem operations
       initializeProject(p.path).catch((error) => {
         console.error('Failed to initialize project during switch:', error);
-        toast.error('Failed to initialize project .automaker', {
+        toast.error('Failed to initialize project .aboardai', {
           description: error instanceof Error ? error.message : String(error),
         });
       });
@@ -407,12 +407,12 @@ export function ProjectSelectorWithOptions({
             {/* Remove / Trash Section */}
             <DropdownMenuSeparator />
             <DropdownMenuItem
-              onClick={() => setShowRemoveFromAutomakerDialog(true)}
+              onClick={() => setShowRemoveFromAboardAIDialog(true)}
               className="text-muted-foreground focus:text-foreground"
-              data-testid="remove-from-automaker"
+              data-testid="remove-from-aboardai"
             >
               <LogOut className="w-4 h-4 mr-2" />
-              <span>Remove from Automaker</span>
+              <span>Remove from AboardAI</span>
             </DropdownMenuItem>
             <DropdownMenuItem
               onClick={() => setShowDeleteProjectDialog(true)}

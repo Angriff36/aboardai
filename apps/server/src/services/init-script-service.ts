@@ -1,14 +1,14 @@
 /**
  * Init Script Service - Executes worktree initialization scripts
  *
- * Runs the .automaker/worktree-init.sh script after worktree creation.
+ * Runs the .aboardai/worktree-init.sh script after worktree creation.
  * Uses Git Bash on Windows for cross-platform shell script compatibility.
  */
 
 import { spawn } from 'child_process';
 import path from 'path';
-import { createLogger } from '@automaker/utils';
-import { systemPathExists, getShellPaths, findGitBashPath } from '@automaker/platform';
+import { createLogger } from '@aboardai/utils';
+import { systemPathExists, getShellPaths, findGitBashPath } from '@aboardai/platform';
 import { findCommand } from '../lib/cli-detection.js';
 import type { EventEmitter } from '../lib/events.js';
 import { readWorktreeMetadata, writeWorktreeMetadata } from '../lib/worktree-metadata.js';
@@ -45,7 +45,7 @@ export class InitScriptService {
    * Get the path to the init script for a project
    */
   getInitScriptPath(projectPath: string): string {
-    return path.join(projectPath, '.automaker', 'worktree-init.sh');
+    return path.join(projectPath, '.aboardai', 'worktree-init.sh');
   }
 
   /**
@@ -194,10 +194,10 @@ export class InitScriptService {
     // Build safe environment - only pass necessary variables, not all of process.env
     // This prevents exposure of sensitive credentials like ANTHROPIC_API_KEY
     const safeEnv: Record<string, string> = {
-      // Automaker-specific variables
-      AUTOMAKER_PROJECT_PATH: projectPath,
-      AUTOMAKER_WORKTREE_PATH: worktreePath,
-      AUTOMAKER_BRANCH: branch,
+      // AboardAI-specific variables
+      ABOARDAI_PROJECT_PATH: projectPath,
+      ABOARDAI_WORKTREE_PATH: worktreePath,
+      ABOARDAI_BRANCH: branch,
 
       // Essential system variables
       PATH: process.env.PATH || '',

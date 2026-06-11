@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { MessageSquareText, RotateCcw, Info } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import type { PromptCustomization, CustomPrompt } from '@automaker/types';
+import type { PromptCustomization, CustomPrompt } from '@aboardai/types';
 import { TAB_CONFIGS } from './tab-configs';
 import { Banner, PromptFieldList } from './components';
 

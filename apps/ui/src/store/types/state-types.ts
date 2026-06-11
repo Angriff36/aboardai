@@ -25,7 +25,7 @@ import type {
   ThinkingLevel,
   ReasoningEffort,
   FeatureTemplate,
-} from '@automaker/types';
+} from '@aboardai/types';
 
 import type {
   ViewMode,

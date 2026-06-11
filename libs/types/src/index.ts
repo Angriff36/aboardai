@@ -1,6 +1,6 @@
 /**
- * @automaker/types
- * Shared type definitions for AutoMaker
+ * @aboardai/types
+ * Shared type definitions for AboardAI
  */
 
 // Provider types

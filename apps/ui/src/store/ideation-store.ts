@@ -12,8 +12,8 @@ import type {
   AnalysisSuggestion,
   ProjectAnalysisResult,
   IdeationContextSources,
-} from '@automaker/types';
-import { DEFAULT_IDEATION_CONTEXT_SOURCES } from '@automaker/types';
+} from '@aboardai/types';
+import { DEFAULT_IDEATION_CONTEXT_SOURCES } from '@aboardai/types';
 
 // ============================================================================
 // Generation Job Types
@@ -351,7 +351,7 @@ export const useIdeationStore = create<IdeationState & IdeationActions>()(
         }),
     }),
     {
-      name: 'automaker-ideation-store',
+      name: 'aboardai-ideation-store',
       version: 5,
       partialize: (state) => ({
         // Only persist these fields

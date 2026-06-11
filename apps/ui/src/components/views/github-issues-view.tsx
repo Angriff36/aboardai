@@ -1,6 +1,6 @@
 // @ts-nocheck - GitHub issues view with issue selection and feature creation flow
 import { useState, useCallback, useMemo } from 'react';
-import { createLogger } from '@automaker/utils/logger';
+import { createLogger } from '@aboardai/utils/logger';
 import { CircleDot, RefreshCw, SearchX } from 'lucide-react';
 import { useQueryClient } from '@tanstack/react-query';
 import { getElectronAPI, GitHubIssue, IssueValidationResult } from '@/lib/electron';
@@ -18,7 +18,7 @@ import { IssueRow, IssueDetailPanel, IssuesListHeader } from './github-issues-vi
 import { ValidationDialog } from './github-issues-view/dialogs';
 import { AddFeatureDialog } from './board-view/dialogs';
 import { formatDate, getFeaturePriority } from './github-issues-view/utils';
-import { resolveModelString } from '@automaker/model-resolver';
+import { resolveModelString } from '@aboardai/model-resolver';
 import { useModelOverride } from '@/components/shared';
 import type {
   ValidateIssueOptions,

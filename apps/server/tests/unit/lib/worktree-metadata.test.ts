@@ -276,7 +276,7 @@ describe('worktree-metadata.ts', () => {
     });
 
     it('should return empty map when worktrees directory is empty', async () => {
-      const worktreesDir = path.join(testProjectPath, '.automaker', 'worktrees');
+      const worktreesDir = path.join(testProjectPath, '.aboardai', 'worktrees');
       await fs.mkdir(worktreesDir, { recursive: true });
 
       const result = await readAllWorktreeMetadata(testProjectPath);
@@ -312,7 +312,7 @@ describe('worktree-metadata.ts', () => {
     });
 
     it('should skip directories without worktree.json', async () => {
-      const worktreesDir = path.join(testProjectPath, '.automaker', 'worktrees');
+      const worktreesDir = path.join(testProjectPath, '.aboardai', 'worktrees');
       const emptyDir = path.join(worktreesDir, 'empty-dir');
       await fs.mkdir(emptyDir, { recursive: true });
 
@@ -329,7 +329,7 @@ describe('worktree-metadata.ts', () => {
     });
 
     it('should skip files in worktrees directory', async () => {
-      const worktreesDir = path.join(testProjectPath, '.automaker', 'worktrees');
+      const worktreesDir = path.join(testProjectPath, '.aboardai', 'worktrees');
       await fs.mkdir(worktreesDir, { recursive: true });
       const filePath = path.join(worktreesDir, 'not-a-dir.txt');
       await fs.writeFile(filePath, 'content');
@@ -347,7 +347,7 @@ describe('worktree-metadata.ts', () => {
     });
 
     it('should skip directories with malformed JSON', async () => {
-      const worktreesDir = path.join(testProjectPath, '.automaker', 'worktrees');
+      const worktreesDir = path.join(testProjectPath, '.aboardai', 'worktrees');
       const badDir = path.join(worktreesDir, 'bad-dir');
       await fs.mkdir(badDir, { recursive: true });
       const badJsonPath = path.join(badDir, 'worktree.json');

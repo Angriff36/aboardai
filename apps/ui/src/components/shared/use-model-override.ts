@@ -1,7 +1,7 @@
 import { useState, useCallback, useMemo } from 'react';
 import { useAppStore } from '@/store/app-store';
-import type { ModelId, PhaseModelKey, PhaseModelEntry } from '@automaker/types';
-import { DEFAULT_PHASE_MODELS } from '@automaker/types';
+import type { ModelId, PhaseModelKey, PhaseModelEntry } from '@aboardai/types';
+import { DEFAULT_PHASE_MODELS } from '@aboardai/types';
 
 export interface UseModelOverrideOptions {
   /** Which phase this override is for */

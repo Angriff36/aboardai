@@ -4,7 +4,7 @@
 
 import type { Request, Response } from 'express';
 import type { IdeationService } from '../../../services/ideation-service.js';
-import type { StartSessionOptions } from '@automaker/types';
+import type { StartSessionOptions } from '@aboardai/types';
 import { getErrorMessage, logError } from '../common.js';
 
 export function createSessionStartHandler(ideationService: IdeationService) {

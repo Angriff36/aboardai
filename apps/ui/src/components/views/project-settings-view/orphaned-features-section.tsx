@@ -31,7 +31,7 @@ import {
 import { getHttpApiClient } from '@/lib/http-api-client';
 import { toast } from 'sonner';
 import type { Project } from '@/lib/electron';
-import type { Feature } from '@automaker/types';
+import type { Feature } from '@aboardai/types';
 
 interface OrphanedFeatureInfo {
   feature: Feature;

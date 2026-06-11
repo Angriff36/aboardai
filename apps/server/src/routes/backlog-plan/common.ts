@@ -2,11 +2,11 @@
  * Common utilities for backlog plan routes
  */
 
-import { createLogger } from '@automaker/utils';
-import { ensureAutomakerDir, getAutomakerDir } from '@automaker/platform';
+import { createLogger } from '@aboardai/utils';
+import { ensureAboardAIDir, getAboardAIDir } from '@aboardai/platform';
 import * as secureFs from '../../lib/secure-fs.js';
 import path from 'path';
-import type { BacklogPlanResult } from '@automaker/types';
+import type { BacklogPlanResult } from '@aboardai/types';
 
 const logger = createLogger('BacklogPlan');
 
@@ -64,11 +64,11 @@ export function getRunningDetails(): {
 }
 
 function getBacklogPlanPath(projectPath: string): string {
-  return path.join(getAutomakerDir(projectPath), BACKLOG_PLAN_FILENAME);
+  return path.join(getAboardAIDir(projectPath), BACKLOG_PLAN_FILENAME);
 }
 
 export async function saveBacklogPlan(projectPath: string, plan: StoredBacklogPlan): Promise<void> {
-  await ensureAutomakerDir(projectPath);
+  await ensureAboardAIDir(projectPath);
   const filePath = getBacklogPlanPath(projectPath);
   await secureFs.writeFile(filePath, JSON.stringify(plan, null, 2), 'utf-8');
 }

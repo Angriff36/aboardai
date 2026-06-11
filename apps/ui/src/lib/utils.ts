@@ -6,17 +6,17 @@ import {
   normalizeReasoningEffortForModel,
   LEGACY_CLAUDE_ALIAS_MAP,
   type PhaseModelEntry,
-} from '@automaker/types';
+} from '@aboardai/types';
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
-// Re-export getErrorMessage from @automaker/utils to maintain backward compatibility
+// Re-export getErrorMessage from @aboardai/utils to maintain backward compatibility
 // for components that already import it from here
 // NOTE: Using subpath export to avoid pulling in Node.js-specific dependencies
-// (the main @automaker/utils barrel imports modules that depend on @automaker/platform)
-export { getErrorMessage } from '@automaker/utils/error-handler';
+// (the main @aboardai/utils barrel imports modules that depend on @aboardai/platform)
+export { getErrorMessage } from '@aboardai/utils/error-handler';
 
 /**
  * Migrate legacy model aliases to canonical prefixed IDs.

@@ -8,8 +8,8 @@ import type {
   ZaiUsageResponse,
   GeminiUsageResponse,
 } from '@/store/app-store';
-import type { ParsedTask, FeatureStatusWithPipeline, MergeStateInfo } from '@automaker/types';
-export type { MergeStateInfo } from '@automaker/types';
+import type { ParsedTask, FeatureStatusWithPipeline, MergeStateInfo } from '@aboardai/types';
+export type { MergeStateInfo } from '@aboardai/types';
 
 export interface ImageAttachment {
   id?: string; // Optional - may not be present in messages loaded from server

@@ -5,7 +5,7 @@
  * but communicates with the backend server via HTTP/WebSocket.
  */
 
-import { createLogger } from '@automaker/utils/logger';
+import { createLogger } from '@aboardai/utils/logger';
 import type {
   ElectronAPI,
   FileResult,
@@ -39,7 +39,7 @@ import type {
   IdeationStreamEvent,
   IdeationAnalysisEvent,
   Notification,
-} from '@automaker/types';
+} from '@aboardai/types';
 import type { Message, SessionListItem } from '@/types/electron';
 import type {
   ClaudeUsageResponse,
@@ -48,7 +48,7 @@ import type {
   ZaiUsageResponse,
 } from '@/store/app-store';
 import type { WorktreeAPI, GitAPI, ModelDefinition, ProviderStatus } from '@/types/electron';
-import type { ModelId, ThinkingLevel, ReasoningEffort, Feature } from '@automaker/types';
+import type { ModelId, ThinkingLevel, ReasoningEffort, Feature } from '@aboardai/types';
 import { getGlobalFileBrowser } from '@/contexts/file-browser-context';
 
 const logger = createLogger('HttpClient');
@@ -64,7 +64,7 @@ let cachedServerUrl: string | null = null;
 const notifyLoggedOut = (): void => {
   if (typeof window === 'undefined') return;
   try {
-    window.dispatchEvent(new CustomEvent('automaker:logged-out'));
+    window.dispatchEvent(new CustomEvent('aboardai:logged-out'));
   } catch {
     // Ignore - navigation will still be handled by failed requests in most cases
   }
@@ -95,7 +95,7 @@ const handleUnauthorized = (): void => {
 const notifyServerOffline = (): void => {
   if (typeof window === 'undefined') return;
   try {
-    window.dispatchEvent(new CustomEvent('automaker:server-offline'));
+    window.dispatchEvent(new CustomEvent('aboardai:server-offline'));
   } catch {
     // Ignore
   }
@@ -217,7 +217,7 @@ let apiKeyInitPromise: Promise<void> | null = null;
 // Cached session token for authentication (Web mode - explicit header auth)
 // Persisted to localStorage to survive page reloads
 let cachedSessionToken: string | null = null;
-const SESSION_TOKEN_KEY = 'automaker:sessionToken';
+const SESSION_TOKEN_KEY = 'aboardai:sessionToken';
 
 // Initialize cached session token from localStorage on module load
 // This ensures web mode survives page reloads with valid authentication
@@ -2866,11 +2866,11 @@ export class HttpApiClient implements ElectronAPI {
 
     // Migration from localStorage
     migrate: (data: {
-      'automaker-storage'?: string;
-      'automaker-setup'?: string;
+      'aboardai-storage'?: string;
+      'aboardai-setup'?: string;
       'worktree-panel-collapsed'?: string;
       'file-browser-recent-folders'?: string;
-      'automaker:lastProjectDir'?: string;
+      'aboardai:lastProjectDir'?: string;
     }): Promise<{
       success: boolean;
       migratedGlobalSettings: boolean;

@@ -40,7 +40,7 @@ export async function clickReloadSpec(page: Page): Promise<void> {
 }
 
 /**
- * Check if the spec view path display shows the correct .automaker path
+ * Check if the spec view path display shows the correct .aboardai path
  */
 export async function getDisplayedSpecPath(page: Page): Promise<string | null> {
   const specView = page.locator('[data-testid="spec-view"]');

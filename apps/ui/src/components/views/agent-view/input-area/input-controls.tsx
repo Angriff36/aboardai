@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { cn } from '@/lib/utils';
 import { AgentModelSelector } from '../shared/agent-model-selector';
-import type { PhaseModelEntry } from '@automaker/types';
+import type { PhaseModelEntry } from '@aboardai/types';
 
 interface InputControlsProps {
   input: string;

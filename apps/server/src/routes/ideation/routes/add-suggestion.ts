@@ -9,7 +9,7 @@
 import type { Request, Response } from 'express';
 import type { IdeationService } from '../../../services/ideation-service.js';
 import type { FeatureLoader } from '../../../services/feature-loader.js';
-import type { AnalysisSuggestion } from '@automaker/types';
+import type { AnalysisSuggestion } from '@aboardai/types';
 import { getErrorMessage, logError } from '../common.js';
 
 export function createAddSuggestionHandler(

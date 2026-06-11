@@ -4,15 +4,15 @@ import type { EventEmitter } from '@/lib/events.js';
 import type { SettingsService } from '@/services/settings-service.js';
 import type { FeatureLoader } from '@/services/feature-loader.js';
 import * as secureFs from '@/lib/secure-fs.js';
-import * as platform from '@automaker/platform';
-import * as utils from '@automaker/utils';
+import * as platform from '@aboardai/platform';
+import * as utils from '@aboardai/utils';
 import type {
   CreateIdeaInput,
   UpdateIdeaInput,
   Idea,
   IdeationSession,
   StartSessionOptions,
-} from '@automaker/types';
+} from '@aboardai/types';
 import { ProviderFactory } from '@/providers/provider-factory.js';
 
 // Create shared mock instances for assertions using vi.hoisted
@@ -32,9 +32,9 @@ const mockCreateChatOptions = vi.hoisted(() =>
 
 // Mock dependencies
 vi.mock('@/lib/secure-fs.js');
-vi.mock('@automaker/platform');
-vi.mock('@automaker/utils', async () => {
-  const actual = await vi.importActual<typeof import('@automaker/utils')>('@automaker/utils');
+vi.mock('@aboardai/platform');
+vi.mock('@aboardai/utils', async () => {
+  const actual = await vi.importActual<typeof import('@aboardai/utils')>('@aboardai/utils');
   return {
     ...actual,
     createLogger: vi.fn(() => mockLogger),
@@ -80,20 +80,20 @@ describe('IdeationService', () => {
     // Mock platform functions
     vi.mocked(platform.ensureIdeationDir).mockResolvedValue(undefined);
     vi.mocked(platform.getIdeaDir).mockReturnValue(
-      '/test/project/.automaker/ideation/ideas/idea-123'
+      '/test/project/.aboardai/ideation/ideas/idea-123'
     );
     vi.mocked(platform.getIdeaPath).mockReturnValue(
-      '/test/project/.automaker/ideation/ideas/idea-123/idea.json'
+      '/test/project/.aboardai/ideation/ideas/idea-123/idea.json'
     );
-    vi.mocked(platform.getIdeasDir).mockReturnValue('/test/project/.automaker/ideation/ideas');
+    vi.mocked(platform.getIdeasDir).mockReturnValue('/test/project/.aboardai/ideation/ideas');
     vi.mocked(platform.getIdeationSessionPath).mockReturnValue(
-      '/test/project/.automaker/ideation/sessions/session-123.json'
+      '/test/project/.aboardai/ideation/sessions/session-123.json'
     );
     vi.mocked(platform.getIdeationSessionsDir).mockReturnValue(
-      '/test/project/.automaker/ideation/sessions'
+      '/test/project/.aboardai/ideation/sessions'
     );
     vi.mocked(platform.getIdeationAnalysisPath).mockReturnValue(
-      '/test/project/.automaker/ideation/analysis.json'
+      '/test/project/.aboardai/ideation/analysis.json'
     );
 
     // Mock utils (already mocked above, but reset return values)
@@ -809,7 +809,7 @@ describe('IdeationService', () => {
           </project_specification>
         `;
 
-        vi.mocked(platform.getAppSpecPath).mockReturnValue('/test/project/.automaker/app_spec.txt');
+        vi.mocked(platform.getAppSpecPath).mockReturnValue('/test/project/.aboardai/app_spec.txt');
 
         // First call returns app spec, subsequent calls return empty JSON
         vi.mocked(secureFs.readFile)
@@ -855,7 +855,7 @@ describe('IdeationService', () => {
           </project_specification>
         `;
 
-        vi.mocked(platform.getAppSpecPath).mockReturnValue('/test/project/.automaker/app_spec.txt');
+        vi.mocked(platform.getAppSpecPath).mockReturnValue('/test/project/.aboardai/app_spec.txt');
         vi.mocked(secureFs.readFile).mockResolvedValue(mockAppSpec);
 
         const mockProvider = {
@@ -888,7 +888,7 @@ describe('IdeationService', () => {
       });
 
       it('should handle missing app spec file gracefully', async () => {
-        vi.mocked(platform.getAppSpecPath).mockReturnValue('/test/project/.automaker/app_spec.txt');
+        vi.mocked(platform.getAppSpecPath).mockReturnValue('/test/project/.aboardai/app_spec.txt');
 
         const enoentError = new Error('ENOENT: no such file or directory') as NodeJS.ErrnoException;
         enoentError.code = 'ENOENT';

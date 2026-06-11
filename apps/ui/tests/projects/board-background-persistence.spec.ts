@@ -3,7 +3,7 @@
  *
  * Tests that board background settings are properly saved and loaded when switching projects.
  * This verifies that:
- * 1. Background settings are saved to .automaker/settings.json
+ * 1. Background settings are saved to .aboardai/settings.json
  * 2. Settings are loaded when switching back to a project
  * 3. Background image, opacity, and other settings are correctly restored
  * 4. Settings persist across app restarts (new page loads)
@@ -62,20 +62,20 @@ test.describe('Board Background Persistence', () => {
       fs.writeFileSync(path.join(projectPath, 'README.md'), `# ${name}\n`);
     }
 
-    // Create .automaker directory for project A with background settings
-    const automakerDirA = path.join(projectAPath, '.automaker');
-    fs.mkdirSync(automakerDirA, { recursive: true });
-    fs.mkdirSync(path.join(automakerDirA, 'board'), { recursive: true });
-    fs.mkdirSync(path.join(automakerDirA, 'features'), { recursive: true });
-    fs.mkdirSync(path.join(automakerDirA, 'context'), { recursive: true });
+    // Create .aboardai directory for project A with background settings
+    const aboardaiDirA = path.join(projectAPath, '.aboardai');
+    fs.mkdirSync(aboardaiDirA, { recursive: true });
+    fs.mkdirSync(path.join(aboardaiDirA, 'board'), { recursive: true });
+    fs.mkdirSync(path.join(aboardaiDirA, 'features'), { recursive: true });
+    fs.mkdirSync(path.join(aboardaiDirA, 'context'), { recursive: true });
 
     // Copy actual background image from test fixtures
-    const backgroundPath = path.join(automakerDirA, 'board', 'background.jpg');
+    const backgroundPath = path.join(aboardaiDirA, 'board', 'background.jpg');
     const testImagePath = path.join(__dirname, '..', 'img', 'background.jpg');
     fs.copyFileSync(testImagePath, backgroundPath);
 
     // Create settings.json with board background configuration
-    const settingsPath = path.join(automakerDirA, 'settings.json');
+    const settingsPath = path.join(aboardaiDirA, 'settings.json');
     const backgroundSettings = {
       version: 1,
       boardBackground: {
@@ -92,13 +92,13 @@ test.describe('Board Background Persistence', () => {
     };
     fs.writeFileSync(settingsPath, JSON.stringify(backgroundSettings, null, 2));
 
-    // Create minimal .automaker directory for project B (no background)
-    const automakerDirB = path.join(projectBPath, '.automaker');
-    fs.mkdirSync(automakerDirB, { recursive: true });
-    fs.mkdirSync(path.join(automakerDirB, 'features'), { recursive: true });
-    fs.mkdirSync(path.join(automakerDirB, 'context'), { recursive: true });
+    // Create minimal .aboardai directory for project B (no background)
+    const aboardaiDirB = path.join(projectBPath, '.aboardai');
+    fs.mkdirSync(aboardaiDirB, { recursive: true });
+    fs.mkdirSync(path.join(aboardaiDirB, 'features'), { recursive: true });
+    fs.mkdirSync(path.join(aboardaiDirB, 'context'), { recursive: true });
     fs.writeFileSync(
-      path.join(automakerDirB, 'settings.json'),
+      path.join(aboardaiDirB, 'settings.json'),
       JSON.stringify({ version: 1 }, null, 2)
     );
 
@@ -142,7 +142,7 @@ test.describe('Board Background Persistence', () => {
           },
           version: versions.APP_STORE,
         };
-        localStorage.setItem('automaker-storage', JSON.stringify(appState));
+        localStorage.setItem('aboardai-storage', JSON.stringify(appState));
 
         const setupState = {
           state: {
@@ -152,7 +152,7 @@ test.describe('Board Background Persistence', () => {
           },
           version: versions.SETUP_STORE,
         };
-        localStorage.setItem('automaker-setup', JSON.stringify(setupState));
+        localStorage.setItem('aboardai-setup', JSON.stringify(setupState));
 
         const settingsCache = {
           setupComplete: true,
@@ -169,7 +169,7 @@ test.describe('Board Background Persistence', () => {
           sidebarStyle: 'unified',
           maxConcurrency: 3,
         };
-        localStorage.setItem('automaker-settings-cache', JSON.stringify(settingsCache));
+        localStorage.setItem('aboardai-settings-cache', JSON.stringify(settingsCache));
 
         // Force unified sidebar (project-dropdown-trigger exists only in unified mode)
         const uiCache = {
@@ -183,9 +183,9 @@ test.describe('Board Background Persistence', () => {
           },
           version: 2,
         };
-        localStorage.setItem('automaker-ui-cache', JSON.stringify(uiCache));
+        localStorage.setItem('aboardai-ui-cache', JSON.stringify(uiCache));
 
-        localStorage.setItem('automaker-disable-splash', 'true');
+        localStorage.setItem('aboardai-disable-splash', 'true');
       },
       { projects: [projectA, projectB], versions: { APP_STORE: 2, SETUP_STORE: 1 } }
     );
@@ -453,19 +453,19 @@ test.describe('Board Background Persistence', () => {
       JSON.stringify({ name: projectName, version: '1.0.0' }, null, 2)
     );
 
-    // Create .automaker with background settings
-    const automakerDir = path.join(projectPath, '.automaker');
-    fs.mkdirSync(automakerDir, { recursive: true });
-    fs.mkdirSync(path.join(automakerDir, 'board'), { recursive: true });
-    fs.mkdirSync(path.join(automakerDir, 'features'), { recursive: true });
-    fs.mkdirSync(path.join(automakerDir, 'context'), { recursive: true });
+    // Create .aboardai with background settings
+    const aboardaiDir = path.join(projectPath, '.aboardai');
+    fs.mkdirSync(aboardaiDir, { recursive: true });
+    fs.mkdirSync(path.join(aboardaiDir, 'board'), { recursive: true });
+    fs.mkdirSync(path.join(aboardaiDir, 'features'), { recursive: true });
+    fs.mkdirSync(path.join(aboardaiDir, 'context'), { recursive: true });
 
     // Copy actual background image from test fixtures
-    const backgroundPath = path.join(automakerDir, 'board', 'background.jpg');
+    const backgroundPath = path.join(aboardaiDir, 'board', 'background.jpg');
     const testImagePath = path.join(__dirname, '..', 'img', 'background.jpg');
     fs.copyFileSync(testImagePath, backgroundPath);
 
-    const settingsPath = path.join(automakerDir, 'settings.json');
+    const settingsPath = path.join(aboardaiDir, 'settings.json');
     fs.writeFileSync(
       settingsPath,
       JSON.stringify(
@@ -509,7 +509,7 @@ test.describe('Board Background Persistence', () => {
           },
           version: 2,
         };
-        localStorage.setItem('automaker-storage', JSON.stringify(appState));
+        localStorage.setItem('aboardai-storage', JSON.stringify(appState));
 
         // Setup complete - use correct key name
         const setupState = {
@@ -520,7 +520,7 @@ test.describe('Board Background Persistence', () => {
           },
           version: 1,
         };
-        localStorage.setItem('automaker-setup', JSON.stringify(setupState));
+        localStorage.setItem('aboardai-setup', JSON.stringify(setupState));
 
         const settingsCache = {
           setupComplete: true,
@@ -538,10 +538,10 @@ test.describe('Board Background Persistence', () => {
           sidebarOpen: true,
           maxConcurrency: 3,
         };
-        localStorage.setItem('automaker-settings-cache', JSON.stringify(settingsCache));
+        localStorage.setItem('aboardai-settings-cache', JSON.stringify(settingsCache));
 
         // Disable splash screen in tests
-        localStorage.setItem('automaker-disable-splash', 'true');
+        localStorage.setItem('aboardai-disable-splash', 'true');
       },
       { project: [projectId, projectName, projectPath] }
     );

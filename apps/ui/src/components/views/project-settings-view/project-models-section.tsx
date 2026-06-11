@@ -6,8 +6,8 @@ import { cn } from '@/lib/utils';
 import type { Project } from '@/lib/electron';
 import { PhaseModelSelector } from '@/components/views/settings-view/model-defaults/phase-model-selector';
 import { ProjectBulkReplaceDialog } from './project-bulk-replace-dialog';
-import type { PhaseModelKey, PhaseModelEntry } from '@automaker/types';
-import { DEFAULT_PHASE_MODELS, DEFAULT_GLOBAL_SETTINGS } from '@automaker/types';
+import type { PhaseModelKey, PhaseModelEntry } from '@aboardai/types';
+import { DEFAULT_PHASE_MODELS, DEFAULT_GLOBAL_SETTINGS } from '@aboardai/types';
 
 interface ProjectModelsSectionProps {
   project: Project;

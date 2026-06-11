@@ -61,7 +61,7 @@ Follow this format for your commit message:
 #### Scope (optional but recommended):
 - Component/module name (e.g., \`ui\`, \`server\`, \`auth\`)
 - Feature area (e.g., \`board\`, \`pipeline\`, \`agent\`)
-- Package name (e.g., \`@automaker/types\`)
+- Package name (e.g., \`@aboardai/types\`)
 
 #### Subject:
 - Use imperative mood: "add" not "added" or "adds"

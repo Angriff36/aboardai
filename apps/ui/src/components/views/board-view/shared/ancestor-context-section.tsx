@@ -4,7 +4,7 @@ import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { ChevronDown, ChevronRight, Users, CheckCircle2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import type { AncestorContext } from '@automaker/dependency-resolver';
+import type { AncestorContext } from '@aboardai/dependency-resolver';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 
 interface ParentFeatureContext {

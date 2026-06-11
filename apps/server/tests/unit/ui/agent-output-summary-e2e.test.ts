@@ -16,11 +16,11 @@
 
 import { describe, it, expect, beforeEach, vi, type Mock } from 'vitest';
 import { FeatureStateManager } from '@/services/feature-state-manager.js';
-import type { Feature } from '@automaker/types';
+import type { Feature } from '@aboardai/types';
 import type { EventEmitter } from '@/lib/events.js';
 import type { FeatureLoader } from '@/services/feature-loader.js';
-import { atomicWriteJson, readJsonWithRecovery } from '@automaker/utils';
-import { getFeatureDir } from '@automaker/platform';
+import { atomicWriteJson, readJsonWithRecovery } from '@aboardai/utils';
+import { getFeatureDir } from '@aboardai/platform';
 import { pipelineService } from '@/services/pipeline-service.js';
 
 // Mock dependencies
@@ -29,8 +29,8 @@ vi.mock('@/lib/secure-fs.js', () => ({
   readdir: vi.fn(),
 }));
 
-vi.mock('@automaker/utils', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('@automaker/utils')>();
+vi.mock('@aboardai/utils', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@aboardai/utils')>();
   return {
     ...actual,
     atomicWriteJson: vi.fn(),
@@ -39,7 +39,7 @@ vi.mock('@automaker/utils', async (importOriginal) => {
   };
 });
 
-vi.mock('@automaker/platform', () => ({
+vi.mock('@aboardai/platform', () => ({
   getFeatureDir: vi.fn(),
   getFeaturesDir: vi.fn(),
 }));
@@ -189,7 +189,7 @@ describe('Agent Output Summary E2E Flow', () => {
 
     manager = new FeatureStateManager(mockEvents, mockFeatureLoader);
 
-    (getFeatureDir as Mock).mockReturnValue('/project/.automaker/features/e2e-feature-1');
+    (getFeatureDir as Mock).mockReturnValue('/project/.aboardai/features/e2e-feature-1');
   });
 
   describe('complete pipeline flow: server accumulation → UI display', () => {
@@ -226,7 +226,7 @@ describe('Agent Output Summary E2E Flow', () => {
 
       // ===== STEP 2: Code Review =====
       vi.clearAllMocks();
-      (getFeatureDir as Mock).mockReturnValue('/project/.automaker/features/e2e-feature-1');
+      (getFeatureDir as Mock).mockReturnValue('/project/.aboardai/features/e2e-feature-1');
       (pipelineService.getStep as Mock).mockResolvedValue({
         name: 'Code Review',
         id: 'code_review',
@@ -262,7 +262,7 @@ describe('Agent Output Summary E2E Flow', () => {
 
       // ===== STEP 3: Testing =====
       vi.clearAllMocks();
-      (getFeatureDir as Mock).mockReturnValue('/project/.automaker/features/e2e-feature-1');
+      (getFeatureDir as Mock).mockReturnValue('/project/.aboardai/features/e2e-feature-1');
       (pipelineService.getStep as Mock).mockResolvedValue({ name: 'Testing', id: 'testing' });
       (readJsonWithRecovery as Mock).mockResolvedValue({
         data: { ...baseFeature, status: 'pipeline_testing', summary: step2Summary },
@@ -325,7 +325,7 @@ describe('Agent Output Summary E2E Flow', () => {
 
       // Step 2
       vi.clearAllMocks();
-      (getFeatureDir as Mock).mockReturnValue('/project/.automaker/features/e2e-feature-1');
+      (getFeatureDir as Mock).mockReturnValue('/project/.aboardai/features/e2e-feature-1');
       (pipelineService.getStep as Mock).mockResolvedValue({ name: 'Testing', id: 'testing' });
       (readJsonWithRecovery as Mock).mockResolvedValue({
         data: {
@@ -457,7 +457,7 @@ Working on tests...
 
       for (let i = 0; i < 5; i++) {
         vi.clearAllMocks();
-        (getFeatureDir as Mock).mockReturnValue('/project/.automaker/features/e2e-feature-1');
+        (getFeatureDir as Mock).mockReturnValue('/project/.aboardai/features/e2e-feature-1');
         (pipelineService.getStep as Mock).mockResolvedValue({
           name: stepNames[i],
           id: stepNames[i].toLowerCase().replace(' ', '_'),

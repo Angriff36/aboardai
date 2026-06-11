@@ -73,7 +73,7 @@ export function ClaudeMdSettings({
             </Label>
             <p className="text-xs text-muted-foreground/80 leading-relaxed">
               Use Claude Code&apos;s built-in system prompt as the base for all agent sessions.
-              Automaker&apos;s prompts are appended on top. When disabled, only Automaker&apos;s
+              AboardAI&apos;s prompts are appended on top. When disabled, only AboardAI&apos;s
               custom system prompt is used.
             </p>
           </div>

@@ -33,7 +33,7 @@ import {
   type PhaseModelEntry,
   type ThinkingLevel,
   type ReasoningEffort,
-} from '@automaker/types';
+} from '@aboardai/types';
 
 // Pattern definitions for Codex/OpenAI models
 const CODEX_MODEL_PREFIXES = ['codex-', 'gpt-'];

@@ -165,7 +165,7 @@ test.describe('Projects Overview Dashboard', () => {
     await expect(page.locator('[data-testid="overview-view"]')).toBeVisible({ timeout: 15000 });
 
     // Verify the header is visible with title
-    await expect(page.getByText('Automaker Dashboard')).toBeVisible({ timeout: 5000 });
+    await expect(page.getByText('AboardAI Dashboard')).toBeVisible({ timeout: 5000 });
 
     // Verify the refresh button is present
     await expect(page.getByRole('button', { name: /Refresh/i })).toBeVisible();

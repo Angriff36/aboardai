@@ -2,7 +2,7 @@
 
 ## Problem Statement
 
-When using the Automaker app to iterate on itself:
+When using the AboardAI app to iterate on itself:
 
 1. Agent modifies code files
 2. Next.js hot-reloads and restarts
@@ -218,7 +218,7 @@ The agent is configured with:
 
 ### For Self-Iteration
 
-Now you can ask the agent to modify Automaker itself:
+Now you can ask the agent to modify AboardAI itself:
 
 ```
 User: "Add a dark mode toggle to the settings"
@@ -248,7 +248,7 @@ Agent:
 
 To test the architecture:
 
-1. Open a project in Automaker
+1. Open a project in AboardAI
 2. Ask the agent to modify a file in `src/`
 3. Watch Next.js restart
 4. Verify the conversation continues

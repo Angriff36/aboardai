@@ -2,7 +2,7 @@
 <html lang="en" suppressHydrationWarning>
   <head>
     <meta charset="UTF-8" />
-    <title>Automaker - Autonomous AI Development Studio</title>
+    <title>AboardAI - Autonomous AI Development Studio</title>
     <meta name="description" content="Build software autonomously with AI agents" />
     <meta
       name="viewport"
@@ -14,14 +14,14 @@
     <meta name="theme-color" content="#09090b" />
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
-    <meta name="apple-mobile-web-app-title" content="Automaker" />
+    <meta name="apple-mobile-web-app-title" content="AboardAI" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <link rel="apple-touch-icon" href="/logo_larger.png" />
     <!-- Performance: Preload critical assets with fetchpriority for faster First Contentful Paint -->
     <link rel="preload" href="/logo.png" as="image" fetchpriority="high" />
     <link
       rel="preload"
-      href="/automaker.svg"
+      href="/aboardai.svg"
       as="image"
       type="image/svg+xml"
       fetchpriority="high"
@@ -142,11 +142,11 @@
       (function () {
         try {
           // Primary key used by current builds for pre-React theme persistence.
-          var theme = localStorage.getItem('automaker:theme');
+          var theme = localStorage.getItem('aboardai:theme');
 
           // Backward compatibility: older builds stored theme in the Zustand blob.
           if (!theme) {
-            var stored = localStorage.getItem('automaker-storage');
+            var stored = localStorage.getItem('aboardai-storage');
             if (stored) {
               var data = JSON.parse(stored);
               theme = data?.state?.theme || data?.theme || null;

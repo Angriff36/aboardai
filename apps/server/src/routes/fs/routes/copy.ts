@@ -5,8 +5,8 @@
 import type { Request, Response } from 'express';
 import * as secureFs from '../../../lib/secure-fs.js';
 import path from 'path';
-import { PathNotAllowedError } from '@automaker/platform';
-import { mkdirSafe } from '@automaker/utils';
+import { PathNotAllowedError } from '@aboardai/platform';
+import { mkdirSafe } from '@aboardai/utils';
 import { getErrorMessage, logError } from '../common.js';
 
 /**

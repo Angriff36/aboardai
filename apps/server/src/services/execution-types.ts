@@ -5,8 +5,8 @@
  * allowing the service to delegate to other services without circular dependencies.
  */
 
-import type { Feature, PlanningMode, ThinkingLevel, ReasoningEffort } from '@automaker/types';
-import type { loadContextFiles } from '@automaker/utils';
+import type { Feature, PlanningMode, ThinkingLevel, ReasoningEffort } from '@aboardai/types';
+import type { loadContextFiles } from '@aboardai/utils';
 import type { PipelineContext } from './pipeline-orchestrator.js';
 
 // =============================================================================

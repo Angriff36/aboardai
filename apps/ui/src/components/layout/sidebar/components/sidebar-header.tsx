@@ -25,7 +25,7 @@ interface SidebarHeaderProps {
   onNewProject: () => void;
   onOpenFolder: () => void;
   onProjectContextMenu: (project: Project, event: React.MouseEvent) => void;
-  setShowRemoveFromAutomakerDialog: (show: boolean) => void;
+  setShowRemoveFromAboardAIDialog: (show: boolean) => void;
 }
 
 export function SidebarHeader({
@@ -34,7 +34,7 @@ export function SidebarHeader({
   onNewProject,
   onOpenFolder,
   onProjectContextMenu,
-  setShowRemoveFromAutomakerDialog,
+  setShowRemoveFromAboardAIDialog,
 }: SidebarHeaderProps) {
   const navigate = useNavigate();
   const projects = useAppStore((s) => s.projects);
@@ -53,7 +53,7 @@ export function SidebarHeader({
         return;
       }
       try {
-        // Ensure .automaker directory structure exists before switching
+        // Ensure .aboardai directory structure exists before switching
         await initializeProject(project.path);
       } catch (error) {
         console.error('Failed to initialize project during switch:', error);
@@ -125,7 +125,7 @@ export function SidebarHeader({
                 xmlns="http://www.w3.org/2000/svg"
                 viewBox="0 0 256 256"
                 role="img"
-                aria-label="Automaker Logo"
+                aria-label="AboardAI Logo"
                 className="size-8 group-hover:rotate-12 transition-transform duration-300 ease-out"
               >
                 <defs>
@@ -255,13 +255,13 @@ export function SidebarHeader({
                     <DropdownMenuItem
                       onClick={() => {
                         setDropdownOpen(false);
-                        setShowRemoveFromAutomakerDialog(true);
+                        setShowRemoveFromAboardAIDialog(true);
                       }}
                       className="cursor-pointer text-muted-foreground focus:text-foreground"
-                      data-testid="collapsed-remove-from-automaker-dropdown-item"
+                      data-testid="collapsed-remove-from-aboardai-dropdown-item"
                     >
                       <LogOut className="w-4 h-4 mr-2" />
-                      <span>Remove from Automaker</span>
+                      <span>Remove from AboardAI</span>
                     </DropdownMenuItem>
                   </>
                 )}
@@ -294,7 +294,7 @@ export function SidebarHeader({
             xmlns="http://www.w3.org/2000/svg"
             viewBox="0 0 256 256"
             role="img"
-            aria-label="Automaker Logo"
+            aria-label="AboardAI Logo"
             className="h-8 w-8 group-hover:rotate-12 transition-transform duration-300 ease-out"
           >
             <defs>
@@ -413,13 +413,13 @@ export function SidebarHeader({
               <DropdownMenuItem
                 onClick={() => {
                   setDropdownOpen(false);
-                  setShowRemoveFromAutomakerDialog(true);
+                  setShowRemoveFromAboardAIDialog(true);
                 }}
                 className="cursor-pointer text-muted-foreground focus:text-foreground"
-                data-testid="remove-from-automaker-dropdown-item"
+                data-testid="remove-from-aboardai-dropdown-item"
               >
                 <LogOut className="w-4 h-4 mr-2" />
-                <span>Remove from Automaker</span>
+                <span>Remove from AboardAI</span>
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>

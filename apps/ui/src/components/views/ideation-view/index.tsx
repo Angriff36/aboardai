@@ -14,7 +14,7 @@ import { Button } from '@/components/ui/button';
 import { ArrowLeft, ChevronRight, Lightbulb, CheckCheck, Trash2 } from 'lucide-react';
 import { Spinner } from '@/components/ui/spinner';
 import { IdeationSettingsPopover } from './components/ideation-settings-popover';
-import type { IdeaCategory } from '@automaker/types';
+import type { IdeaCategory } from '@aboardai/types';
 import type { IdeationMode } from '@/store/ideation-store';
 
 // Breadcrumb component - compact inline breadcrumbs

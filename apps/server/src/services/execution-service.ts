@@ -3,10 +3,10 @@
  */
 
 import path from 'path';
-import type { Feature } from '@automaker/types';
-import { createLogger, classifyError, loadContextFiles, recordMemoryUsage } from '@automaker/utils';
-import { resolveModelString, DEFAULT_MODELS } from '@automaker/model-resolver';
-import { getFeatureDir } from '@automaker/platform';
+import type { Feature } from '@aboardai/types';
+import { createLogger, classifyError, loadContextFiles, recordMemoryUsage } from '@aboardai/utils';
+import { resolveModelString, DEFAULT_MODELS } from '@aboardai/model-resolver';
+import { getFeatureDir } from '@aboardai/platform';
 import { ProviderFactory } from '../providers/provider-factory.js';
 import * as secureFs from '../lib/secure-fs.js';
 import {

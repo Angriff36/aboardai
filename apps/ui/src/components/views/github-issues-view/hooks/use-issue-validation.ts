@@ -1,6 +1,6 @@
 // @ts-nocheck - GitHub issue validation with Electron API integration and async state
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { createLogger } from '@automaker/utils/logger';
+import { createLogger } from '@aboardai/utils/logger';
 import {
   getElectronAPI,
   GitHubIssue,
@@ -9,7 +9,7 @@ import {
   IssueValidationEvent,
   StoredValidation,
 } from '@/lib/electron';
-import type { LinkedPRInfo, PhaseModelEntry, ModelId } from '@automaker/types';
+import type { LinkedPRInfo, PhaseModelEntry, ModelId } from '@aboardai/types';
 import { useAppStore } from '@/store/app-store';
 import { toast } from 'sonner';
 import { isValidationStale } from '../utils';

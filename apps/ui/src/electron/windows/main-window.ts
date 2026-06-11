@@ -6,7 +6,7 @@
 
 import path from 'path';
 import { app, BrowserWindow, shell } from 'electron';
-import { createLogger } from '@automaker/utils/logger';
+import { createLogger } from '@aboardai/utils/logger';
 import { MIN_WIDTH_COLLAPSED, MIN_HEIGHT, DEFAULT_WIDTH, DEFAULT_HEIGHT } from '../constants';
 import { state } from '../state';
 import { getIconPath } from '../utils/icon-manager';

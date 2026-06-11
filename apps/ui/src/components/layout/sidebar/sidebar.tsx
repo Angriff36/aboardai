@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect, startTransition } from 'react';
-import { createLogger } from '@automaker/utils/logger';
+import { createLogger } from '@aboardai/utils/logger';
 import { useNavigate, useLocation } from '@tanstack/react-router';
 import { PanelLeftClose, ChevronDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -7,7 +7,7 @@ import { useAppStore } from '@/store/app-store';
 import { useNotificationsStore } from '@/store/notifications-store';
 import { useKeyboardShortcuts, useKeyboardShortcutsConfig } from '@/hooks/use-keyboard-shortcuts';
 import { getElectronAPI } from '@/lib/electron';
-import { initializeProject, hasAppSpec, hasAutomakerDir } from '@/lib/project-init';
+import { initializeProject, hasAppSpec, hasAboardAIDir } from '@/lib/project-init';
 import { toast } from 'sonner';
 import { useIsCompact } from '@/hooks/use-media-query';
 import type { Project } from '@/lib/electron';
@@ -39,7 +39,7 @@ import { EditProjectDialog } from '../project-switcher/components/edit-project-d
 
 // Import shared dialogs
 import { DeleteProjectDialog } from '@/components/views/settings-view/components/delete-project-dialog';
-import { RemoveFromAutomakerDialog } from '@/components/views/settings-view/components/remove-from-automaker-dialog';
+import { RemoveFromAboardAIDialog } from '@/components/views/settings-view/components/remove-from-aboardai-dialog';
 import { NewProjectModal } from '@/components/dialogs/new-project-modal';
 import { CreateSpecDialog } from '@/components/views/spec-view/dialogs';
 
@@ -93,8 +93,8 @@ export function Sidebar() {
 
   // State for delete project confirmation dialog
   const [showDeleteProjectDialog, setShowDeleteProjectDialog] = useState(false);
-  // State for remove from automaker confirmation dialog
-  const [showRemoveFromAutomakerDialog, setShowRemoveFromAutomakerDialog] = useState(false);
+  // State for remove from aboardai confirmation dialog
+  const [showRemoveFromAboardAIDialog, setShowRemoveFromAboardAIDialog] = useState(false);
 
   // State for trash dialog
   const [showTrashDialog, setShowTrashDialog] = useState(false);
@@ -216,7 +216,7 @@ export function Sidebar() {
       const name = path.split(/[/\\]/).filter(Boolean).pop() || 'Untitled Project';
 
       try {
-        const hadAutomakerDir = await hasAutomakerDir(path);
+        const hadAboardAIDir = await hasAboardAIDir(path);
         const initResult = await initializeProject(path);
 
         if (!initResult.success) {
@@ -229,7 +229,7 @@ export function Sidebar() {
         upsertAndSetCurrentProject(path, name);
         const specExists = await hasAppSpec(path);
 
-        if (!hadAutomakerDir && !specExists) {
+        if (!hadAboardAIDir && !specExists) {
           setSetupProjectPath(path);
           setShowSetupDialog(true);
           toast.success('Project opened', {
@@ -237,7 +237,7 @@ export function Sidebar() {
           });
         } else if (initResult.createdFiles && initResult.createdFiles.length > 0) {
           toast.success(initResult.isNewProject ? 'Project initialized' : 'Project updated', {
-            description: `Set up ${initResult.createdFiles.length} file(s) in .automaker`,
+            description: `Set up ${initResult.createdFiles.length} file(s) in .aboardai`,
           });
         } else {
           toast.success('Project opened', {
@@ -283,7 +283,7 @@ export function Sidebar() {
 
   const switchProjectSafely = useCallback(
     async (targetProject: Project) => {
-      // Ensure .automaker directory structure exists before switching
+      // Ensure .aboardai directory structure exists before switching
       const initResult = await initializeProject(targetProject.path);
       if (!initResult.success) {
         logger.error('Failed to initialize project during switch:', initResult.error);
@@ -414,7 +414,7 @@ export function Sidebar() {
               onNewProject={handleNewProject}
               onOpenFolder={handleOpenFolder}
               onProjectContextMenu={handleContextMenu}
-              setShowRemoveFromAutomakerDialog={setShowRemoveFromAutomakerDialog}
+              setShowRemoveFromAboardAIDialog={setShowRemoveFromAboardAIDialog}
             />
           )}
 
@@ -513,10 +513,10 @@ export function Sidebar() {
           onConfirm={moveProjectToTrash}
         />
 
-        {/* Remove from Automaker Confirmation Dialog */}
-        <RemoveFromAutomakerDialog
-          open={showRemoveFromAutomakerDialog}
-          onOpenChange={setShowRemoveFromAutomakerDialog}
+        {/* Remove from AboardAI Confirmation Dialog */}
+        <RemoveFromAboardAIDialog
+          open={showRemoveFromAboardAIDialog}
+          onOpenChange={setShowRemoveFromAboardAIDialog}
           project={currentProject}
           onConfirm={removeProject}
         />

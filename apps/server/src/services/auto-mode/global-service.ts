@@ -10,7 +10,7 @@
  */
 
 import path from 'path';
-import { createLogger } from '@automaker/utils';
+import { createLogger } from '@aboardai/utils';
 import type { EventEmitter } from '../../lib/events.js';
 import { TypedEventBus } from '../typed-event-bus.js';
 import { ConcurrencyManager } from '../concurrency-manager.js';

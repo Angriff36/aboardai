@@ -52,7 +52,7 @@ describe('validation-storage.ts', () => {
       // Verify file was created
       const validationPath = path.join(
         testProjectPath,
-        '.automaker',
+        '.aboardai',
         'validations',
         '123',
         'validation.json'
@@ -68,7 +68,7 @@ describe('validation-storage.ts', () => {
 
       const validationPath = path.join(
         testProjectPath,
-        '.automaker',
+        '.aboardai',
         'validations',
         '456',
         'validation.json'
@@ -124,7 +124,7 @@ describe('validation-storage.ts', () => {
       await writeValidation(testProjectPath, 1, validation);
 
       // Create a non-numeric directory
-      const invalidDir = path.join(testProjectPath, '.automaker', 'validations', 'invalid');
+      const invalidDir = path.join(testProjectPath, '.aboardai', 'validations', 'invalid');
       await fs.mkdir(invalidDir, { recursive: true });
 
       const result = await getAllValidations(testProjectPath);

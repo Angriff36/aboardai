@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { createLogger } from '@automaker/utils/logger';
+import { createLogger } from '@aboardai/utils/logger';
 import {
   Dialog,
   DialogContent,
@@ -295,7 +295,7 @@ export function NewProjectModal({
             <TabsContent value="blank" className="mt-0">
               <div className="p-4 rounded-lg bg-muted/50 border border-border">
                 <p className="text-sm text-muted-foreground">
-                  Create an empty project with the standard .automaker directory structure. Perfect
+                  Create an empty project with the standard .aboardai directory structure. Perfect
                   for starting from scratch or importing an existing codebase.
                 </p>
               </div>

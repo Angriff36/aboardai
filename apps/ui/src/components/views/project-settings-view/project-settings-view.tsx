@@ -11,7 +11,7 @@ import { DataManagementSection } from './data-management-section';
 import { OrphanedFeaturesSection } from './orphaned-features-section';
 import { DangerZoneSection } from '../settings-view/danger-zone/danger-zone-section';
 import { DeleteProjectDialog } from '../settings-view/components/delete-project-dialog';
-import { RemoveFromAutomakerDialog } from '../settings-view/components/remove-from-automaker-dialog';
+import { RemoveFromAboardAIDialog } from '../settings-view/components/remove-from-aboardai-dialog';
 import { ProjectSettingsNavigation } from './components/project-settings-navigation';
 import { useProjectSettingsView } from './hooks/use-project-settings-view';
 import type { Project as ElectronProject } from '@/lib/electron';
@@ -34,7 +34,7 @@ interface SettingsProject {
 export function ProjectSettingsView() {
   const { currentProject, moveProjectToTrash, removeProject } = useAppStore();
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
-  const [showRemoveFromAutomakerDialog, setShowRemoveFromAutomakerDialog] = useState(false);
+  const [showRemoveFromAboardAIDialog, setShowRemoveFromAboardAIDialog] = useState(false);
 
   // Read the optional section search param to support deep-linking to a specific section
   const search = useSearch({ strict: false }) as { section?: ProjectSettingsViewId };
@@ -117,7 +117,7 @@ export function ProjectSettingsView() {
           <DangerZoneSection
             project={settingsProject}
             onDeleteClick={() => setShowDeleteDialog(true)}
-            onRemoveFromAutomakerClick={() => setShowRemoveFromAutomakerDialog(true)}
+            onRemoveFromAboardAIClick={() => setShowRemoveFromAboardAIDialog(true)}
           />
         );
       default:
@@ -199,10 +199,10 @@ export function ProjectSettingsView() {
         onConfirm={moveProjectToTrash}
       />
 
-      {/* Remove from Automaker Confirmation Dialog */}
-      <RemoveFromAutomakerDialog
-        open={showRemoveFromAutomakerDialog}
-        onOpenChange={setShowRemoveFromAutomakerDialog}
+      {/* Remove from AboardAI Confirmation Dialog */}
+      <RemoveFromAboardAIDialog
+        open={showRemoveFromAboardAIDialog}
+        onOpenChange={setShowRemoveFromAboardAIDialog}
         project={currentProject}
         onConfirm={removeProject}
       />

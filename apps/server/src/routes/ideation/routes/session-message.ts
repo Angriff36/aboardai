@@ -4,7 +4,7 @@
 
 import type { Request, Response } from 'express';
 import type { IdeationService } from '../../../services/ideation-service.js';
-import type { SendMessageOptions } from '@automaker/types';
+import type { SendMessageOptions } from '@aboardai/types';
 import { getErrorMessage, logError } from '../common.js';
 
 export function createSessionMessageHandler(ideationService: IdeationService) {

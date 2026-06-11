@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react';
-import { createLogger } from '@automaker/utils/logger';
+import { createLogger } from '@aboardai/utils/logger';
 import { getElectronAPI } from '@/lib/electron';
 
 const logger = createLogger('ProjectCreation');
@@ -28,14 +28,14 @@ export function useProjectCreation({ upsertAndSetCurrentProject }: UseProjectCre
   const finalizeProjectCreation = useCallback(
     async (projectPath: string, projectName: string) => {
       try {
-        // Initialize .automaker directory structure
+        // Initialize .aboardai directory structure
         await initializeProject(projectPath);
 
         // Write initial app_spec.txt with proper XML structure
         // Note: Must follow XML format as defined in apps/server/src/lib/app-spec-format.ts
         const api = getElectronAPI();
         await api.writeFile(
-          `${projectPath}/.automaker/app_spec.txt`,
+          `${projectPath}/.aboardai/app_spec.txt`,
           `<project_specification>
   <project_name>${projectName}</project_name>
 
@@ -81,7 +81,7 @@ export function useProjectCreation({ upsertAndSetCurrentProject }: UseProjectCre
   );
 
   /**
-   * Create a blank project with .automaker structure
+   * Create a blank project with .aboardai structure
    */
   const handleCreateBlankProject = useCallback(
     async (projectName: string, parentDir: string) => {
@@ -126,12 +126,12 @@ export function useProjectCreation({ upsertAndSetCurrentProject }: UseProjectCre
         }
         const projectPath = cloneResult.projectPath!;
 
-        // Initialize .automaker directory structure
+        // Initialize .aboardai directory structure
         await initializeProject(projectPath);
 
         // Write app_spec.txt with template-specific info
         await api.writeFile(
-          `${projectPath}/.automaker/app_spec.txt`,
+          `${projectPath}/.aboardai/app_spec.txt`,
           `<project_specification>
   <project_name>${projectName}</project_name>
 
@@ -195,12 +195,12 @@ export function useProjectCreation({ upsertAndSetCurrentProject }: UseProjectCre
         }
         const projectPath = cloneResult.projectPath!;
 
-        // Initialize .automaker directory structure
+        // Initialize .aboardai directory structure
         await initializeProject(projectPath);
 
         // Write app_spec.txt with custom URL info
         await api.writeFile(
-          `${projectPath}/.automaker/app_spec.txt`,
+          `${projectPath}/.aboardai/app_spec.txt`,
           `<project_specification>
   <project_name>${projectName}</project_name>
 

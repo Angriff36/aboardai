@@ -3,7 +3,7 @@ import { Brain } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ThinkingLevel } from '@/store/app-store';
 import { THINKING_LEVEL_LABELS } from './model-constants';
-import { getThinkingLevelsForModel } from '@automaker/types';
+import { getThinkingLevelsForModel } from '@aboardai/types';
 
 interface ThinkingLevelSelectorProps {
   selectedLevel: ThinkingLevel;

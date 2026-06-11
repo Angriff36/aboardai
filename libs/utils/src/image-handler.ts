@@ -8,9 +8,9 @@
  * - Path resolution (relative/absolute)
  */
 
-import { secureFs } from '@automaker/platform';
+import { secureFs } from '@aboardai/platform';
 import path from 'path';
-import type { ImageData, ImageContentBlock } from '@automaker/types';
+import type { ImageData, ImageContentBlock } from '@aboardai/types';
 
 /**
  * MIME type mapping for image file extensions

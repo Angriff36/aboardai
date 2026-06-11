@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import { Node, Edge } from '@xyflow/react';
 import { Feature } from '@/store/app-store';
-import { createFeatureMap, getBlockingDependenciesFromMap } from '@automaker/dependency-resolver';
+import { createFeatureMap, getBlockingDependenciesFromMap } from '@aboardai/dependency-resolver';
 import { GRAPH_RENDER_MODE_FULL, type GraphRenderMode } from '../constants';
 import { GraphFilterResult } from './use-graph-filter';
 

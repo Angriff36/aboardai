@@ -10,7 +10,7 @@ import { useAppStore } from '@/store/app-store';
 import { initializeProject } from '@/lib/project-init';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
-import type { RecentActivity, ActivityType, ActivitySeverity } from '@automaker/types';
+import type { RecentActivity, ActivityType, ActivitySeverity } from '@aboardai/types';
 import { CheckCircle2, XCircle, Play, Bot, AlertTriangle, Info, Clock } from 'lucide-react';
 
 interface RecentActivityFeedProps {

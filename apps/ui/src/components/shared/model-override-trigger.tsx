@@ -1,6 +1,6 @@
 import { cn } from '@/lib/utils';
 import { useAppStore } from '@/store/app-store';
-import type { ModelAlias, CursorModelId, PhaseModelKey, PhaseModelEntry } from '@automaker/types';
+import type { ModelAlias, CursorModelId, PhaseModelKey, PhaseModelEntry } from '@aboardai/types';
 import { PhaseModelSelector } from '@/components/views/settings-view/model-defaults/phase-model-selector';
 
 /**

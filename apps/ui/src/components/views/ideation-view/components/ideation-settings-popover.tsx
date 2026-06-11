@@ -9,7 +9,7 @@ import { Switch } from '@/components/ui/switch';
 import { Settings2, FileText, Brain, LayoutGrid, Lightbulb, ScrollText } from 'lucide-react';
 import { useShallow } from 'zustand/react/shallow';
 import { useIdeationStore } from '@/store/ideation-store';
-import { DEFAULT_IDEATION_CONTEXT_SOURCES, type IdeationContextSources } from '@automaker/types';
+import { DEFAULT_IDEATION_CONTEXT_SOURCES, type IdeationContextSources } from '@aboardai/types';
 
 interface IdeationSettingsPopoverProps {
   projectPath: string;
@@ -30,13 +30,13 @@ const IDEATION_CONTEXT_OPTIONS: Array<{
   {
     key: 'useContextFiles',
     label: 'Context Files',
-    description: '.automaker/context/*.md|.txt',
+    description: '.aboardai/context/*.md|.txt',
     icon: FileText,
   },
   {
     key: 'useMemoryFiles',
     label: 'Memory Files',
-    description: '.automaker/memory/*.md',
+    description: '.aboardai/memory/*.md',
     icon: Brain,
   },
   {

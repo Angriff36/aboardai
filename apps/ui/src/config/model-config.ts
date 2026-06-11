@@ -2,13 +2,13 @@
  * Model Configuration - Centralized model settings for the app
  *
  * Models can be overridden via environment variables:
- * - AUTOMAKER_MODEL_CHAT: Model for chat interactions
- * - AUTOMAKER_MODEL_DEFAULT: Fallback model for all operations
+ * - ABOARDAI_MODEL_CHAT: Model for chat interactions
+ * - ABOARDAI_MODEL_DEFAULT: Fallback model for all operations
  */
 
 // Import shared model constants and types
-import { CLAUDE_MODEL_MAP, DEFAULT_MODELS } from '@automaker/types';
-import { resolveModelString } from '@automaker/model-resolver';
+import { CLAUDE_MODEL_MAP, DEFAULT_MODELS } from '@aboardai/types';
+import { resolveModelString } from '@aboardai/model-resolver';
 
 // Re-export for backward compatibility
 export { CLAUDE_MODEL_MAP, DEFAULT_MODELS, resolveModelString };
@@ -18,8 +18,8 @@ export { CLAUDE_MODEL_MAP, DEFAULT_MODELS, resolveModelString };
  *
  * Priority:
  * 1. Explicit model parameter
- * 2. AUTOMAKER_MODEL_CHAT environment variable
- * 3. AUTOMAKER_MODEL_DEFAULT environment variable
+ * 2. ABOARDAI_MODEL_CHAT environment variable
+ * 3. ABOARDAI_MODEL_DEFAULT environment variable
  * 4. Default chat model
  */
 export function getChatModel(explicitModel?: string): string {
@@ -27,7 +27,7 @@ export function getChatModel(explicitModel?: string): string {
     return resolveModelString(explicitModel);
   }
 
-  const envModel = import.meta.env.AUTOMAKER_MODEL_CHAT || import.meta.env.AUTOMAKER_MODEL_DEFAULT;
+  const envModel = import.meta.env.ABOARDAI_MODEL_CHAT || import.meta.env.ABOARDAI_MODEL_DEFAULT;
 
   if (envModel) {
     return resolveModelString(envModel);

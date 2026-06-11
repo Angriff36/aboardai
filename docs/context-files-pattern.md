@@ -1,15 +1,15 @@
 # Context Files System
 
-This document describes how context files work in Automaker and how to use them in agent prompts.
+This document describes how context files work in AboardAI and how to use them in agent prompts.
 
 ## Overview
 
-Context files are user-defined documents stored in `.automaker/context/` that provide project-specific rules, conventions, and guidelines for AI agents. They are automatically loaded and prepended to agent prompts.
+Context files are user-defined documents stored in `.aboardai/context/` that provide project-specific rules, conventions, and guidelines for AI agents. They are automatically loaded and prepended to agent prompts.
 
 ## Directory Structure
 
 ```
-{projectPath}/.automaker/context/
+{projectPath}/.aboardai/context/
 ├── CLAUDE.md              # Project rules and conventions
 ├── CODE_QUALITY.md        # Code quality guidelines
 ├── context-metadata.json  # File descriptions
@@ -35,10 +35,10 @@ File descriptions are stored in `context-metadata.json`:
 
 ## Shared Utility
 
-The `loadContextFiles` function from `@automaker/utils` provides a unified way to load context files:
+The `loadContextFiles` function from `@aboardai/utils` provides a unified way to load context files:
 
 ```typescript
-import { loadContextFiles } from '@automaker/utils';
+import { loadContextFiles } from '@aboardai/utils';
 
 // Load context files from a project
 const { formattedPrompt, files } = await loadContextFiles({
@@ -72,7 +72,7 @@ interface ContextFileInfo {
 ### Auto-Mode Service (Feature Execution)
 
 ```typescript
-import { loadContextFiles } from '@automaker/utils';
+import { loadContextFiles } from '@aboardai/utils';
 import * as secureFs from '../lib/secure-fs.js';
 
 // In executeFeature() or followUpFeature()
@@ -91,7 +91,7 @@ await this.runAgent(workDir, featureId, prompt, abortController, projectPath, im
 ### Agent Service (Chat Sessions)
 
 ```typescript
-import { loadContextFiles } from '@automaker/utils';
+import { loadContextFiles } from '@aboardai/utils';
 import * as secureFs from '../lib/secure-fs.js';
 
 // In sendMessage()
@@ -137,7 +137,7 @@ If you need more details about a context file, you can read the full file at the
 
 ## CLAUDE.md
 
-**Path:** `/path/to/project/.automaker/context/CLAUDE.md`
+**Path:** `/path/to/project/.aboardai/context/CLAUDE.md`
 **Purpose:** Project-specific rules including package manager, commit conventions, and architectural patterns
 
 [File content here]
@@ -146,7 +146,7 @@ If you need more details about a context file, you can read the full file at the
 
 ## CODE_QUALITY.md
 
-**Path:** `/path/to/project/.automaker/context/CODE_QUALITY.md`
+**Path:** `/path/to/project/.aboardai/context/CODE_QUALITY.md`
 **Purpose:** Code quality standards, testing requirements, and linting rules
 
 [File content here]

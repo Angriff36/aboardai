@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import type { BacklogPlanResult, ProviderMessage } from '@automaker/types';
+import type { BacklogPlanResult, ProviderMessage } from '@aboardai/types';
 
 const {
   mockGetAll,

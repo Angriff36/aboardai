@@ -4,7 +4,7 @@
  */
 
 import { PhaseModelSelector } from '@/components/views/settings-view/model-defaults/phase-model-selector';
-import type { PhaseModelEntry } from '@automaker/types';
+import type { PhaseModelEntry } from '@aboardai/types';
 
 // Re-export types for convenience
 export type { PhaseModelEntry };

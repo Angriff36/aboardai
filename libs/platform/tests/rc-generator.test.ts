@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { generateCommonFunctions, generateThemeColors } from '../src/rc-generator';
 import { terminalThemeColors } from '../src/terminal-theme-colors';
 import type { TerminalConfig } from '../src/rc-generator';
-import type { ThemeMode } from '@automaker/types';
+import type { ThemeMode } from '@aboardai/types';
 
 describe('rc-generator.ts', () => {
   const THEME_DARK = 'dark' as ThemeMode;
@@ -11,7 +11,7 @@ describe('rc-generator.ts', () => {
   const EMPTY_ENV_VARS = {};
   const PATH_STYLE_FULL: TerminalConfig['pathStyle'] = 'full';
   const PATH_DEPTH_DEFAULT = 0;
-  const EXPECTED_BANNER_FUNCTION = 'automaker_show_banner_once';
+  const EXPECTED_BANNER_FUNCTION = 'aboardai_show_banner_once';
   const RAW_COLOR_PREFIX = 'export COLOR_USER_RAW=';
   const RAW_COLOR_ESCAPE_START = '\\\\[';
   const RAW_COLOR_ESCAPE_END = '\\\\]';

@@ -1,6 +1,6 @@
 /**
- * @automaker/git-utils
- * Git operations utilities for AutoMaker
+ * @aboardai/git-utils
+ * Git operations utilities for AboardAI
  */
 
 // Export command execution utilities

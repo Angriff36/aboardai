@@ -11,7 +11,7 @@ import {
   formatBacklogPlanEventContent,
 } from '@/components/views/board-view/dialogs/event-content-formatter';
 import type { AutoModeEvent } from '@/types/electron';
-import type { BacklogPlanEvent } from '@automaker/types';
+import type { BacklogPlanEvent } from '@aboardai/types';
 import { MODAL_CONSTANTS } from '@/components/views/board-view/dialogs/agent-output-modal.constants';
 
 interface UseAgentOutputWebSocketProps {

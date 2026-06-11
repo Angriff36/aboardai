@@ -1,6 +1,6 @@
 import { useState, useCallback, useEffect } from 'react';
 import { RouterProvider } from '@tanstack/react-router';
-import { createLogger } from '@automaker/utils/logger';
+import { createLogger } from '@aboardai/utils/logger';
 import { router } from './utils/router';
 import { SplashScreen } from './components/splash-screen';
 import { useSettingsSync } from './hooks/use-settings-sync';
@@ -17,7 +17,7 @@ import { loadUserFonts, preloadAllFonts } from './styles/font-imports';
 const logger = createLogger('App');
 
 // Key for localStorage to persist splash screen preference
-const DISABLE_SPLASH_KEY = 'automaker-disable-splash';
+const DISABLE_SPLASH_KEY = 'aboardai-disable-splash';
 
 export default function App() {
   const disableSplashScreen = useAppStore((state) => state.disableSplashScreen);
@@ -34,7 +34,7 @@ export default function App() {
     // The flag is written on splash complete and cleared when the tab is fully closed
     // (via the 'pagehide' + persisted=false event, which fires on true tab close but
     // not on discard/background). This gives "once per actual session" semantics.
-    if (localStorage.getItem('automaker-splash-shown-session')) {
+    if (localStorage.getItem('aboardai-splash-shown-session')) {
       return false;
     }
     return true;
@@ -109,7 +109,7 @@ export default function App() {
 
   const handleSplashComplete = useCallback(() => {
     // Mark splash as shown for this session (survives tab discard/restore)
-    localStorage.setItem('automaker-splash-shown-session', 'true');
+    localStorage.setItem('aboardai-splash-shown-session', 'true');
     setShowSplash(false);
   }, []);
 
@@ -120,7 +120,7 @@ export default function App() {
     const handlePageHide = (e: PageTransitionEvent) => {
       if (!e.persisted) {
         // Tab is being closed or navigating away (not going into bfcache)
-        localStorage.removeItem('automaker-splash-shown-session');
+        localStorage.removeItem('aboardai-splash-shown-session');
       }
     };
     window.addEventListener('pagehide', handlePageHide);

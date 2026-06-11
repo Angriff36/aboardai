@@ -15,8 +15,8 @@
  * and cherry-pick-service.ts.
  */
 
-import { createLogger, getErrorMessage } from '@automaker/utils';
-import { execGitCommand, getConflictFiles } from '@automaker/git-utils';
+import { createLogger, getErrorMessage } from '@aboardai/utils';
+import { execGitCommand, getConflictFiles } from '@aboardai/git-utils';
 import { execGitCommandWithLockRetry, getCurrentBranch } from '../lib/git.js';
 
 const logger = createLogger('PullService');
@@ -106,7 +106,7 @@ export async function getLocalChanges(
  * @returns Promise<void> — resolves on success, throws on failure
  */
 export async function stashChanges(worktreePath: string, branchName: string): Promise<void> {
-  const stashMessage = `automaker-pull-stash: Pre-pull stash on ${branchName}`;
+  const stashMessage = `aboardai-pull-stash: Pre-pull stash on ${branchName}`;
   await execGitCommandWithLockRetry(
     ['stash', 'push', '--include-untracked', '-m', stashMessage],
     worktreePath

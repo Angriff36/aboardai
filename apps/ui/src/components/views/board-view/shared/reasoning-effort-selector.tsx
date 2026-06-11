@@ -1,7 +1,7 @@
 import { Label } from '@/components/ui/label';
 import { Brain } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import type { ReasoningEffort } from '@automaker/types';
+import type { ReasoningEffort } from '@aboardai/types';
 import { REASONING_EFFORT_LEVELS, REASONING_EFFORT_LABELS } from './model-constants';
 
 interface ReasoningEffortSelectorProps {

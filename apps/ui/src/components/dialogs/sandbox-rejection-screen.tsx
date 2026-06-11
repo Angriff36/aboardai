@@ -11,7 +11,7 @@ import { Button } from '@/components/ui/button';
 export function SandboxRejectionScreen() {
   const handleReload = () => {
     // Clear the rejection state and reload
-    sessionStorage.removeItem('automaker-sandbox-denied');
+    sessionStorage.removeItem('aboardai-sandbox-denied');
     window.location.reload();
   };
 
@@ -27,12 +27,12 @@ export function SandboxRejectionScreen() {
         <div className="space-y-2">
           <h1 className="text-2xl font-semibold">Access Denied</h1>
           <p className="text-muted-foreground">
-            You declined to accept the risks of running Automaker outside a sandbox environment.
+            You declined to accept the risks of running AboardAI outside a sandbox environment.
           </p>
         </div>
 
         <p className="text-sm text-muted-foreground">
-          For safer operation, consider running Automaker in Docker. See the README for
+          For safer operation, consider running AboardAI in Docker. See the README for
           instructions.
         </p>
 

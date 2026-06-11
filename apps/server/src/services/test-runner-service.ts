@@ -13,7 +13,7 @@
 
 import { spawn, execSync, type ChildProcess } from 'child_process';
 import * as secureFs from '../lib/secure-fs.js';
-import { createLogger } from '@automaker/utils';
+import { createLogger } from '@aboardai/utils';
 import type { EventEmitter } from '../lib/events.js';
 
 const logger = createLogger('TestRunnerService');

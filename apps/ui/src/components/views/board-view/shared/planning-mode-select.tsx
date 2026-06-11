@@ -9,7 +9,7 @@ import {
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 import { cn } from '@/lib/utils';
-import type { PlanningMode } from '@automaker/types';
+import type { PlanningMode } from '@aboardai/types';
 
 interface PlanningModeSelectProps {
   mode: PlanningMode;

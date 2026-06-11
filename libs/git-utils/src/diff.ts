@@ -2,8 +2,8 @@
  * Git diff generation utilities
  */
 
-import { createLogger } from '@automaker/utils';
-import { secureFs } from '@automaker/platform';
+import { createLogger } from '@aboardai/utils';
+import { secureFs } from '@aboardai/platform';
 import path from 'path';
 import { exec } from 'child_process';
 import { promisify } from 'util';
@@ -169,7 +169,7 @@ export async function listAllFilesInDirectory(
   const skipDirs = new Set([
     'node_modules',
     '.git',
-    '.automaker',
+    '.aboardai',
     'dist',
     'build',
     '.next',

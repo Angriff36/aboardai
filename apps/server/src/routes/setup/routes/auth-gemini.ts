@@ -17,8 +17,8 @@ export function createAuthGeminiHandler() {
   return async (_req: Request, res: Response): Promise<void> => {
     try {
       const projectRoot = process.cwd();
-      const automakerDir = path.join(projectRoot, '.automaker');
-      const markerPath = path.join(automakerDir, DISCONNECTED_MARKER_FILE);
+      const aboardaiDir = path.join(projectRoot, '.aboardai');
+      const markerPath = path.join(aboardaiDir, DISCONNECTED_MARKER_FILE);
 
       // Remove the disconnection marker if it exists
       try {

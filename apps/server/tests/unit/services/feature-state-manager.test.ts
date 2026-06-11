@@ -1,16 +1,16 @@
 import { describe, it, expect, beforeEach, vi, type Mock } from 'vitest';
 import path from 'path';
 import { FeatureStateManager } from '@/services/feature-state-manager.js';
-import type { Feature } from '@automaker/types';
-import { isPipelineStatus } from '@automaker/types';
+import type { Feature } from '@aboardai/types';
+import { isPipelineStatus } from '@aboardai/types';
 
 const PIPELINE_SUMMARY_SEPARATOR = '\n\n---\n\n';
 const PIPELINE_SUMMARY_HEADER_PREFIX = '### ';
 import type { EventEmitter } from '@/lib/events.js';
 import type { FeatureLoader } from '@/services/feature-loader.js';
 import * as secureFs from '@/lib/secure-fs.js';
-import { atomicWriteJson, readJsonWithRecovery } from '@automaker/utils';
-import { getFeatureDir, getFeaturesDir } from '@automaker/platform';
+import { atomicWriteJson, readJsonWithRecovery } from '@aboardai/utils';
+import { getFeatureDir, getFeaturesDir } from '@aboardai/platform';
 import { getNotificationService } from '@/services/notification-service.js';
 import { pipelineService } from '@/services/pipeline-service.js';
 
@@ -26,8 +26,8 @@ vi.mock('@/lib/secure-fs.js', () => ({
   readdir: vi.fn(),
 }));
 
-vi.mock('@automaker/utils', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('@automaker/utils')>();
+vi.mock('@aboardai/utils', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@aboardai/utils')>();
   return {
     ...actual,
     atomicWriteJson: vi.fn(),
@@ -36,7 +36,7 @@ vi.mock('@automaker/utils', async (importOriginal) => {
   };
 });
 
-vi.mock('@automaker/platform', () => ({
+vi.mock('@aboardai/platform', () => ({
   getFeatureDir: vi.fn(),
   getFeaturesDir: vi.fn(),
 }));
@@ -87,8 +87,8 @@ describe('FeatureStateManager', () => {
     manager = new FeatureStateManager(mockEvents, mockFeatureLoader);
 
     // Default mocks
-    (getFeatureDir as Mock).mockReturnValue('/project/.automaker/features/feature-123');
-    (getFeaturesDir as Mock).mockReturnValue('/project/.automaker/features');
+    (getFeatureDir as Mock).mockReturnValue('/project/.aboardai/features/feature-123');
+    (getFeaturesDir as Mock).mockReturnValue('/project/.aboardai/features');
   });
 
   describe('loadFeature', () => {
@@ -100,7 +100,7 @@ describe('FeatureStateManager', () => {
       expect(feature).toEqual(mockFeature);
       expect(getFeatureDir).toHaveBeenCalledWith('/project', 'feature-123');
       expect(readJsonWithRecovery).toHaveBeenCalledWith(
-        normalizePath('/project/.automaker/features/feature-123/feature.json'),
+        normalizePath('/project/.aboardai/features/feature-123/feature.json'),
         null,
         expect.objectContaining({ autoRestore: true })
       );
@@ -962,7 +962,7 @@ describe('FeatureStateManager', () => {
 
       // Step 2: Testing (summary from step 1 exists)
       vi.clearAllMocks();
-      (getFeatureDir as Mock).mockReturnValue('/project/.automaker/features/feature-123');
+      (getFeatureDir as Mock).mockReturnValue('/project/.aboardai/features/feature-123');
       (pipelineService.getStep as Mock).mockResolvedValue({ name: 'Testing', id: 'step2' });
       (readJsonWithRecovery as Mock).mockResolvedValue({
         data: { ...mockFeature, status: 'pipeline_step2', summary: afterStep1.summary },
@@ -975,7 +975,7 @@ describe('FeatureStateManager', () => {
 
       // Step 3: Refinement (summaries from steps 1+2 exist)
       vi.clearAllMocks();
-      (getFeatureDir as Mock).mockReturnValue('/project/.automaker/features/feature-123');
+      (getFeatureDir as Mock).mockReturnValue('/project/.aboardai/features/feature-123');
       (pipelineService.getStep as Mock).mockResolvedValue({ name: 'Refinement', id: 'step3' });
       (readJsonWithRecovery as Mock).mockResolvedValue({
         data: { ...mockFeature, status: 'pipeline_step3', summary: afterStep2.summary },

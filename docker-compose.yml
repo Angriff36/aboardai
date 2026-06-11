@@ -1,5 +1,5 @@
-# Automaker Docker Compose
-# Runs Automaker in complete isolation from your host filesystem.
+# AboardAI Docker Compose
+# Runs AboardAI in complete isolation from your host filesystem.
 # The container cannot access any files on your laptop - only Docker-managed volumes.
 #
 # Usage:
@@ -15,7 +15,7 @@ services:
       context: .
       dockerfile: Dockerfile
       target: ui
-    container_name: automaker-ui
+    container_name: aboardai-ui
     restart: unless-stopped
     ports:
       - '3007:80'
@@ -33,7 +33,7 @@ services:
         # Override with: UID=$(id -u) GID=$(id -g) docker-compose build
         UID: ${UID:-1001}
         GID: ${GID:-1001}
-    container_name: automaker-server
+    container_name: aboardai-server
     restart: unless-stopped
     ports:
       - '3008:3008'
@@ -53,7 +53,7 @@ services:
       - CURSOR_AUTH_TOKEN=${CURSOR_AUTH_TOKEN:-}
 
       # Optional - authentication, one will generate if left blank
-      - AUTOMAKER_API_KEY=${AUTOMAKER_API_KEY:-}
+      - ABOARDAI_API_KEY=${ABOARDAI_API_KEY:-}
 
       # Optional - restrict to specific directory within container only
       # Projects and files can only be created/accessed within this directory
@@ -75,25 +75,25 @@ services:
     volumes:
       # ONLY named volumes - these are isolated from your host filesystem
       # This volume persists data between restarts but is container-managed
-      - automaker-data:/data
+      - aboardai-data:/data
 
       # Persist Claude CLI OAuth session keys across container restarts
       # This allows 'claude login' authentication to persist between restarts
-      - automaker-claude-config:/home/automaker/.claude
+      - aboardai-claude-config:/home/aboardai/.claude
 
       # Persist Cursor CLI configuration and authentication across container restarts
       # This allows 'cursor-agent login' authentication to persist between restarts
-      - automaker-cursor-config:/home/automaker/.cursor
+      - aboardai-cursor-config:/home/aboardai/.cursor
 
       # Persist OpenCode CLI configuration and authentication across container restarts
       # This allows 'opencode auth login' authentication to persist between restarts
-      - automaker-opencode-data:/home/automaker/.local/share/opencode
+      - aboardai-opencode-data:/home/aboardai/.local/share/opencode
 
       # Persist OpenCode user configuration across container restarts
-      - automaker-opencode-config:/home/automaker/.config/opencode
+      - aboardai-opencode-config:/home/aboardai/.config/opencode
 
       # Persist OpenCode cache directory (contains version file and other cache data)
-      - automaker-opencode-cache:/home/automaker/.cache/opencode
+      - aboardai-opencode-cache:/home/aboardai/.cache/opencode
 
       # NO host directory mounts - container cannot access your laptop files
       # If you need to work on a project, create it INSIDE the container
@@ -105,31 +105,31 @@ services:
     # Security: No host filesystem mounts
 
 volumes:
-  automaker-data:
-    name: automaker-data
+  aboardai-data:
+    name: aboardai-data
     # Named volume - completely isolated from host filesystem
 
-  automaker-claude-config:
-    name: automaker-claude-config
+  aboardai-claude-config:
+    name: aboardai-claude-config
     # Named volume for Claude CLI OAuth session keys and configuration
     # Persists authentication across container restarts
 
-  automaker-cursor-config:
-    name: automaker-cursor-config
+  aboardai-cursor-config:
+    name: aboardai-cursor-config
     # Named volume for Cursor CLI configuration and authentication
     # Persists cursor-agent login authentication across container restarts
 
-  automaker-opencode-data:
-    name: automaker-opencode-data
+  aboardai-opencode-data:
+    name: aboardai-opencode-data
     # Named volume for OpenCode CLI data and authentication (~/.local/share/opencode)
     # Persists opencode auth login authentication across container restarts
 
-  automaker-opencode-config:
-    name: automaker-opencode-config
+  aboardai-opencode-config:
+    name: aboardai-opencode-config
     # Named volume for OpenCode user configuration (~/.config/opencode)
     # Persists user configuration across container restarts
 
-  automaker-opencode-cache:
-    name: automaker-opencode-cache
+  aboardai-opencode-cache:
+    name: aboardai-opencode-cache
     # Named volume for OpenCode cache directory (~/.cache/opencode)
     # Contains version file and other cached data

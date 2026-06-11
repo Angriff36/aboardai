@@ -1,4 +1,4 @@
-import type { TerminalPromptTheme } from '@automaker/types';
+import type { TerminalPromptTheme } from '@aboardai/types';
 
 export const PROMPT_THEME_CUSTOM_ID: TerminalPromptTheme = 'custom';
 

@@ -12,7 +12,7 @@ import { getElectronAPI } from '@/lib/electron';
 import { queryKeys } from '@/lib/query-keys';
 import { STALE_TIMES } from '@/lib/query-client';
 import { createSmartPollingInterval, getGlobalEventsRecent } from '@/hooks/use-event-recency';
-import { isPipelineStatus } from '@automaker/types';
+import { isPipelineStatus } from '@aboardai/types';
 import type { Feature } from '@/store/app-store';
 
 const FEATURES_REFETCH_ON_FOCUS = false;
@@ -20,7 +20,7 @@ const FEATURES_REFETCH_ON_RECONNECT = false;
 const FEATURES_POLLING_INTERVAL = 30000;
 /** Default polling interval for agent output when WebSocket is inactive */
 const AGENT_OUTPUT_POLLING_INTERVAL = 5000;
-const FEATURES_CACHE_PREFIX = 'automaker:features-cache:';
+const FEATURES_CACHE_PREFIX = 'aboardai:features-cache:';
 
 /**
  * Bump this version whenever the Feature shape changes so stale localStorage

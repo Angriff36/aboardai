@@ -11,7 +11,7 @@ import { Button } from '@/components/ui/button';
 import { HotkeyButton } from '@/components/ui/hotkey-button';
 import { Textarea } from '@/components/ui/textarea';
 import { Play, Plus } from 'lucide-react';
-import type { PhaseModelEntry } from '@automaker/types';
+import type { PhaseModelEntry } from '@aboardai/types';
 import { PhaseModelSelector } from '@/components/views/settings-view/model-defaults/phase-model-selector';
 import { useAppStore } from '@/store/app-store';
 

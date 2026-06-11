@@ -5,7 +5,7 @@
 
 import { describe, it, expect } from 'vitest';
 import { terminalThemeColors, getTerminalThemeColors } from '../src/terminal-theme-colors';
-import type { ThemeMode } from '@automaker/types';
+import type { ThemeMode } from '@aboardai/types';
 
 describe('terminal-theme-colors', () => {
   describe('terminalThemeColors', () => {

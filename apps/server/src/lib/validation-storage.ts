@@ -1,13 +1,13 @@
 /**
  * Validation Storage - CRUD operations for GitHub issue validation results
  *
- * Stores validation results in .automaker/validations/{issueNumber}/validation.json
+ * Stores validation results in .aboardai/validations/{issueNumber}/validation.json
  * Results include the validation verdict, metadata, and timestamp for cache invalidation.
  */
 
 import * as secureFs from './secure-fs.js';
-import { getValidationsDir, getValidationDir, getValidationPath } from '@automaker/platform';
-import type { StoredValidation } from '@automaker/types';
+import { getValidationsDir, getValidationDir, getValidationPath } from '@aboardai/platform';
+import type { StoredValidation } from '@aboardai/types';
 
 // Re-export StoredValidation for convenience
 export type { StoredValidation };

@@ -245,8 +245,8 @@ async function main() {
   const githubZipUrl = `https://github.com/${GITHUB_REPO}/archive/refs/tags/${RELEASE_TAG}.zip`;
   const githubTarGzUrl = `https://github.com/${GITHUB_REPO}/archive/refs/tags/${RELEASE_TAG}.tar.gz`;
 
-  const sourceZipPath = path.join(tempDir, `automaker-${VERSION}.zip`);
-  const sourceTarGzPath = path.join(tempDir, `automaker-${VERSION}.tar.gz`);
+  const sourceZipPath = path.join(tempDir, `aboardai-${VERSION}.zip`);
+  const sourceTarGzPath = path.join(tempDir, `aboardai-${VERSION}.tar.gz`);
 
   console.log(`Waiting for source archives to be available on GitHub...`);
   console.log(`  ZIP: ${githubZipUrl}`);

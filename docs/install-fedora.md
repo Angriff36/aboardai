@@ -1,10 +1,10 @@
-# Installing Automaker on Fedora/RHEL
+# Installing AboardAI on Fedora/RHEL
 
-This guide covers installation of Automaker on Fedora, RHEL, Rocky Linux, AlmaLinux, and other RPM-based distributions.
+This guide covers installation of AboardAI on Fedora, RHEL, Rocky Linux, AlmaLinux, and other RPM-based distributions.
 
 ## Prerequisites
 
-Automaker requires:
+AboardAI requires:
 
 - **64-bit x86_64 architecture**
 - **Fedora 39+** or **RHEL 9+** (earlier versions may work but not officially supported)
@@ -25,54 +25,54 @@ See main [README.md authentication section](../README.md#authentication) for det
 
 ### Option 1: Download and Install from GitHub
 
-1. Visit [GitHub Releases](https://github.com/AutoMaker-Org/automaker/releases)
+1. Visit [GitHub Releases](https://github.com/AboardAI-Org/aboardai/releases)
 2. Find the latest release and download the `.rpm` file:
-   - Download: `Automaker-<version>-x86_64.rpm`
+   - Download: `AboardAI-<version>-x86_64.rpm`
 
 3. Install using dnf (Fedora):
 
    ```bash
-   sudo dnf install ./Automaker-<version>-x86_64.rpm
+   sudo dnf install ./AboardAI-<version>-x86_64.rpm
    ```
 
    Or using yum (RHEL/CentOS):
 
    ```bash
-   sudo yum localinstall ./Automaker-<version>-x86_64.rpm
+   sudo yum localinstall ./AboardAI-<version>-x86_64.rpm
    ```
 
 ### Option 2: Install Directly from URL
 
-Install from GitHub releases URL without downloading first. Visit [releases page](https://github.com/AutoMaker-Org/automaker/releases) to find the latest version.
+Install from GitHub releases URL without downloading first. Visit [releases page](https://github.com/AboardAI-Org/aboardai/releases) to find the latest version.
 
 **Fedora:**
 
 ```bash
 # Replace v0.11.0 with the actual latest version
-sudo dnf install https://github.com/AutoMaker-Org/automaker/releases/download/v0.11.0/Automaker-0.11.0-x86_64.rpm
+sudo dnf install https://github.com/AboardAI-Org/aboardai/releases/download/v0.11.0/AboardAI-0.11.0-x86_64.rpm
 ```
 
 **RHEL/CentOS:**
 
 ```bash
 # Replace v0.11.0 with the actual latest version
-sudo yum install https://github.com/AutoMaker-Org/automaker/releases/download/v0.11.0/Automaker-0.11.0-x86_64.rpm
+sudo yum install https://github.com/AboardAI-Org/aboardai/releases/download/v0.11.0/AboardAI-0.11.0-x86_64.rpm
 ```
 
-## Running Automaker
+## Running AboardAI
 
-After successful installation, launch Automaker:
+After successful installation, launch AboardAI:
 
 ### From Application Menu
 
 - Open Activities/Applications
-- Search for "Automaker"
+- Search for "AboardAI"
 - Click to launch
 
 ### From Terminal
 
 ```bash
-automaker
+aboardai
 ```
 
 ## System Requirements & Capabilities
@@ -140,10 +140,10 @@ Set authentication via environment variable:
 
 ```bash
 export ANTHROPIC_API_KEY=sk-ant-...
-automaker
+aboardai
 ```
 
-Or create `~/.config/automaker/.env`:
+Or create `~/.config/aboardai/.env`:
 
 ```
 ANTHROPIC_API_KEY=sk-ant-...
@@ -151,12 +151,12 @@ ANTHROPIC_API_KEY=sk-ant-...
 
 ### Configuration Directory
 
-Automaker stores configuration and cache in:
+AboardAI stores configuration and cache in:
 
 ```
-~/.automaker/                # Project-specific data
-~/.config/automaker/         # Application configuration
-~/.cache/automaker/          # Cache and temporary files
+~/.aboardai/                # Project-specific data
+~/.config/aboardai/         # Application configuration
+~/.cache/aboardai/          # Cache and temporary files
 ```
 
 ## Troubleshooting
@@ -166,20 +166,20 @@ Automaker stores configuration and cache in:
 **Check installation:**
 
 ```bash
-rpm -qi automaker
-rpm -V automaker
+rpm -qi aboardai
+rpm -V aboardai
 ```
 
 **Verify desktop file:**
 
 ```bash
-cat /usr/share/applications/automaker.desktop
+cat /usr/share/applications/aboardai.desktop
 ```
 
 **Run from terminal for error output:**
 
 ```bash
-automaker
+aboardai
 ```
 
 ### Missing Dependencies
@@ -201,7 +201,7 @@ sudo dnf install gtk3 libnotify nss libXScrnSaver libXtst xdg-utils at-spi2-core
 
 ### SELinux Denials
 
-If Automaker fails on SELinux-enforced systems:
+If AboardAI fails on SELinux-enforced systems:
 
 **Temporary workaround (testing):**
 
@@ -209,22 +209,22 @@ If Automaker fails on SELinux-enforced systems:
 # Set SELinux to permissive mode
 sudo setenforce 0
 
-# Run Automaker
-automaker
+# Run AboardAI
+aboardai
 
 # Check for denials
-sudo ausearch -m avc -ts recent | grep automaker
+sudo ausearch -m avc -ts recent | grep aboardai
 
 # Re-enable SELinux
 sudo setenforce 1
 ```
 
 **Permanent fix (not recommended for production):**
-Create custom SELinux policy based on ausearch output. For support, see [GitHub Issues](https://github.com/AutoMaker-Org/automaker/issues).
+Create custom SELinux policy based on ausearch output. For support, see [GitHub Issues](https://github.com/AboardAI-Org/aboardai/issues).
 
 ### Port Conflicts
 
-Automaker uses port 3008 for the internal server. If port is already in use:
+AboardAI uses port 3008 for the internal server. If port is already in use:
 
 **Find process using port 3008:**
 
@@ -240,7 +240,7 @@ lsof -i :3008
 sudo kill -9 <PID>
 ```
 
-Or configure Automaker to use different port (see Configuration section).
+Or configure AboardAI to use different port (see Configuration section).
 
 ### Firewall Issues
 
@@ -254,7 +254,7 @@ sudo firewall-cmd --permanent --add-port=3008/tcp
 
 ### GPU/Acceleration
 
-Automaker uses Chromium for rendering. GPU acceleration should work automatically on supported systems.
+AboardAI uses Chromium for rendering. GPU acceleration should work automatically on supported systems.
 
 **Check acceleration:**
 
@@ -264,7 +264,7 @@ Automaker uses Chromium for rendering. GPU acceleration should work automaticall
 **Disable acceleration if issues occur:**
 
 ```bash
-DISABLE_GPU_ACCELERATION=1 automaker
+DISABLE_GPU_ACCELERATION=1 aboardai
 ```
 
 ### Terminal/Worktree Issues
@@ -281,8 +281,8 @@ If terminal emulator fails or git worktree operations hang:
 If the application freezes:
 
 1. Wait 30 seconds (AI operations may be processing)
-2. Check process: `ps aux | grep automaker`
-3. Force quit if necessary: `killall automaker`
+2. Check process: `ps aux | grep aboardai`
+3. Force quit if necessary: `killall aboardai`
 4. Check system resources: `free -h`, `top`
 
 ### Network Issues
@@ -307,13 +307,13 @@ curl -I https://api.anthropic.com
 **Fedora:**
 
 ```bash
-sudo dnf remove automaker
+sudo dnf remove aboardai
 ```
 
 **RHEL/CentOS:**
 
 ```bash
-sudo yum remove automaker
+sudo yum remove aboardai
 ```
 
 ### Clean Configuration (Optional)
@@ -322,20 +322,20 @@ Remove all user data and configuration:
 
 ```bash
 # Remove project-specific data
-rm -rf ~/.automaker
+rm -rf ~/.aboardai
 
 # Remove application configuration
-rm -rf ~/.config/automaker
+rm -rf ~/.config/aboardai
 
 # Remove cache
-rm -rf ~/.cache/automaker
+rm -rf ~/.cache/aboardai
 ```
 
 **Warning:** This removes all saved projects and settings. Ensure you have backups if needed.
 
 ## Building from Source
 
-To build Automaker from source on Fedora/RHEL:
+To build AboardAI from source on Fedora/RHEL:
 
 **Prerequisites:**
 
@@ -352,8 +352,8 @@ sudo dnf install nodejs npm git
 
 ```bash
 # Clone repository
-git clone https://github.com/AutoMaker-Org/automaker.git
-cd automaker
+git clone https://github.com/AboardAI-Org/aboardai.git
+cd aboardai
 
 # Install dependencies
 npm install
@@ -370,27 +370,27 @@ ls apps/ui/release/*.rpm
 
 See main [README.md](../README.md) for detailed build instructions.
 
-## Updating Automaker
+## Updating AboardAI
 
 **Automatic Updates:**
-Automaker checks for updates on startup. Install available updates through notifications.
+AboardAI checks for updates on startup. Install available updates through notifications.
 
 **Manual Update:**
 
 ```bash
 # Fedora
-sudo dnf update automaker
+sudo dnf update aboardai
 
 # RHEL/CentOS
-sudo yum update automaker
+sudo yum update aboardai
 
 # Or reinstall latest release
-sudo dnf remove automaker
+sudo dnf remove aboardai
 
 # Download the latest .rpm from releases page
-# https://github.com/AutoMaker-Org/automaker/releases
+# https://github.com/AboardAI-Org/aboardai/releases
 # Then reinstall with:
-# sudo dnf install ./Automaker-<VERSION>-x86_64.rpm
+# sudo dnf install ./AboardAI-<VERSION>-x86_64.rpm
 ```
 
 ## Getting Help
@@ -399,8 +399,8 @@ sudo dnf remove automaker
 
 - [Main README](../README.md) - Project overview
 - [CONTRIBUTING.md](../CONTRIBUTING.md) - Contributing guide
-- [GitHub Issues](https://github.com/AutoMaker-Org/automaker/issues) - Bug reports & feature requests
-- [Discussions](https://github.com/AutoMaker-Org/automaker/discussions) - Questions & community
+- [GitHub Issues](https://github.com/AboardAI-Org/aboardai/issues) - Bug reports & feature requests
+- [Discussions](https://github.com/AboardAI-Org/aboardai/discussions) - Questions & community
 
 ### Reporting Issues
 
@@ -411,17 +411,17 @@ When reporting Fedora/RHEL issues, include:
 lsb_release -a
 uname -m
 
-# Automaker version
-rpm -qi automaker
+# AboardAI version
+rpm -qi aboardai
 
 # Error output (run from terminal)
-automaker 2>&1 | tee automaker.log
+aboardai 2>&1 | tee aboardai.log
 
 # SELinux status
 getenforce
 
 # Relevant system logs
-sudo journalctl -xeu automaker.service (if systemd service exists)
+sudo journalctl -xeu aboardai.service (if systemd service exists)
 ```
 
 ## Performance Tips
@@ -443,7 +443,7 @@ Never commit API keys to version control:
 export ANTHROPIC_API_KEY=sk-ant-...
 
 # Good: Use .env file (not in git)
-echo "ANTHROPIC_API_KEY=sk-ant-..." > ~/.config/automaker/.env
+echo "ANTHROPIC_API_KEY=sk-ant-..." > ~/.config/aboardai/.env
 
 # Bad: Hardcoded in files
 ANTHROPIC_API_KEY="sk-ant-..." (in any tracked file)
@@ -453,7 +453,7 @@ ANTHROPIC_API_KEY="sk-ant-..." (in any tracked file)
 
 Running with SELinux disabled (`setenforce 0`) reduces security. Create custom policy:
 
-1. Generate policy from audit logs: `ausearch -m avc -ts recent | grep automaker`
+1. Generate policy from audit logs: `ausearch -m avc -ts recent | grep aboardai`
 2. Use selinux-policy tools to create module
 3. Install and test module
 4. Keep SELinux enforcing
@@ -463,9 +463,9 @@ Running with SELinux disabled (`setenforce 0`) reduces security. Create custom p
 Ensure configuration files are readable by user only:
 
 ```bash
-chmod 600 ~/.config/automaker/.env
-chmod 700 ~/.automaker/
-chmod 700 ~/.config/automaker/
+chmod 600 ~/.config/aboardai/.env
+chmod 700 ~/.aboardai/
+chmod 700 ~/.config/aboardai/
 ```
 
 ## Known Limitations

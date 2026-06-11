@@ -18,7 +18,7 @@ import type { BaseProvider } from '../../../src/providers/base-provider.js';
  * Unit tests for AgentExecutor
  *
  * Note: Full integration tests for execute() require complex mocking of
- * @automaker/utils and @automaker/platform which have module hoisting issues.
+ * @aboardai/utils and @aboardai/platform which have module hoisting issues.
  * These tests focus on:
  * - Constructor injection
  * - Interface exports

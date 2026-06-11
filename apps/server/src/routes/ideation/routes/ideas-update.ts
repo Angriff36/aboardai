@@ -5,7 +5,7 @@
 import type { Request, Response } from 'express';
 import type { EventEmitter } from '../../../lib/events.js';
 import type { IdeationService } from '../../../services/ideation-service.js';
-import type { UpdateIdeaInput } from '@automaker/types';
+import type { UpdateIdeaInput } from '@aboardai/types';
 import { getErrorMessage, logError } from '../common.js';
 
 export function createIdeasUpdateHandler(events: EventEmitter, ideationService: IdeationService) {

@@ -31,12 +31,12 @@ let _workerFixturePath: string | null = null;
 function ensureFixtureExists(): void {
   if (fs.existsSync(FIXTURE_PATH)) return;
 
-  fs.mkdirSync(path.join(FIXTURE_PATH, '.automaker/context'), { recursive: true });
+  fs.mkdirSync(path.join(FIXTURE_PATH, '.aboardai/context'), { recursive: true });
 
-  fs.writeFileSync(path.join(FIXTURE_PATH, '.automaker/app_spec.txt'), ORIGINAL_SPEC_CONTENT);
-  fs.writeFileSync(path.join(FIXTURE_PATH, '.automaker/categories.json'), '[]');
+  fs.writeFileSync(path.join(FIXTURE_PATH, '.aboardai/app_spec.txt'), ORIGINAL_SPEC_CONTENT);
+  fs.writeFileSync(path.join(FIXTURE_PATH, '.aboardai/categories.json'), '[]');
   fs.writeFileSync(
-    path.join(FIXTURE_PATH, '.automaker/context/context-metadata.json'),
+    path.join(FIXTURE_PATH, '.aboardai/context/context-metadata.json'),
     '{"files": {}}'
   );
 }
@@ -76,21 +76,21 @@ function getWorkerFixturePath(): string {
  * Get the worker-isolated context path
  */
 function getWorkerContextPath(): string {
-  return path.join(getWorkerFixturePath(), '.automaker/context');
+  return path.join(getWorkerFixturePath(), '.aboardai/context');
 }
 
 /**
  * Get the worker-isolated memory path
  */
 function getWorkerMemoryPath(): string {
-  return path.join(getWorkerFixturePath(), '.automaker/memory');
+  return path.join(getWorkerFixturePath(), '.aboardai/memory');
 }
 
 /**
  * Get the worker-isolated spec file path
  */
 function getWorkerSpecPath(): string {
-  return path.join(getWorkerFixturePath(), '.automaker/app_spec.txt');
+  return path.join(getWorkerFixturePath(), '.aboardai/app_spec.txt');
 }
 
 /**
@@ -220,7 +220,7 @@ export async function setupProjectWithFixture(
       version: 2, // Must match app-store.ts persist version
     };
 
-    localStorage.setItem('automaker-storage', JSON.stringify(mockState));
+    localStorage.setItem('aboardai-storage', JSON.stringify(mockState));
 
     // Also mark setup as complete (fallback for when NEXT_PUBLIC_SKIP_SETUP isn't set)
     const setupState = {
@@ -232,11 +232,11 @@ export async function setupProjectWithFixture(
       },
       version: 0, // setup-store.ts doesn't specify a version, so zustand defaults to 0
     };
-    localStorage.setItem('automaker-setup', JSON.stringify(setupState));
+    localStorage.setItem('aboardai-setup', JSON.stringify(setupState));
 
     // Set settings cache so the fast-hydrate path uses our fixture project.
     // Without this, a stale settings cache from a previous test can override
-    // the project we just set in automaker-storage.
+    // the project we just set in aboardai-storage.
     const settingsCache = {
       setupComplete: true,
       isFirstRun: false,
@@ -254,10 +254,10 @@ export async function setupProjectWithFixture(
       maxConcurrency: 3,
       skipSandboxWarning: true,
     };
-    localStorage.setItem('automaker-settings-cache', JSON.stringify(settingsCache));
+    localStorage.setItem('aboardai-settings-cache', JSON.stringify(settingsCache));
 
     // Disable splash screen in tests
-    localStorage.setItem('automaker-disable-splash', 'true');
+    localStorage.setItem('aboardai-disable-splash', 'true');
   }, projectPath);
 }
 

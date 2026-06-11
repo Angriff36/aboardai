@@ -13,7 +13,7 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import { resolveModelString } from '@automaker/model-resolver';
+import { resolveModelString } from '@aboardai/model-resolver';
 
 // ============================================
 // Feature construction helpers that mirror the actual creation logic

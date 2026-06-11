@@ -1,10 +1,10 @@
 import { useCallback } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-import type { Feature as ApiFeature } from '@automaker/types';
+import type { Feature as ApiFeature } from '@aboardai/types';
 import { Feature } from '@/store/app-store';
 import { getElectronAPI } from '@/lib/electron';
 import { useAppStore } from '@/store/app-store';
-import { createLogger } from '@automaker/utils/logger';
+import { createLogger } from '@aboardai/utils/logger';
 import { queryKeys } from '@/lib/query-keys';
 
 const logger = createLogger('BoardPersistence');

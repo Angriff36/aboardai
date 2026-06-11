@@ -1,6 +1,6 @@
 /**
- * @automaker/dependency-resolver
- * Feature dependency resolution for AutoMaker
+ * @aboardai/dependency-resolver
+ * Feature dependency resolution for AboardAI
  */
 
 export {

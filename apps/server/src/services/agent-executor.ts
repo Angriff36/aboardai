@@ -3,10 +3,10 @@
  */
 
 import path from 'path';
-import type { ExecuteOptions, ParsedTask } from '@automaker/types';
-import { isPipelineStatus } from '@automaker/types';
-import { buildPromptWithImages, createLogger, isAuthenticationError } from '@automaker/utils';
-import { getFeatureDir } from '@automaker/platform';
+import type { ExecuteOptions, ParsedTask } from '@aboardai/types';
+import { isPipelineStatus } from '@aboardai/types';
+import { buildPromptWithImages, createLogger, isAuthenticationError } from '@aboardai/utils';
+import { getFeatureDir } from '@aboardai/platform';
 import * as secureFs from '../lib/secure-fs.js';
 import { TypedEventBus } from './typed-event-bus.js';
 import { FeatureStateManager } from './feature-state-manager.js';
@@ -139,8 +139,8 @@ export class AgentExecutor {
     const outputPath = path.join(featureDirForOutput, 'agent-output.md');
     const rawOutputPath = path.join(featureDirForOutput, 'raw-output.jsonl');
     const enableRawOutput =
-      process.env.AUTOMAKER_DEBUG_RAW_OUTPUT === 'true' ||
-      process.env.AUTOMAKER_DEBUG_RAW_OUTPUT === '1';
+      process.env.ABOARDAI_DEBUG_RAW_OUTPUT === 'true' ||
+      process.env.ABOARDAI_DEBUG_RAW_OUTPUT === '1';
     let responseText = previousContent
       ? `${previousContent}\n\n---\n\n## Follow-up Session\n\n`
       : '';

@@ -5,7 +5,7 @@
  */
 
 import { describe, it, expect, vi } from 'vitest';
-import type { Feature } from '@automaker/types';
+import type { Feature } from '@aboardai/types';
 
 describe('Lint fix type safety - Feature casting patterns', () => {
   // The lint fix changed `} as any` to `} as unknown as Feature` in test files.

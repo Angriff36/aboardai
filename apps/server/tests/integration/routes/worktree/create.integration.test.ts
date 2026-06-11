@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import { createCreateHandler } from '@/routes/worktree/routes/create.js';
-import { AUTOMAKER_INITIAL_COMMIT_MESSAGE } from '@/routes/worktree/common.js';
+import { ABOARDAI_INITIAL_COMMIT_MESSAGE } from '@/routes/worktree/common.js';
 import { exec } from 'child_process';
 import { promisify } from 'util';
 import * as fs from 'fs/promises';
@@ -13,7 +13,7 @@ describe('worktree create route - repositories without commits', () => {
   let repoPath: string | null = null;
 
   async function initRepoWithoutCommit() {
-    repoPath = await fs.mkdtemp(path.join(os.tmpdir(), 'automaker-no-commit-'));
+    repoPath = await fs.mkdtemp(path.join(os.tmpdir(), 'aboardai-no-commit-'));
     // Initialize with 'main' as the default branch (matching GitHub's standard)
     await execAsync('git init --initial-branch=main', { cwd: repoPath });
     // Don't set git config - use environment variables in commit operations instead
@@ -56,6 +56,6 @@ describe('worktree create route - repositories without commits', () => {
     expect(Number(commitCount.trim())).toBeGreaterThan(0);
 
     const { stdout: latestMessage } = await execAsync('git log -1 --pretty=%B', { cwd: repoPath! });
-    expect(latestMessage.trim()).toBe(AUTOMAKER_INITIAL_COMMIT_MESSAGE);
+    expect(latestMessage.trim()).toBe(ABOARDAI_INITIAL_COMMIT_MESSAGE);
   });
 });

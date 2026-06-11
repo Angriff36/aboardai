@@ -24,7 +24,7 @@ export const TEST_BASE_DIR = path.join(getWorkspaceRoot(), 'test');
  * Assert that a project path is safe for E2E tests (never the main repo root).
  * Safe paths must be either:
  * - Under workspace root's test/ directory (e.g. test/fixtures/projectA, test/open-project-test-xxx)
- * - Under the OS temp directory (e.g. /tmp/automaker-e2e-workspace)
+ * - Under the OS temp directory (e.g. /tmp/aboardai-e2e-workspace)
  *
  * This prevents tests from checking out or modifying branches in the main project's git repo.
  *

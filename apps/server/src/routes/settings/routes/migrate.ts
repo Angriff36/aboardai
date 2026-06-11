@@ -9,11 +9,11 @@
  * ```json
  * {
  *   "data": {
- *     "automaker-storage"?: string,
- *     "automaker-setup"?: string,
+ *     "aboardai-storage"?: string,
+ *     "aboardai-setup"?: string,
  *     "worktree-panel-collapsed"?: string,
  *     "file-browser-recent-folders"?: string,
- *     "automaker:lastProjectDir"?: string
+ *     "aboardai:lastProjectDir"?: string
  *   }
  * }
  * ```
@@ -45,11 +45,11 @@ export function createMigrateHandler(settingsService: SettingsService) {
     try {
       const { data } = req.body as {
         data?: {
-          'automaker-storage'?: string;
-          'automaker-setup'?: string;
+          'aboardai-storage'?: string;
+          'aboardai-setup'?: string;
           'worktree-panel-collapsed'?: string;
           'file-browser-recent-folders'?: string;
-          'automaker:lastProjectDir'?: string;
+          'aboardai:lastProjectDir'?: string;
         };
       };
 

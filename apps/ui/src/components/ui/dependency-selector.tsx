@@ -12,8 +12,8 @@ import {
 } from '@/components/ui/command';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Badge } from '@/components/ui/badge';
-import { wouldCreateCircularDependency } from '@automaker/dependency-resolver';
-import type { Feature } from '@automaker/types';
+import { wouldCreateCircularDependency } from '@aboardai/dependency-resolver';
+import type { Feature } from '@aboardai/types';
 
 interface DependencySelectorProps {
   /** The current feature being edited (null for add mode) */

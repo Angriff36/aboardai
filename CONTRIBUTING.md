@@ -1,14 +1,14 @@
-# Contributing to Automaker
+# Contributing to AboardAI
 
-Thank you for your interest in contributing to Automaker! We're excited to have you join our community of developers building the future of autonomous AI development.
+Thank you for your interest in contributing to AboardAI! We're excited to have you join our community of developers building the future of autonomous AI development.
 
-Automaker is an autonomous AI development studio that provides a Kanban-based workflow where AI agents implement features in isolated git worktrees. Whether you're fixing bugs, adding features, improving documentation, or suggesting ideas, your contributions help make this project better for everyone.
+AboardAI is an autonomous AI development studio that provides a Kanban-based workflow where AI agents implement features in isolated git worktrees. Whether you're fixing bugs, adding features, improving documentation, or suggesting ideas, your contributions help make this project better for everyone.
 
-This guide will help you get started with contributing to Automaker. Please take a moment to read through these guidelines to ensure a smooth contribution process.
+This guide will help you get started with contributing to AboardAI. Please take a moment to read through these guidelines to ensure a smooth contribution process.
 
 ## Contribution License Agreement
 
-**Important:** By submitting, pushing, or contributing any code, documentation, pull requests, issues, or other materials to the Automaker project, you agree to assign all right, title, and interest in and to your contributions, including all copyrights, patents, and other intellectual property rights, to the Core Contributors of Automaker. This assignment is irrevocable and includes the right to use, modify, distribute, and monetize your contributions in any manner.
+**Important:** By submitting, pushing, or contributing any code, documentation, pull requests, issues, or other materials to the AboardAI project, you agree to assign all right, title, and interest in and to your contributions, including all copyrights, patents, and other intellectual property rights, to the Core Contributors of AboardAI. This assignment is irrevocable and includes the right to use, modify, distribute, and monetize your contributions in any manner.
 
 **You understand and agree that you will have no right to receive any royalties, compensation, or other financial benefits from any revenue, income, or commercial use generated from your contributed code or any derivative works thereof.** All contributions are made without expectation of payment or financial return.
 
@@ -16,7 +16,7 @@ For complete details on contribution terms and rights assignment, please review 
 
 ## Table of Contents
 
-- [Contributing to Automaker](#contributing-to-automaker)
+- [Contributing to AboardAI](#contributing-to-aboardai)
   - [Table of Contents](#table-of-contents)
   - [Getting Started](#getting-started)
     - [Prerequisites](#prerequisites)
@@ -68,7 +68,7 @@ For complete details on contribution terms and rights assignment, please review 
 
 ### Prerequisites
 
-Before contributing to Automaker, ensure you have the following installed on your system:
+Before contributing to AboardAI, ensure you have the following installed on your system:
 
 - **Node.js 18+** (tested with Node.js 22)
   - Download from [nodejs.org](https://nodejs.org/)
@@ -88,31 +88,31 @@ Before contributing to Automaker, ensure you have the following installed on you
 ### Fork and Clone
 
 1. **Fork the repository** on GitHub
-   - Navigate to [https://github.com/AutoMaker-Org/automaker](https://github.com/AutoMaker-Org/automaker)
+   - Navigate to [https://github.com/AboardAI-Org/aboardai](https://github.com/AboardAI-Org/aboardai)
    - Click the "Fork" button in the top-right corner
    - This creates your own copy of the repository
 
 2. **Clone your fork locally**
 
    ```bash
-   git clone https://github.com/YOUR_USERNAME/automaker.git
-   cd automaker
+   git clone https://github.com/YOUR_USERNAME/aboardai.git
+   cd aboardai
    ```
 
 3. **Add the upstream remote** to keep your fork in sync
 
    ```bash
-   git remote add upstream https://github.com/AutoMaker-Org/automaker.git
+   git remote add upstream https://github.com/AboardAI-Org/aboardai.git
    ```
 
 4. **Verify remotes**
    ```bash
    git remote -v
    # Should show:
-   # origin    https://github.com/YOUR_USERNAME/automaker.git (fetch)
-   # origin    https://github.com/YOUR_USERNAME/automaker.git (push)
-   # upstream  https://github.com/AutoMaker-Org/automaker.git (fetch)
-   # upstream  https://github.com/AutoMaker-Org/automaker.git (push)
+   # origin    https://github.com/YOUR_USERNAME/aboardai.git (fetch)
+   # origin    https://github.com/YOUR_USERNAME/aboardai.git (push)
+   # upstream  https://github.com/AboardAI-Org/aboardai.git (fetch)
+   # upstream  https://github.com/AboardAI-Org/aboardai.git (push)
    ```
 
 ### Development Setup
@@ -155,28 +155,28 @@ Before contributing to Automaker, ensure you have the following installed on you
 
 ### Project Structure
 
-Automaker is organized as an npm workspace monorepo:
+AboardAI is organized as an npm workspace monorepo:
 
 ```
-automaker/
+aboardai/
 ├── apps/
 │   ├── ui/              # React + Vite + Electron frontend
 │   └── server/          # Express + WebSocket backend
 ├── libs/
-│   ├── @automaker/types/            # Shared TypeScript types
-│   ├── @automaker/utils/            # Utility functions
-│   ├── @automaker/prompts/          # AI prompt templates
-│   ├── @automaker/platform/         # Platform abstractions
-│   ├── @automaker/model-resolver/   # AI model resolution
-│   ├── @automaker/dependency-resolver/ # Dependency management
-│   └── @automaker/git-utils/        # Git operations
+│   ├── @aboardai/types/            # Shared TypeScript types
+│   ├── @aboardai/utils/            # Utility functions
+│   ├── @aboardai/prompts/          # AI prompt templates
+│   ├── @aboardai/platform/         # Platform abstractions
+│   ├── @aboardai/model-resolver/   # AI model resolution
+│   ├── @aboardai/dependency-resolver/ # Dependency management
+│   └── @aboardai/git-utils/        # Git operations
 ├── docs/                # Documentation
 └── package.json         # Root package configuration
 ```
 
 **Key conventions:**
 
-- Always import from `@automaker/*` shared packages, never use relative paths to `libs/`
+- Always import from `@aboardai/*` shared packages, never use relative paths to `libs/`
 - Frontend code lives in `apps/ui/`
 - Backend code lives in `apps/server/`
 - Shared logic should be in the appropriate `libs/` package
@@ -189,7 +189,7 @@ This section covers everything you need to know about contributing changes throu
 
 ### Branching Strategy (RC Branches)
 
-Automaker uses **Release Candidate (RC) branches** for all development work. Understanding this workflow is essential before contributing.
+AboardAI uses **Release Candidate (RC) branches** for all development work. Understanding this workflow is essential before contributing.
 
 **How it works:**
 
@@ -368,7 +368,7 @@ git push origin feature/your-feature-name
 
 1. Go to your fork on GitHub
 2. Click "Compare & pull request" for your branch
-3. **Important:** Set the base repository to `AutoMaker-Org/automaker` and the base branch to the **current RC branch** (e.g., `v0.11.0rc`), not `main`
+3. **Important:** Set the base repository to `AboardAI-Org/aboardai` and the base branch to the **current RC branch** (e.g., `v0.11.0rc`), not `main`
 4. Fill out the PR template completely
 
 #### PR Requirements Checklist
@@ -389,7 +389,7 @@ Your PR should include:
 ```markdown
 ## Summary
 
-This PR adds dark mode support to the Automaker UI.
+This PR adds dark mode support to the AboardAI UI.
 
 - Implements theme toggle in settings panel
 - Adds CSS custom properties for theme colors
@@ -460,13 +460,13 @@ If your PR seems stuck:
 
 ## Code Style Guidelines
 
-Automaker uses automated tooling to enforce code style. Run `npm run format` to format code and `npm run lint` to check for issues. Pre-commit hooks automatically format staged files before committing.
+AboardAI uses automated tooling to enforce code style. Run `npm run format` to format code and `npm run lint` to check for issues. Pre-commit hooks automatically format staged files before committing.
 
 ---
 
 ## Testing Requirements
 
-Testing helps prevent regressions. Automaker uses **Playwright** for end-to-end testing and **Vitest** for unit tests.
+Testing helps prevent regressions. AboardAI uses **Playwright** for end-to-end testing and **Vitest** for unit tests.
 
 ### Running Tests
 
@@ -506,7 +506,7 @@ npm run test
 npx playwright test --headed
 
 # Run a specific test file
-npm test --workspace=@automaker/ui -- tests/example.spec.ts
+npm test --workspace=@aboardai/ui -- tests/example.spec.ts
 ```
 
 **E2E Test Guidelines:**
@@ -559,7 +559,7 @@ npx vitest --watch
 
 ### CI/CD Pipeline
 
-Automaker uses **GitHub Actions** for continuous integration. Every pull request triggers automated checks.
+AboardAI uses **GitHub Actions** for continuous integration. Every pull request triggers automated checks.
 
 #### CI Checks
 
@@ -569,16 +569,16 @@ The following checks must pass before your PR can be merged:
 | ----------------- | --------------------------------------------- |
 | **Format**        | Verifies code is formatted with Prettier      |
 | **Build**         | Ensures the project compiles without errors   |
-| **Package Tests** | Runs tests for shared `@automaker/*` packages |
+| **Package Tests** | Runs tests for shared `@aboardai/*` packages |
 | **Server Tests**  | Runs server unit tests with coverage          |
 
 #### CI Testing Environment
 
-For CI environments, Automaker supports a mock agent mode:
+For CI environments, AboardAI supports a mock agent mode:
 
 ```bash
 # Enable mock agent mode for CI testing
-AUTOMAKER_MOCK_AGENT=true npm run test
+ABOARDAI_MOCK_AGENT=true npm run test
 ```
 
 This allows tests to run without requiring a real Claude API connection.
@@ -628,7 +628,7 @@ When reporting a bug, please provide as much information as possible to help us 
 #### Before Reporting
 
 1. **Search existing issues** - Check if the bug has already been reported
-2. **Try the latest version** - Make sure you're running the latest version of Automaker
+2. **Try the latest version** - Make sure you're running the latest version of AboardAI
 3. **Reproduce the issue** - Verify you can consistently reproduce the bug
 
 #### Bug Report Template
@@ -639,7 +639,7 @@ When creating a bug report, include:
 - **Environment:**
   - Operating System and version
   - Node.js version (`node --version`)
-  - Automaker version or commit hash
+  - AboardAI version or commit hash
 - **Steps to Reproduce:** Numbered list of steps to reproduce the bug
 - **Expected Behavior:** What you expected to happen
 - **Actual Behavior:** What actually happened
@@ -654,7 +654,7 @@ When creating a bug report, include:
 
 - OS: Windows 11
 - Node.js: 22.11.0
-- Automaker: commit abc1234
+- AboardAI: commit abc1234
 
 ### Steps to Reproduce
 
@@ -678,12 +678,12 @@ The UI shows "Connection lost" and the card doesn't move.
 
 ### Feature Requests
 
-We welcome ideas for improving Automaker! Here's how to submit a feature request:
+We welcome ideas for improving AboardAI! Here's how to submit a feature request:
 
 #### Before Requesting
 
 1. **Check existing issues** - Your idea may already be proposed or in development
-2. **Consider scope** - Think about whether the feature fits Automaker's mission as an autonomous AI development studio
+2. **Consider scope** - Think about whether the feature fits AboardAI's mission as an autonomous AI development studio
 
 #### Feature Request Template
 
@@ -737,4 +737,4 @@ For license and contribution terms, see the [LICENSE](LICENSE) file in the repos
 
 ---
 
-Thank you for contributing to Automaker!
+Thank you for contributing to AboardAI!

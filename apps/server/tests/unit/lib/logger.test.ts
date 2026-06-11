@@ -6,7 +6,7 @@ import {
   setLogLevel,
   setColorsEnabled,
   setTimestampsEnabled,
-} from '@automaker/utils';
+} from '@aboardai/utils';
 
 describe('logger.ts', () => {
   let consoleSpy: {

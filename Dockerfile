@@ -1,8 +1,8 @@
-# Automaker Multi-Stage Dockerfile
+# AboardAI Multi-Stage Dockerfile
 # Single Dockerfile for both server and UI builds
 # Usage:
-#   docker build --target server -t automaker-server .
-#   docker build --target ui -t automaker-ui .
+#   docker build --target server -t aboardai-server .
+#   docker build --target ui -t aboardai-ui .
 # Or use docker-compose which selects targets automatically
 
 # =============================================================================
@@ -59,7 +59,7 @@ FROM node:22-slim AS server
 
 # Build argument for tracking which commit this image was built from
 ARG GIT_COMMIT_SHA=unknown
-LABEL automaker.git.commit.sha="${GIT_COMMIT_SHA}"
+LABEL aboardai.git.commit.sha="${GIT_COMMIT_SHA}"
 
 # Build arguments for user ID matching (allows matching host user for mounted volumes)
 # Override at build time: docker build --build-arg UID=$(id -u) --build-arg GID=$(id -g) ...
@@ -96,42 +96,42 @@ RUN npm install -g @anthropic-ai/claude-code
 # Create non-root user with home directory BEFORE installing Cursor CLI
 # Uses UID/GID build args to match host user for mounted volume permissions
 # Use -o flag to allow non-unique IDs (GID 1000 may already exist as 'node' group)
-RUN groupadd -o -g ${GID} automaker && \
-    useradd -o -u ${UID} -g automaker -m -d /home/automaker -s /bin/bash automaker && \
-    mkdir -p /home/automaker/.local/bin && \
-    mkdir -p /home/automaker/.cursor && \
-    chown -R automaker:automaker /home/automaker && \
-    chmod 700 /home/automaker/.cursor
+RUN groupadd -o -g ${GID} aboardai && \
+    useradd -o -u ${UID} -g aboardai -m -d /home/aboardai -s /bin/bash aboardai && \
+    mkdir -p /home/aboardai/.local/bin && \
+    mkdir -p /home/aboardai/.cursor && \
+    chown -R aboardai:aboardai /home/aboardai && \
+    chmod 700 /home/aboardai/.cursor
 
-# Install Cursor CLI as the automaker user
-# Set HOME explicitly and install to /home/automaker/.local/bin/
-USER automaker
-ENV HOME=/home/automaker
+# Install Cursor CLI as the aboardai user
+# Set HOME explicitly and install to /home/aboardai/.local/bin/
+USER aboardai
+ENV HOME=/home/aboardai
 RUN curl https://cursor.com/install -fsS | bash && \
     echo "=== Checking Cursor CLI installation ===" && \
-    ls -la /home/automaker/.local/bin/ && \
+    ls -la /home/aboardai/.local/bin/ && \
     echo "=== PATH is: $PATH ===" && \
     (which cursor-agent && cursor-agent --version) || echo "cursor-agent installed (may need auth setup)"
 
 # Install OpenCode CLI (for multi-provider AI model access)
 RUN curl -fsSL https://opencode.ai/install | bash && \
     echo "=== Checking OpenCode CLI installation ===" && \
-    ls -la /home/automaker/.local/bin/ && \
+    ls -la /home/aboardai/.local/bin/ && \
     (which opencode && opencode --version) || echo "opencode installed (may need auth setup)"
 
 USER root
 
 # Add PATH to profile so it's available in all interactive shells (for login shells)
 RUN mkdir -p /etc/profile.d && \
-    echo 'export PATH="/home/automaker/.local/bin:$PATH"' > /etc/profile.d/cursor-cli.sh && \
+    echo 'export PATH="/home/aboardai/.local/bin:$PATH"' > /etc/profile.d/cursor-cli.sh && \
     chmod +x /etc/profile.d/cursor-cli.sh
 
-# Add to automaker's .bashrc for bash interactive shells
-RUN echo 'export PATH="/home/automaker/.local/bin:$PATH"' >> /home/automaker/.bashrc && \
-    chown automaker:automaker /home/automaker/.bashrc
+# Add to aboardai's .bashrc for bash interactive shells
+RUN echo 'export PATH="/home/aboardai/.local/bin:$PATH"' >> /home/aboardai/.bashrc && \
+    chown aboardai:aboardai /home/aboardai/.bashrc
 
 # Also add to root's .bashrc since docker exec defaults to root
-RUN echo 'export PATH="/home/automaker/.local/bin:$PATH"' >> /root/.bashrc
+RUN echo 'export PATH="/home/aboardai/.local/bin:$PATH"' >> /root/.bashrc
 
 WORKDIR /app
 
@@ -151,14 +151,14 @@ COPY --from=server-builder /app/node_modules ./node_modules
 # Install Playwright Chromium browser for AI agent verification tests
 # This adds ~300MB to the image but enables automated testing mode out of the box
 # Using the locally installed playwright ensures we use the pinned version from package-lock.json
-USER automaker
+USER aboardai
 RUN ./node_modules/.bin/playwright install chromium && \
     echo "=== Playwright Chromium installed ===" && \
-    ls -la /home/automaker/.cache/ms-playwright/
+    ls -la /home/aboardai/.cache/ms-playwright/
 USER root
 
 # Create data and projects directories
-RUN mkdir -p /data /projects && chown automaker:automaker /data /projects
+RUN mkdir -p /data /projects && chown aboardai:aboardai /data /projects
 
 # Configure git for mounted volumes and authentication
 # Use --system so it's not overwritten by mounted user .gitconfig
@@ -171,14 +171,14 @@ COPY docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
 RUN chmod +x /usr/local/bin/docker-entrypoint.sh
 
 # Note: We stay as root here so entrypoint can fix permissions
-# The entrypoint script will switch to automaker user before running the command
+# The entrypoint script will switch to aboardai user before running the command
 
 # Environment variables
 ENV PORT=3008
 ENV DATA_DIR=/data
-ENV HOME=/home/automaker
+ENV HOME=/home/aboardai
 # Add user's local bin to PATH for cursor-agent
-ENV PATH="/home/automaker/.local/bin:${PATH}"
+ENV PATH="/home/aboardai/.local/bin:${PATH}"
 
 # Expose port
 EXPOSE 3008
@@ -224,7 +224,7 @@ FROM nginx:alpine AS ui
 
 # Build argument for tracking which commit this image was built from
 ARG GIT_COMMIT_SHA=unknown
-LABEL automaker.git.commit.sha="${GIT_COMMIT_SHA}"
+LABEL aboardai.git.commit.sha="${GIT_COMMIT_SHA}"
 
 # Copy built files
 COPY --from=ui-builder /app/apps/ui/dist /usr/share/nginx/html

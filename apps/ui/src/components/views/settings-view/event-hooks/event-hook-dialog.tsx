@@ -27,8 +27,8 @@ import type {
   EventHookShellAction,
   EventHookHttpAction,
   EventHookNtfyAction,
-} from '@automaker/types';
-import { EVENT_HOOK_TRIGGER_LABELS } from '@automaker/types';
+} from '@aboardai/types';
+import { EVENT_HOOK_TRIGGER_LABELS } from '@aboardai/types';
 import { generateUUID } from '@/lib/utils';
 import { useAppStore } from '@/store/app-store';
 import { toast } from 'sonner';

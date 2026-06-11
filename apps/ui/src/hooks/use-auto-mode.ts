@@ -1,7 +1,7 @@
 import { useEffect, useCallback, useMemo, useRef } from 'react';
 import { useShallow } from 'zustand/react/shallow';
-import { createLogger } from '@automaker/utils/logger';
-import { DEFAULT_MAX_CONCURRENCY } from '@automaker/types';
+import { createLogger } from '@aboardai/utils/logger';
+import { DEFAULT_MAX_CONCURRENCY } from '@aboardai/types';
 import { useAppStore } from '@/store/app-store';
 import { getElectronAPI } from '@/lib/electron';
 import type { AutoModeEvent } from '@/types/electron';
@@ -10,7 +10,7 @@ import { getGlobalEventsRecent } from '@/hooks/use-event-recency';
 
 const logger = createLogger('AutoMode');
 
-const AUTO_MODE_SESSION_KEY = 'automaker:autoModeRunningByWorktreeKey';
+const AUTO_MODE_SESSION_KEY = 'aboardai:autoModeRunningByWorktreeKey';
 // Session key delimiter for parsing stored worktree keys
 const SESSION_KEY_DELIMITER = '::';
 // Marker for main worktree in session storage keys

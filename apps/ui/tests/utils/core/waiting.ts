@@ -57,8 +57,8 @@ export async function waitForSplashScreenToDisappear(page: Page, timeout = 5000)
     // Check if splash screen is disabled or already shown (fastest check)
     const splashDisabled = await page.evaluate(() => {
       return (
-        localStorage.getItem('automaker-disable-splash') === 'true' ||
-        localStorage.getItem('automaker-splash-shown-session') === 'true'
+        localStorage.getItem('aboardai-disable-splash') === 'true' ||
+        localStorage.getItem('aboardai-splash-shown-session') === 'true'
       );
     });
 
@@ -74,8 +74,8 @@ export async function waitForSplashScreenToDisappear(page: Page, timeout = 5000)
       () => {
         // Check if splash is disabled or already shown
         if (
-          localStorage.getItem('automaker-disable-splash') === 'true' ||
-          localStorage.getItem('automaker-splash-shown-session') === 'true'
+          localStorage.getItem('aboardai-disable-splash') === 'true' ||
+          localStorage.getItem('aboardai-splash-shown-session') === 'true'
         ) {
           return true;
         }

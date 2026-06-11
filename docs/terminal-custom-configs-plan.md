@@ -2,7 +2,7 @@
 
 ## Overview
 
-Implement custom shell configuration files (.bashrc, .zshrc) that automatically sync with Automaker's 40 themes, providing a seamless terminal experience where prompt colors match the app theme. This is an **opt-in feature** that creates configs in `.automaker/terminal/` without modifying user's existing RC files.
+Implement custom shell configuration files (.bashrc, .zshrc) that automatically sync with AboardAI's 40 themes, providing a seamless terminal experience where prompt colors match the app theme. This is an **opt-in feature** that creates configs in `.aboardai/terminal/` without modifying user's existing RC files.
 
 ## Architecture
 
@@ -15,7 +15,7 @@ Implement custom shell configuration files (.bashrc, .zshrc) that automatically 
    - Prompt format templates (standard, minimal, powerline, starship-inspired)
 
 2. **RC File Manager** (`libs/platform/src/rc-file-manager.ts`) - NEW
-   - File I/O for `.automaker/terminal/` directory
+   - File I/O for `.aboardai/terminal/` directory
    - Version checking and regeneration logic
    - Path resolution for different shells
 
@@ -39,7 +39,7 @@ Implement custom shell configuration files (.bashrc, .zshrc) that automatically 
 ## File Structure
 
 ```
-.automaker/terminal/
+.aboardai/terminal/
 ├── bashrc.sh          # Bash config (sourced via BASH_ENV)
 ├── zshrc.zsh          # Zsh config (via ZDOTDIR)
 ├── common.sh          # Shared functions (git prompt, etc.)
@@ -75,35 +75,35 @@ export function getThemeANSIColors(terminalTheme: TerminalTheme): ANSIColors;
 **Templates**:
 
 - Source user's original ~/.bashrc or ~/.zshrc first
-- Load theme colors from `themes/${AUTOMAKER_THEME}.sh`
-- Set custom PS1/PROMPT only if `AUTOMAKER_CUSTOM_PROMPT=true`
-- Include git prompt function: `automaker_git_prompt()`
+- Load theme colors from `themes/${ABOARDAI_THEME}.sh`
+- Set custom PS1/PROMPT only if `ABOARDAI_CUSTOM_PROMPT=true`
+- Include git prompt function: `aboardai_git_prompt()`
 
 **Example bashrc.sh template**:
 
 ```bash
 #!/bin/bash
-# Automaker Terminal Configuration v1.0
+# AboardAI Terminal Configuration v1.0
 
 # Source user's original bashrc first
 if [ -f "$HOME/.bashrc" ]; then
     source "$HOME/.bashrc"
 fi
 
-# Load Automaker theme colors
-AUTOMAKER_THEME="${AUTOMAKER_THEME:-dark}"
-if [ -f "${BASH_SOURCE%/*}/themes/$AUTOMAKER_THEME.sh" ]; then
-    source "${BASH_SOURCE%/*}/themes/$AUTOMAKER_THEME.sh"
+# Load AboardAI theme colors
+ABOARDAI_THEME="${ABOARDAI_THEME:-dark}"
+if [ -f "${BASH_SOURCE%/*}/themes/$ABOARDAI_THEME.sh" ]; then
+    source "${BASH_SOURCE%/*}/themes/$ABOARDAI_THEME.sh"
 fi
 
 # Load common functions (git prompt)
 source "${BASH_SOURCE%/*}/common.sh"
 
 # Set custom prompt (only if enabled)
-if [ "$AUTOMAKER_CUSTOM_PROMPT" = "true" ]; then
+if [ "$ABOARDAI_CUSTOM_PROMPT" = "true" ]; then
     PS1="\[$COLOR_USER\]\u@\h\[$COLOR_RESET\] "
     PS1="$PS1\[$COLOR_PATH\]\w\[$COLOR_RESET\]"
-    PS1="$PS1\$(automaker_git_prompt) "
+    PS1="$PS1\$(aboardai_git_prompt) "
     PS1="$PS1\[$COLOR_PROMPT\]\$\[$COLOR_RESET\] "
 fi
 
@@ -144,7 +144,7 @@ export async function needsRegeneration(
 
 **File Operations**:
 
-- Create `.automaker/terminal/` if doesn't exist
+- Create `.aboardai/terminal/` if doesn't exist
 - Write RC files with 0644 permissions
 - Write theme color files (40 themes × 1 file each)
 - Create version.txt with format version (currently "11")
@@ -272,7 +272,7 @@ const DEFAULT_TERMINAL_CONFIG = {
 
 - When `promptTheme` starts with `omp-` and `oh-my-posh` is available, the generated RC files will
   initialize oh-my-posh with the selected theme name.
-- If oh-my-posh is not installed, the prompt falls back to the Automaker-built prompt format.
+- If oh-my-posh is not installed, the prompt falls back to the AboardAI-built prompt format.
 - `POSH_THEMES_PATH` is exported to the standard user themes directory so themes resolve offline.
 
 ### Step 4: Modify Terminal Service
@@ -305,16 +305,16 @@ if (effectiveTerminalConfig?.enabled) {
 
   if (shellName.includes('bash')) {
     env.BASH_ENV = getRcFilePath(options.projectPath || cwd, 'bash');
-    env.AUTOMAKER_CUSTOM_PROMPT = effectiveTerminalConfig.customPrompt ? 'true' : 'false';
-    env.AUTOMAKER_THEME = currentTheme;
+    env.ABOARDAI_CUSTOM_PROMPT = effectiveTerminalConfig.customPrompt ? 'true' : 'false';
+    env.ABOARDAI_THEME = currentTheme;
   } else if (shellName.includes('zsh')) {
-    env.ZDOTDIR = path.join(options.projectPath || cwd, '.automaker', 'terminal');
-    env.AUTOMAKER_CUSTOM_PROMPT = effectiveTerminalConfig.customPrompt ? 'true' : 'false';
-    env.AUTOMAKER_THEME = currentTheme;
+    env.ZDOTDIR = path.join(options.projectPath || cwd, '.aboardai', 'terminal');
+    env.ABOARDAI_CUSTOM_PROMPT = effectiveTerminalConfig.customPrompt ? 'true' : 'false';
+    env.ABOARDAI_THEME = currentTheme;
   } else if (shellName === 'sh') {
     env.ENV = getRcFilePath(options.projectPath || cwd, 'sh');
-    env.AUTOMAKER_CUSTOM_PROMPT = effectiveTerminalConfig.customPrompt ? 'true' : 'false';
-    env.AUTOMAKER_THEME = currentTheme;
+    env.ABOARDAI_CUSTOM_PROMPT = effectiveTerminalConfig.customPrompt ? 'true' : 'false';
+    env.ABOARDAI_THEME = currentTheme;
   }
 }
 ```
@@ -347,7 +347,7 @@ export function TerminalConfigSection() {
       <div>
         <Label>Custom Terminal Configurations</Label>
         <Switch checked={enabled} onCheckedChange={handleToggle} />
-        <p>Creates custom shell configs in .automaker/terminal/</p>
+        <p>Creates custom shell configs in .aboardai/terminal/</p>
       </div>
 
       {enabled && (
@@ -394,7 +394,7 @@ export function TerminalConfigSection() {
 ```
 
 **Preview Component**:
-Shows example prompt like: `[user@host] ~/projects/automaker (main*) $`
+Shows example prompt like: `[user@host] ~/projects/aboardai (main*) $`
 Updates instantly when theme or format changes.
 
 ### Step 6: Theme Change Hook
@@ -421,21 +421,21 @@ if (oldTheme !== newTheme) {
 
 ### Bash (via BASH_ENV)
 
-- Set `BASH_ENV=/path/to/.automaker/terminal/bashrc.sh`
+- Set `BASH_ENV=/path/to/.aboardai/terminal/bashrc.sh`
 - BASH_ENV is loaded for all shells (interactive and non-interactive)
 - User's ~/.bashrc is sourced first within our bashrc.sh
 - No need for `--rcfile` flag (which would skip ~/.bashrc)
 
 ### Zsh (via ZDOTDIR)
 
-- Set `ZDOTDIR=/path/to/.automaker/terminal/`
+- Set `ZDOTDIR=/path/to/.aboardai/terminal/`
 - Create `.zshrc` symlink: `zshrc.zsh`
 - User's ~/.zshrc is sourced within our zshrc.zsh
 - Zsh's canonical configuration directory mechanism
 
 ### Sh (via ENV)
 
-- Set `ENV=/path/to/.automaker/terminal/common.sh`
+- Set `ENV=/path/to/.aboardai/terminal/common.sh`
 - POSIX shell standard environment variable
 - Minimal prompt (POSIX sh doesn't support advanced prompts)
 
@@ -481,14 +481,14 @@ user@host in ~/path on main*
 1. User changes app theme in settings
 2. Settings API detects theme change
 3. Call `terminalService.onThemeChange()` for each project
-4. Regenerate theme color files (`.automaker/terminal/themes/`)
+4. Regenerate theme color files (`.aboardai/terminal/themes/`)
 5. Existing terminals keep old theme (expected behavior)
 6. New terminals use new theme
 
 ### On Disable
 
 1. User toggles off "Enable Custom Terminal Configs"
-2. Delete `.automaker/terminal/` directory
+2. Delete `.aboardai/terminal/` directory
 3. New terminals spawn without custom env vars
 4. Existing terminals continue with current config until restarted
 
@@ -496,20 +496,20 @@ user@host in ~/path on main*
 
 ### Files to Modify
 
-1. `/home/dhanush/Projects/automaker/apps/server/src/services/terminal-service.ts` - Add env var injection logic at line ~335-344
-2. `/home/dhanush/Projects/automaker/libs/types/src/settings.ts` - Add terminalConfig to GlobalSettings (~line 842) and ProjectSettings
-3. `/home/dhanush/Projects/automaker/apps/server/src/routes/settings.ts` - Add theme change hook
+1. `/home/dhanush/Projects/aboardai/apps/server/src/services/terminal-service.ts` - Add env var injection logic at line ~335-344
+2. `/home/dhanush/Projects/aboardai/libs/types/src/settings.ts` - Add terminalConfig to GlobalSettings (~line 842) and ProjectSettings
+3. `/home/dhanush/Projects/aboardai/apps/server/src/routes/settings.ts` - Add theme change hook
 
 ### Files to Create
 
-1. `/home/dhanush/Projects/automaker/libs/platform/src/rc-generator.ts` - RC file generation logic
-2. `/home/dhanush/Projects/automaker/libs/platform/src/rc-file-manager.ts` - File I/O and path resolution
-3. `/home/dhanush/Projects/automaker/apps/ui/src/components/views/settings-view/terminal/terminal-config-section.tsx` - Settings UI
-4. `/home/dhanush/Projects/automaker/apps/ui/src/components/views/settings-view/terminal/prompt-preview.tsx` - Live preview component
+1. `/home/dhanush/Projects/aboardai/libs/platform/src/rc-generator.ts` - RC file generation logic
+2. `/home/dhanush/Projects/aboardai/libs/platform/src/rc-file-manager.ts` - File I/O and path resolution
+3. `/home/dhanush/Projects/aboardai/apps/ui/src/components/views/settings-view/terminal/terminal-config-section.tsx` - Settings UI
+4. `/home/dhanush/Projects/aboardai/apps/ui/src/components/views/settings-view/terminal/prompt-preview.tsx` - Live preview component
 
 ### Files to Read
 
-1. `/home/dhanush/Projects/automaker/apps/ui/src/config/terminal-themes.ts` - Source of theme hex colors for ANSI mapping
+1. `/home/dhanush/Projects/aboardai/apps/ui/src/config/terminal-themes.ts` - Source of theme hex colors for ANSI mapping
 
 ## Testing Approach
 
@@ -556,14 +556,14 @@ user@host in ~/path on main*
 8. Open new terminal
 9. Verify prompt colors changed to match nord theme
 10. Disable custom configs
-11. Verify `.automaker/terminal/` deleted
+11. Verify `.aboardai/terminal/` deleted
 12. Open new terminal
 13. Verify standard prompt without custom config
 
 ### Success Criteria
 
 - ✅ Feature can be enabled/disabled in settings
-- ✅ RC files generated in `.automaker/terminal/`
+- ✅ RC files generated in `.aboardai/terminal/`
 - ✅ Prompt colors match theme (all 40 themes)
 - ✅ Git branch/status shown in prompt
 - ✅ Custom aliases work
@@ -609,7 +609,7 @@ Per PR workflow in DEVELOPMENT_WORKFLOW.md:
 ## Documentation
 
 After implementation, create comprehensive documentation at:
-`/home/dhanush/Projects/automaker/docs/terminal-custom-configs.md`
+`/home/dhanush/Projects/aboardai/docs/terminal-custom-configs.md`
 
 **Documentation should cover**:
 

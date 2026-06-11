@@ -10,8 +10,8 @@
  * Mirrors the pull-service.ts pattern for consistency.
  */
 
-import { createLogger, getErrorMessage } from '@automaker/utils';
-import { execGitCommand } from '@automaker/git-utils';
+import { createLogger, getErrorMessage } from '@aboardai/utils';
+import { execGitCommand } from '@aboardai/git-utils';
 import { getCurrentBranch } from '../lib/git.js';
 import { performPull } from './pull-service.js';
 

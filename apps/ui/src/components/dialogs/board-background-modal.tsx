@@ -1,5 +1,5 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
-import { createLogger } from '@automaker/utils/logger';
+import { createLogger } from '@aboardai/utils/logger';
 import { ImageIcon, Upload, Trash2 } from 'lucide-react';
 import { Spinner } from '@/components/ui/spinner';
 

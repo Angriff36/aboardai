@@ -13,7 +13,7 @@ const DISCONNECTED_MARKER_FILE = '.cursor-disconnected';
 function isCursorDisconnectedFromApp(): boolean {
   try {
     const projectRoot = process.cwd();
-    const markerPath = path.join(projectRoot, '.automaker', DISCONNECTED_MARKER_FILE);
+    const markerPath = path.join(projectRoot, '.aboardai', DISCONNECTED_MARKER_FILE);
     return fs.existsSync(markerPath);
   } catch {
     return false;

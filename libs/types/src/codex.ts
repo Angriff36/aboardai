@@ -35,7 +35,7 @@ export interface CodexEvent {
   [key: string]: unknown;
 }
 
-/** Codex CLI configuration (stored in .automaker/codex-config.json) */
+/** Codex CLI configuration (stored in .aboardai/codex-config.json) */
 export interface CodexCliConfig {
   /** Default model to use when not specified */
   defaultModel?: string;

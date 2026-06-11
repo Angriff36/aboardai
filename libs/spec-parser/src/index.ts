@@ -1,15 +1,15 @@
 /**
- * @automaker/spec-parser
+ * @aboardai/spec-parser
  *
- * XML spec parser for AutoMaker - parses and generates app_spec.txt XML.
+ * XML spec parser for AboardAI - parses and generates app_spec.txt XML.
  * This package provides utilities for:
  * - Parsing XML spec content into SpecOutput objects
  * - Converting SpecOutput objects back to XML
  * - Validating spec data
  */
 
-// Re-export types from @automaker/types for convenience
-export type { SpecOutput } from '@automaker/types';
+// Re-export types from @aboardai/types for convenience
+export type { SpecOutput } from '@aboardai/types';
 
 // XML utilities
 export { escapeXml, unescapeXml, extractXmlSection, extractXmlElements } from './xml-utils.js';

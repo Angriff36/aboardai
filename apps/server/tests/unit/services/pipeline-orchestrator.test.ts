@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import type { Feature, PipelineStep, PipelineConfig } from '@automaker/types';
+import type { Feature, PipelineStep, PipelineConfig } from '@aboardai/types';
 import {
   PipelineOrchestrator,
   type PipelineContext,
@@ -18,7 +18,7 @@ import type { ConcurrencyManager } from '../../../src/services/concurrency-manag
 import type { TestRunnerService } from '../../../src/services/test-runner-service.js';
 import { pipelineService } from '../../../src/services/pipeline-service.js';
 import * as secureFs from '../../../src/lib/secure-fs.js';
-import { getFeatureDir } from '@automaker/platform';
+import { getFeatureDir } from '@aboardai/platform';
 import {
   getPromptCustomization,
   getAutoLoadClaudeMdSetting,
@@ -67,16 +67,16 @@ vi.mock('../../../src/lib/sdk-options.js', () => ({
 }));
 
 // Mock platform
-vi.mock('@automaker/platform', () => ({
+vi.mock('@aboardai/platform', () => ({
   getFeatureDir: vi
     .fn()
     .mockImplementation(
-      (projectPath: string, featureId: string) => `${projectPath}/.automaker/features/${featureId}`
+      (projectPath: string, featureId: string) => `${projectPath}/.aboardai/features/${featureId}`
     ),
 }));
 
 // Mock model-resolver
-vi.mock('@automaker/model-resolver', () => ({
+vi.mock('@aboardai/model-resolver', () => ({
   resolveModelString: vi.fn().mockReturnValue('claude-sonnet-4'),
   DEFAULT_MODELS: { claude: 'claude-sonnet-4' },
 }));
@@ -197,7 +197,7 @@ describe('PipelineOrchestrator', () => {
 
     // Re-setup platform mocks (clearAllMocks resets implementations)
     vi.mocked(getFeatureDir).mockImplementation(
-      (projectPath: string, featureId: string) => `${projectPath}/.automaker/features/${featureId}`
+      (projectPath: string, featureId: string) => `${projectPath}/.aboardai/features/${featureId}`
     );
 
     // Re-setup settings helpers mocks

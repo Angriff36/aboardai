@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { AutoModeServiceFacade } from '@/services/auto-mode/facade.js';
-import type { Feature } from '@automaker/types';
+import type { Feature } from '@aboardai/types';
 
 describe('AutoModeServiceFacade', () => {
   describe('isFeatureEligibleForAutoMode', () => {

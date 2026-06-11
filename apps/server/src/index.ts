@@ -1,5 +1,5 @@
 /**
- * Automaker Backend Server
+ * AboardAI Backend Server
  *
  * Provides HTTP/WebSocket API for both web and Electron modes.
  * In Electron mode, this server runs locally.
@@ -16,8 +16,8 @@ import { createServer } from 'http';
 import dotenv from 'dotenv';
 
 import { createEventEmitter, type EventEmitter } from './lib/events.js';
-import { initAllowedPaths, getClaudeAuthIndicators } from '@automaker/platform';
-import { createLogger, setLogLevel, LogLevel } from '@automaker/utils';
+import { initAllowedPaths, getClaudeAuthIndicators } from '@aboardai/platform';
+import { createLogger, setLogLevel, LogLevel } from '@aboardai/utils';
 
 const logger = createLogger('Server');
 
@@ -373,8 +373,8 @@ eventHookService.initialize(events, settingsService, eventHistoryService, featur
 // Initialize services
 (async () => {
   // Migrate settings from legacy Electron userData location if needed
-  // This handles users upgrading from versions that stored settings in ~/.config/Automaker (Linux),
-  // ~/Library/Application Support/Automaker (macOS), or %APPDATA%\Automaker (Windows)
+  // This handles users upgrading from versions that stored settings in ~/.config/AboardAI (Linux),
+  // ~/Library/Application Support/AboardAI (macOS), or %APPDATA%\AboardAI (Windows)
   // to the new shared ./data directory
   try {
     const migrationResult = await settingsService.migrateFromLegacyElectronPath();
@@ -853,7 +853,7 @@ const startServer = (port: number, host: string) => {
     const wsTerminalUrl = `ws://${HOSTNAME}:${port}/api/terminal/ws`;
     const healthUrl = `http://${HOSTNAME}:${port}/api/health`;
 
-    const sHeader = '🚀 Automaker Backend Server'.padEnd(BOX_CONTENT_WIDTH);
+    const sHeader = '🚀 AboardAI Backend Server'.padEnd(BOX_CONTENT_WIDTH);
     const s1 = `Listening:    ${listenAddr}`.padEnd(BOX_CONTENT_WIDTH);
     const s2 = `HTTP API:     ${httpUrl}`.padEnd(BOX_CONTENT_WIDTH);
     const s3 = `WebSocket:    ${wsEventsUrl}`.padEnd(BOX_CONTENT_WIDTH);

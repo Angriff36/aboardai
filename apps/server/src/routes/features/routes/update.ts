@@ -4,10 +4,10 @@
 
 import type { Request, Response } from 'express';
 import { FeatureLoader } from '../../../services/feature-loader.js';
-import type { Feature, FeatureStatus } from '@automaker/types';
+import type { Feature, FeatureStatus } from '@aboardai/types';
 import type { EventEmitter } from '../../../lib/events.js';
 import { getErrorMessage, logError } from '../common.js';
-import { createLogger } from '@automaker/utils';
+import { createLogger } from '@aboardai/utils';
 
 const logger = createLogger('features/update');
 

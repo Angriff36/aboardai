@@ -2,7 +2,7 @@
  * Common utilities for running-agents routes
  */
 
-import { createLogger } from '@automaker/utils';
+import { createLogger } from '@aboardai/utils';
 import { getErrorMessage as getErrorMessageShared, createLogError } from '../common.js';
 
 const logger = createLogger('RunningAgents');

@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from 'react';
-import { createLogger } from '@automaker/utils/logger';
+import { createLogger } from '@aboardai/utils/logger';
 import { useAppStore } from '@/store/app-store';
 import { getElectronAPI } from '@/lib/electron';
 import { Card, CardContent } from '@/components/ui/card';

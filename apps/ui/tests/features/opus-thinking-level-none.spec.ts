@@ -32,18 +32,18 @@ test.describe('Opus thinking level', () => {
       JSON.stringify({ name: projectName, version: '1.0.0' }, null, 2)
     );
 
-    const automakerDir = path.join(projectPath, '.automaker');
-    fs.mkdirSync(automakerDir, { recursive: true });
-    fs.mkdirSync(path.join(automakerDir, 'features'), { recursive: true });
-    fs.mkdirSync(path.join(automakerDir, 'context'), { recursive: true });
+    const aboardaiDir = path.join(projectPath, '.aboardai');
+    fs.mkdirSync(aboardaiDir, { recursive: true });
+    fs.mkdirSync(path.join(aboardaiDir, 'features'), { recursive: true });
+    fs.mkdirSync(path.join(aboardaiDir, 'context'), { recursive: true });
 
     fs.writeFileSync(
-      path.join(automakerDir, 'categories.json'),
+      path.join(aboardaiDir, 'categories.json'),
       JSON.stringify({ categories: [] }, null, 2)
     );
 
     fs.writeFileSync(
-      path.join(automakerDir, 'app_spec.txt'),
+      path.join(aboardaiDir, 'app_spec.txt'),
       `# ${projectName}\n\nA test project for Opus thinking level e2e coverage.`
     );
   });
@@ -113,7 +113,7 @@ test.describe('Opus thinking level', () => {
       expect(await featureCard.count()).toBeGreaterThan(0);
     }).toPass({ timeout: 10000 });
 
-    const featuresDir = path.join(projectPath, '.automaker', 'features');
+    const featuresDir = path.join(projectPath, '.aboardai', 'features');
     await expect.poll(() => fs.readdirSync(featuresDir).length, { timeout: 10000 }).toBe(1);
 
     const featureDir = fs.readdirSync(featuresDir)[0];

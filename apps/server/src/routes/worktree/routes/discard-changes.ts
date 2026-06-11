@@ -19,7 +19,7 @@
 import type { Request, Response } from 'express';
 import * as path from 'path';
 import * as fs from 'fs';
-import { getErrorMessage, logError } from '@automaker/utils';
+import { getErrorMessage, logError } from '@aboardai/utils';
 import { execGitCommand } from '../../../lib/git.js';
 
 /**

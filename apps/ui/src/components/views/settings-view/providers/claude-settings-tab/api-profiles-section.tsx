@@ -46,8 +46,8 @@ import type {
   ApiKeySource,
   ProviderModel,
   ClaudeModelAlias,
-} from '@automaker/types';
-import { CLAUDE_PROVIDER_TEMPLATES } from '@automaker/types';
+} from '@aboardai/types';
+import { CLAUDE_PROVIDER_TEMPLATES } from '@aboardai/types';
 import { Badge } from '@/components/ui/badge';
 
 // Generate unique ID for providers

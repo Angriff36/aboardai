@@ -13,7 +13,7 @@ import { ArrowDown, ArrowUp, Link2, X } from 'lucide-react';
 import type { Feature } from '@/store/app-store';
 import { cn } from '@/lib/utils';
 import { StatusBadge } from '../components';
-import type { FeatureStatusWithPipeline } from '@automaker/types';
+import type { FeatureStatusWithPipeline } from '@aboardai/types';
 
 export type DependencyLinkType = 'parent' | 'child';
 

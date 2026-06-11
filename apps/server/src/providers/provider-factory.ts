@@ -14,7 +14,7 @@ import {
   isGeminiModel,
   isCopilotModel,
   type ModelProvider,
-} from '@automaker/types';
+} from '@aboardai/types';
 import * as fs from 'fs';
 import * as path from 'path';
 
@@ -34,7 +34,7 @@ export function isProviderDisconnected(providerName: string): boolean {
   const markerFile = DISCONNECTED_MARKERS[providerName.toLowerCase()];
   if (!markerFile) return false;
 
-  const markerPath = path.join(process.cwd(), '.automaker', markerFile);
+  const markerPath = path.join(process.cwd(), '.aboardai', markerFile);
   return fs.existsSync(markerPath);
 }
 
@@ -67,7 +67,7 @@ export function registerProvider(name: string, registration: ProviderRegistratio
   providerRegistry.set(name.toLowerCase(), registration);
 }
 
-/** Cached mock provider instance when AUTOMAKER_MOCK_AGENT is set (E2E/CI). */
+/** Cached mock provider instance when ABOARDAI_MOCK_AGENT is set (E2E/CI). */
 let mockProviderInstance: BaseProvider | null = null;
 
 function getMockProvider(): BaseProvider {
@@ -85,7 +85,7 @@ export class ProviderFactory {
    * @returns Provider name (ModelProvider type)
    */
   static getProviderNameForModel(model: string): ModelProvider {
-    if (process.env.AUTOMAKER_MOCK_AGENT === 'true') {
+    if (process.env.ABOARDAI_MOCK_AGENT === 'true') {
       return 'claude' as ModelProvider; // Name only; getProviderForModel returns MockProvider
     }
     const lowerModel = model.toLowerCase();
@@ -126,7 +126,7 @@ export class ProviderFactory {
     modelId: string,
     options: { throwOnDisconnected?: boolean } = {}
   ): BaseProvider {
-    if (process.env.AUTOMAKER_MOCK_AGENT === 'true') {
+    if (process.env.ABOARDAI_MOCK_AGENT === 'true') {
       return getMockProvider();
     }
     const { throwOnDisconnected = true } = options;
@@ -158,7 +158,7 @@ export class ProviderFactory {
    * Get the provider name for a given model ID (without creating provider instance)
    */
   static getProviderForModelName(modelId: string): string {
-    if (process.env.AUTOMAKER_MOCK_AGENT === 'true') {
+    if (process.env.ABOARDAI_MOCK_AGENT === 'true') {
       return 'claude';
     }
     const lowerModel = modelId.toLowerCase();

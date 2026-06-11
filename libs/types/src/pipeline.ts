@@ -1,5 +1,5 @@
 /**
- * Pipeline types for AutoMaker custom workflow steps
+ * Pipeline types for AboardAI custom workflow steps
  */
 
 export interface PipelineStep {

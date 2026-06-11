@@ -5,12 +5,12 @@ import { useAppStore } from '@/store/app-store';
 import { Button } from '@/components/ui/button';
 import { PhaseModelSelector } from './phase-model-selector';
 import { BulkReplaceDialog } from './bulk-replace-dialog';
-import type { PhaseModelKey, PhaseModelEntry, ThinkingLevel } from '@automaker/types';
+import type { PhaseModelKey, PhaseModelEntry, ThinkingLevel } from '@aboardai/types';
 import {
   DEFAULT_PHASE_MODELS,
   DEFAULT_GLOBAL_SETTINGS,
   REASONING_EFFORT_LEVELS,
-} from '@automaker/types';
+} from '@aboardai/types';
 
 interface PhaseConfig {
   key: PhaseModelKey;

@@ -21,7 +21,7 @@ vi.mock('@/lib/secure-fs.js', () => ({
   mkdir: mockMkdir,
 }));
 
-vi.mock('@automaker/utils', () => ({
+vi.mock('@aboardai/utils', () => ({
   createLogger: vi.fn().mockReturnValue({
     info: vi.fn(),
     warn: vi.fn(),
@@ -32,8 +32,8 @@ vi.mock('@automaker/utils', () => ({
   DEFAULT_BACKUP_COUNT: 3,
 }));
 
-vi.mock('@automaker/platform', () => ({
-  getFeaturesDir: vi.fn((projectPath: string) => path.join(projectPath, '.automaker', 'features')),
+vi.mock('@aboardai/platform', () => ({
+  getFeaturesDir: vi.fn((projectPath: string) => path.join(projectPath, '.aboardai', 'features')),
 }));
 
 vi.mock('@/lib/json-extractor.js', () => ({

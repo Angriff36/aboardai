@@ -1,4 +1,4 @@
-import { createLogger } from '@automaker/utils/logger';
+import { createLogger } from '@aboardai/utils/logger';
 import { useSetupStore } from '@/store/setup-store';
 import { StepIndicator } from './setup-view/components';
 import {
@@ -96,8 +96,8 @@ export function SetupView() {
       <div className="shrink-0 border-b border-border bg-glass backdrop-blur-md titlebar-drag-region">
         <div className="px-8 py-4">
           <div className="flex items-center gap-3 titlebar-no-drag">
-            <img src="/logo.png" alt="Automaker" className="w-8 h-8" />
-            <span className="text-lg font-semibold text-foreground">Automaker Setup</span>
+            <img src="/logo.png" alt="AboardAI" className="w-8 h-8" />
+            <span className="text-lg font-semibold text-foreground">AboardAI Setup</span>
           </div>
         </div>
       </div>

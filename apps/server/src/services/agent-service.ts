@@ -6,8 +6,8 @@
 import path from 'path';
 import * as secureFs from '../lib/secure-fs.js';
 import type { EventEmitter } from '../lib/events.js';
-import type { ExecuteOptions, ThinkingLevel, ReasoningEffort } from '@automaker/types';
-import { stripProviderPrefix } from '@automaker/types';
+import type { ExecuteOptions, ThinkingLevel, ReasoningEffort } from '@aboardai/types';
+import { stripProviderPrefix } from '@aboardai/types';
 import {
   readImageAsBase64,
   buildPromptWithImages,
@@ -15,7 +15,7 @@ import {
   loadContextFiles,
   createLogger,
   classifyError,
-} from '@automaker/utils';
+} from '@aboardai/utils';
 import { ProviderFactory } from '../providers/provider-factory.js';
 import { createChatOptions, validateWorkingDirectory } from '../lib/sdk-options.js';
 import type { SettingsService } from './settings-service.js';
@@ -398,7 +398,7 @@ export class AgentService {
 
       // Try to find a provider for the model (if it's a provider model like "GLM-4.7")
       // This allows users to select provider models in the Agent Runner UI
-      let claudeCompatibleProvider: import('@automaker/types').ClaudeCompatibleProvider | undefined;
+      let claudeCompatibleProvider: import('@aboardai/types').ClaudeCompatibleProvider | undefined;
       let providerResolvedModel: string | undefined;
       const requestedModel = model || session.model;
       if (requestedModel && this.settingsService) {

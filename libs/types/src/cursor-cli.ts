@@ -2,7 +2,7 @@ import type { CursorModelId } from './cursor-models.js';
 
 /**
  * Cursor CLI configuration file schema
- * Stored in: .automaker/cursor-config.json
+ * Stored in: .aboardai/cursor-config.json
  */
 export interface CursorCliConfig {
   defaultModel?: CursorModelId;

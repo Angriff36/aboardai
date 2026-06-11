@@ -10,7 +10,7 @@ import {
   formatBacklogPlanEventContent,
 } from '../../../src/components/views/board-view/dialogs/event-content-formatter';
 import type { AutoModeEvent } from '@/types/electron';
-import type { BacklogPlanEvent } from '@automaker/types';
+import type { BacklogPlanEvent } from '@aboardai/types';
 
 describe('formatAutoModeEventContent', () => {
   describe('auto_mode_progress', () => {

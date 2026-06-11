@@ -5,7 +5,7 @@
  * Used by both route handlers and service layers.
  */
 
-import { createLogger } from '@automaker/utils';
+import { createLogger } from '@aboardai/utils';
 
 const logger = createLogger('ExecUtils');
 

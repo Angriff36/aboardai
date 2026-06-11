@@ -6,7 +6,7 @@
  */
 
 import { useCallback, useMemo } from 'react';
-import type { IdeationPrompt, PromptCategory, IdeaCategory } from '@automaker/types';
+import type { IdeationPrompt, PromptCategory, IdeaCategory } from '@aboardai/types';
 import { useIdeationPrompts } from '@/hooks/queries';
 
 interface UseGuidedPromptsReturn {

@@ -7,8 +7,8 @@
  * @see https://docs.ntfy.sh/publish/
  */
 
-import { createLogger } from '@automaker/utils';
-import type { NtfyEndpointConfig, EventHookContext } from '@automaker/types';
+import { createLogger } from '@aboardai/utils';
+import type { NtfyEndpointConfig, EventHookContext } from '@aboardai/types';
 
 const logger = createLogger('Ntfy');
 

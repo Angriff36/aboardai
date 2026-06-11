@@ -5,8 +5,8 @@ import type { FeatureStateManager } from '../../../src/services/feature-state-ma
 import type { PlanApprovalService } from '../../../src/services/plan-approval-service.js';
 import type { BaseProvider } from '../../../src/providers/base-provider.js';
 import * as secureFs from '../../../src/lib/secure-fs.js';
-import { getFeatureDir } from '@automaker/platform';
-import { buildPromptWithImages } from '@automaker/utils';
+import { getFeatureDir } from '@aboardai/platform';
+import { buildPromptWithImages } from '@aboardai/utils';
 
 vi.mock('../../../src/lib/secure-fs.js', () => ({
   mkdir: vi.fn().mockResolvedValue(undefined),
@@ -15,12 +15,12 @@ vi.mock('../../../src/lib/secure-fs.js', () => ({
   readFile: vi.fn().mockResolvedValue(''),
 }));
 
-vi.mock('@automaker/platform', () => ({
+vi.mock('@aboardai/platform', () => ({
   getFeatureDir: vi.fn(),
 }));
 
-vi.mock('@automaker/utils', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('@automaker/utils')>();
+vi.mock('@aboardai/utils', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@aboardai/utils')>();
   return {
     ...actual,
     buildPromptWithImages: vi.fn(),

@@ -22,7 +22,7 @@ import {
   type CursorModelId,
   type CursorPermissionProfile,
   type CursorCliPermissions,
-} from '@automaker/types';
+} from '@aboardai/types';
 import {
   readGlobalConfig,
   readProjectConfig,

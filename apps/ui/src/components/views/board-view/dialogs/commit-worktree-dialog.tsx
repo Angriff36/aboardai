@@ -37,7 +37,7 @@ import { getElectronAPI } from '@/lib/electron';
 import { getHttpApiClient } from '@/lib/http-api-client';
 import { toast } from 'sonner';
 import { useAppStore } from '@/store/app-store';
-import { resolveModelString } from '@automaker/model-resolver';
+import { resolveModelString } from '@aboardai/model-resolver';
 import { cn } from '@/lib/utils';
 import { TruncatedFilePath } from '@/components/ui/truncated-file-path';
 import { ModelOverrideTrigger, useModelOverride } from '@/components/shared';

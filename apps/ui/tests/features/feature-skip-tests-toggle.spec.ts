@@ -42,18 +42,18 @@ test.describe('Feature Skip Tests Badge', () => {
       JSON.stringify({ name: projectName, version: '1.0.0' }, null, 2)
     );
 
-    const automakerDir = path.join(projectPath, '.automaker');
-    fs.mkdirSync(automakerDir, { recursive: true });
-    fs.mkdirSync(path.join(automakerDir, 'features'), { recursive: true });
-    fs.mkdirSync(path.join(automakerDir, 'context'), { recursive: true });
+    const aboardaiDir = path.join(projectPath, '.aboardai');
+    fs.mkdirSync(aboardaiDir, { recursive: true });
+    fs.mkdirSync(path.join(aboardaiDir, 'features'), { recursive: true });
+    fs.mkdirSync(path.join(aboardaiDir, 'context'), { recursive: true });
 
     fs.writeFileSync(
-      path.join(automakerDir, 'categories.json'),
+      path.join(aboardaiDir, 'categories.json'),
       JSON.stringify({ categories: [] }, null, 2)
     );
 
     fs.writeFileSync(
-      path.join(automakerDir, 'app_spec.txt'),
+      path.join(aboardaiDir, 'app_spec.txt'),
       `# ${projectName}\n\nA test project for e2e testing.`
     );
   });

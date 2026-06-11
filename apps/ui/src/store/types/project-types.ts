@@ -6,7 +6,7 @@ import type {
   ReasoningEffort,
   FeatureStatusWithPipeline,
   PlanSpec,
-} from '@automaker/types';
+} from '@aboardai/types';
 import type { FeatureImage } from './chat-types';
 
 // Available models for feature execution

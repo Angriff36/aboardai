@@ -3,7 +3,7 @@
  */
 
 import type { Request, Response } from 'express';
-import type { ThinkingLevel } from '@automaker/types';
+import type { ThinkingLevel } from '@aboardai/types';
 import { AgentService } from '../../../services/agent-service.js';
 import { getErrorMessage, logError } from '../common.js';
 

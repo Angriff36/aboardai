@@ -7,7 +7,7 @@
  * - Auto-reject on timeout (safety feature, not auto-approve)
  */
 
-import { createLogger } from '@automaker/utils';
+import { createLogger } from '@aboardai/utils';
 import type { TypedEventBus } from './typed-event-bus.js';
 import type { FeatureStateManager } from './feature-state-manager.js';
 import type { SettingsService } from './settings-service.js';

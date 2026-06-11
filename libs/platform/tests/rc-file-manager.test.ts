@@ -5,7 +5,7 @@ import os from 'os';
 import { needsRegeneration, writeRcFiles } from '../src/rc-file-manager';
 import { terminalThemeColors } from '../src/terminal-theme-colors';
 import type { TerminalConfig } from '../src/rc-generator';
-import type { ThemeMode } from '@automaker/types';
+import type { ThemeMode } from '@aboardai/types';
 
 describe('rc-file-manager.ts', () => {
   let tempDir: string;

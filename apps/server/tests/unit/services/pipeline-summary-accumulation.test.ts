@@ -10,11 +10,11 @@
 
 import { describe, it, expect, beforeEach, vi, type Mock } from 'vitest';
 import { FeatureStateManager } from '@/services/feature-state-manager.js';
-import type { Feature } from '@automaker/types';
+import type { Feature } from '@aboardai/types';
 import type { EventEmitter } from '@/lib/events.js';
 import type { FeatureLoader } from '@/services/feature-loader.js';
-import { atomicWriteJson, readJsonWithRecovery } from '@automaker/utils';
-import { getFeatureDir } from '@automaker/platform';
+import { atomicWriteJson, readJsonWithRecovery } from '@aboardai/utils';
+import { getFeatureDir } from '@aboardai/platform';
 import { pipelineService } from '@/services/pipeline-service.js';
 
 // Mock dependencies
@@ -23,8 +23,8 @@ vi.mock('@/lib/secure-fs.js', () => ({
   readdir: vi.fn(),
 }));
 
-vi.mock('@automaker/utils', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('@automaker/utils')>();
+vi.mock('@aboardai/utils', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@aboardai/utils')>();
   return {
     ...actual,
     atomicWriteJson: vi.fn(),
@@ -33,7 +33,7 @@ vi.mock('@automaker/utils', async (importOriginal) => {
   };
 });
 
-vi.mock('@automaker/platform', () => ({
+vi.mock('@aboardai/platform', () => ({
   getFeatureDir: vi.fn(),
   getFeaturesDir: vi.fn(),
 }));
@@ -82,7 +82,7 @@ describe('Pipeline Summary Accumulation (Integration)', () => {
 
     manager = new FeatureStateManager(mockEvents, mockFeatureLoader);
 
-    (getFeatureDir as Mock).mockReturnValue('/project/.automaker/features/pipeline-feature-1');
+    (getFeatureDir as Mock).mockReturnValue('/project/.aboardai/features/pipeline-feature-1');
   });
 
   describe('multi-step pipeline summary accumulation', () => {
@@ -108,7 +108,7 @@ describe('Pipeline Summary Accumulation (Integration)', () => {
 
       // --- Step 2: Code Review ---
       vi.clearAllMocks();
-      (getFeatureDir as Mock).mockReturnValue('/project/.automaker/features/pipeline-feature-1');
+      (getFeatureDir as Mock).mockReturnValue('/project/.aboardai/features/pipeline-feature-1');
       (pipelineService.getStep as Mock).mockResolvedValue({ name: 'Code Review', id: 'step2' });
       (readJsonWithRecovery as Mock).mockResolvedValue({
         data: { ...baseFeature, status: 'pipeline_step2', summary: step1Feature.summary },
@@ -126,7 +126,7 @@ describe('Pipeline Summary Accumulation (Integration)', () => {
 
       // --- Step 3: Testing ---
       vi.clearAllMocks();
-      (getFeatureDir as Mock).mockReturnValue('/project/.automaker/features/pipeline-feature-1');
+      (getFeatureDir as Mock).mockReturnValue('/project/.aboardai/features/pipeline-feature-1');
       (pipelineService.getStep as Mock).mockResolvedValue({ name: 'Testing', id: 'step3' });
       (readJsonWithRecovery as Mock).mockResolvedValue({
         data: { ...baseFeature, status: 'pipeline_step3', summary: step2Feature.summary },
@@ -191,7 +191,7 @@ describe('Pipeline Summary Accumulation (Integration)', () => {
 
       // Step 2 (with accumulated summary from step 1)
       vi.clearAllMocks();
-      (getFeatureDir as Mock).mockReturnValue('/project/.automaker/features/pipeline-feature-1');
+      (getFeatureDir as Mock).mockReturnValue('/project/.aboardai/features/pipeline-feature-1');
       (pipelineService.getStep as Mock).mockResolvedValue({ name: 'Testing', id: 'step2' });
       (readJsonWithRecovery as Mock).mockResolvedValue({
         data: {
@@ -314,7 +314,7 @@ describe('Pipeline Summary Accumulation (Integration)', () => {
 
       for (const step of stepConfigs) {
         vi.clearAllMocks();
-        (getFeatureDir as Mock).mockReturnValue('/project/.automaker/features/pipeline-feature-1');
+        (getFeatureDir as Mock).mockReturnValue('/project/.aboardai/features/pipeline-feature-1');
         (pipelineService.getStep as Mock).mockResolvedValue({
           name: step.name,
           id: step.status.replace('pipeline_', ''),
@@ -365,7 +365,7 @@ describe('Pipeline Summary Accumulation (Integration)', () => {
 
       // Step 2
       vi.clearAllMocks();
-      (getFeatureDir as Mock).mockReturnValue('/project/.automaker/features/pipeline-feature-1');
+      (getFeatureDir as Mock).mockReturnValue('/project/.aboardai/features/pipeline-feature-1');
       (pipelineService.getStep as Mock).mockResolvedValue({ name: 'Testing', id: 'step2' });
       (readJsonWithRecovery as Mock).mockResolvedValue({
         data: { ...baseFeature, status: 'pipeline_step2', summary: step1Summary },
@@ -416,7 +416,7 @@ describe('Pipeline Summary Accumulation (Integration)', () => {
 
       // Step 2
       vi.clearAllMocks();
-      (getFeatureDir as Mock).mockReturnValue('/project/.automaker/features/pipeline-feature-1');
+      (getFeatureDir as Mock).mockReturnValue('/project/.aboardai/features/pipeline-feature-1');
       (pipelineService.getStep as Mock).mockResolvedValue({ name: 'Beta', id: 'step2' });
       (readJsonWithRecovery as Mock).mockResolvedValue({
         data: { ...baseFeature, status: 'pipeline_step2', summary: step1Summary },

@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import type { GeminiAuthStatus } from '@automaker/types';
+import type { GeminiAuthStatus } from '@aboardai/types';
 // Note: persist middleware removed - settings now sync via API (use-settings-sync.ts)
 
 // CLI Installation Status
@@ -128,7 +128,7 @@ export interface ZaiAuthStatus {
   error?: string;
 }
 
-// GeminiAuthStatus is imported from @automaker/types (method: 'google_login' | 'api_key' | 'vertex_ai' | 'none')
+// GeminiAuthStatus is imported from @aboardai/types (method: 'google_login' | 'api_key' | 'vertex_ai' | 'none')
 export type { GeminiAuthStatus };
 
 // Claude Auth Method - all possible authentication sources
@@ -286,7 +286,7 @@ const shouldSkipSetup = import.meta.env.VITE_SKIP_SETUP === 'true';
 function getInitialSetupComplete(): boolean {
   if (shouldSkipSetup) return true;
   try {
-    const raw = localStorage.getItem('automaker-settings-cache');
+    const raw = localStorage.getItem('aboardai-settings-cache');
     if (raw) {
       const parsed = JSON.parse(raw) as { setupComplete?: boolean };
       if (parsed?.setupComplete === true) return true;

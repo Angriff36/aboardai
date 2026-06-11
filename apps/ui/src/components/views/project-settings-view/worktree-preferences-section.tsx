@@ -695,7 +695,7 @@ export function WorktreePreferencesSection({ project }: WorktreePreferencesSecti
           {/* File path indicator */}
           <div className="flex items-center gap-2 text-xs text-muted-foreground/60">
             <FileCode className="w-3.5 h-3.5" />
-            <code className="font-mono">.automaker/worktree-init.sh</code>
+            <code className="font-mono">.aboardai/worktree-init.sh</code>
             {hasChanges && <span className="text-amber-500 font-medium">(unsaved changes)</span>}
           </div>
 

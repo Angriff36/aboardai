@@ -1,4 +1,4 @@
-# Automaker Docker Compose - Server Only (Development Mode)
+# AboardAI Docker Compose - Server Only (Development Mode)
 # Runs only the backend API in a container for use with local Electron.
 #
 # Usage:
@@ -22,7 +22,7 @@ services:
         # Override with: UID=$(id -u) GID=$(id -g) docker-compose build
         UID: ${UID:-1001}
         GID: ${GID:-1001}
-    container_name: automaker-dev-server-only
+    container_name: aboardai-dev-server-only
     restart: unless-stopped
     ports:
       - '3008:3008'
@@ -37,7 +37,7 @@ services:
       - CURSOR_AUTH_TOKEN=${CURSOR_AUTH_TOKEN:-}
 
       # Optional - authentication
-      - AUTOMAKER_API_KEY=${AUTOMAKER_API_KEY:-}
+      - ABOARDAI_API_KEY=${ABOARDAI_API_KEY:-}
 
       # Development settings
       - NODE_ENV=development
@@ -57,7 +57,7 @@ services:
 
       # Use named volume for node_modules to avoid platform conflicts
       # This ensures native modules are built for the container's architecture
-      - automaker-dev-node-modules:/app/node_modules
+      - aboardai-dev-node-modules:/app/node_modules
 
       # IMPORTANT: Mount local ./data directory (not a Docker volume)
       # This ensures Electron and web mode share the same data directory
@@ -65,8 +65,8 @@ services:
       - ./data:/data
 
       # Persist CLI configurations
-      - automaker-claude-config:/home/automaker/.claude
-      - automaker-cursor-config:/home/automaker/.cursor
+      - aboardai-claude-config:/home/aboardai/.claude
+      - aboardai-cursor-config:/home/aboardai/.cursor
 
       # Note: Workspace mount (/projects) comes from docker-compose.override.yml
 
@@ -83,10 +83,10 @@ services:
         echo 'Building shared packages...' &&
         npm run build:packages &&
 
-        # Fix permissions and start server as automaker user
-        chown -R automaker:automaker /app/node_modules &&
+        # Fix permissions and start server as aboardai user
+        chown -R aboardai:aboardai /app/node_modules &&
         echo 'Starting server in development mode...' &&
-        exec gosu automaker npm run _dev:server
+        exec gosu aboardai npm run _dev:server
     healthcheck:
       test: ['CMD', 'curl', '-f', 'http://localhost:3008/api/health']
       interval: 10s
@@ -95,12 +95,12 @@ services:
       start_period: 60s
 
 volumes:
-  automaker-dev-node-modules:
-    name: automaker-dev-node-modules
+  aboardai-dev-node-modules:
+    name: aboardai-dev-node-modules
     # Named volume for container-specific node_modules
 
-  automaker-claude-config:
-    name: automaker-claude-config
+  aboardai-claude-config:
+    name: aboardai-claude-config
 
-  automaker-cursor-config:
-    name: automaker-cursor-config
+  aboardai-cursor-config:
+    name: aboardai-cursor-config

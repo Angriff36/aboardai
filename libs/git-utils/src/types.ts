@@ -2,8 +2,8 @@
  * Git utilities types and constants
  */
 
-// Re-export MergeStateInfo from the centralized @automaker/types package
-export type { MergeStateInfo } from '@automaker/types';
+// Re-export MergeStateInfo from the centralized @aboardai/types package
+export type { MergeStateInfo } from '@aboardai/types';
 
 // Binary file extensions to skip
 export const BINARY_EXTENSIONS = new Set([

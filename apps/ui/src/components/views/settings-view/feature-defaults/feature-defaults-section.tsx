@@ -24,7 +24,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import type { PhaseModelEntry } from '@automaker/types';
+import type { PhaseModelEntry } from '@aboardai/types';
 import { PhaseModelSelector } from '../model-defaults/phase-model-selector';
 
 type PlanningMode = 'skip' | 'lite' | 'spec' | 'full';

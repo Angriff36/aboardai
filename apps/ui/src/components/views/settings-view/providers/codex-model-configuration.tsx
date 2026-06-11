@@ -9,7 +9,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { cn } from '@/lib/utils';
-import { supportsReasoningEffort, type CodexModelId } from '@automaker/types';
+import { supportsReasoningEffort, type CodexModelId } from '@aboardai/types';
 import { OpenAIIcon } from '@/components/ui/provider-icon';
 
 interface CodexModelConfigurationProps {

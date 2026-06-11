@@ -738,7 +738,7 @@ export function WorktreeActionsDropdown({
             <DropdownMenuSubTrigger className="text-xs px-1 rounded-l-none border-l border-border/30 h-8" />
           </div>
           <DropdownMenuSubContent>
-            {/* Automaker Terminal - with submenu for new tab vs split */}
+            {/* AboardAI Terminal - with submenu for new tab vs split */}
             <DropdownMenuSub>
               <DropdownMenuSubTrigger className="text-xs">
                 <Terminal className="w-3.5 h-3.5 mr-2" />

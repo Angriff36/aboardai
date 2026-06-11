@@ -2,9 +2,9 @@
  * Common utilities and state for setup routes
  */
 
-import { createLogger } from '@automaker/utils';
+import { createLogger } from '@aboardai/utils';
 import path from 'path';
-import { secureFs } from '@automaker/platform';
+import { secureFs } from '@aboardai/platform';
 import { getErrorMessage as getErrorMessageShared, createLogError } from '../common.js';
 
 const logger = createLogger('Setup');

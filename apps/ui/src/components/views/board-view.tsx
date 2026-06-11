@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback, useMemo, useRef, startTransition } from 'react';
-import { createLogger } from '@automaker/utils/logger';
+import { createLogger } from '@aboardai/utils/logger';
 import type { PointerEvent as ReactPointerEvent } from 'react';
 import {
   DndContext,
@@ -35,7 +35,7 @@ import type {
   FeatureStatusWithPipeline,
   FeatureTemplate,
   ReasoningEffort,
-} from '@automaker/types';
+} from '@aboardai/types';
 import { pathsEqual } from '@/lib/utils';
 import { initializeProject } from '@/lib/project-init';
 import { toast } from 'sonner';
@@ -46,7 +46,7 @@ import {
 } from '@/components/dialogs';
 import { useShallow } from 'zustand/react/shallow';
 import { useAutoMode } from '@/hooks/use-auto-mode';
-import { resolveModelString } from '@automaker/model-resolver';
+import { resolveModelString } from '@aboardai/model-resolver';
 import { useWindowState } from '@/hooks/use-window-state';
 // Board-view specific imports
 import { BoardHeader } from './board-view/board-header';

@@ -2,7 +2,7 @@ import type { NavigateOptions } from '@tanstack/react-router';
 import { cn } from '@/lib/utils';
 import { useOSDetection } from '@/hooks/use-os-detection';
 
-interface AutomakerLogoProps {
+interface AboardAILogoProps {
   sidebarOpen: boolean;
   navigate: (opts: NavigateOptions) => void;
 }
@@ -20,7 +20,7 @@ function getOSAbbreviation(os: string): string {
   }
 }
 
-export function AutomakerLogo({ sidebarOpen, navigate }: AutomakerLogoProps) {
+export function AboardAILogo({ sidebarOpen, navigate }: AboardAILogoProps) {
   const appVersion = typeof __APP_VERSION__ !== 'undefined' ? __APP_VERSION__ : '0.0.0';
   const { os } = useOSDetection();
   const appMode = import.meta.env.VITE_APP_MODE || '?';
@@ -46,7 +46,7 @@ export function AutomakerLogo({ sidebarOpen, navigate }: AutomakerLogoProps) {
           xmlns="http://www.w3.org/2000/svg"
           viewBox="0 0 256 256"
           role="img"
-          aria-label="Automaker Logo"
+          aria-label="AboardAI Logo"
           className="size-8 group-hover:rotate-12 transition-transform duration-300 ease-out"
         >
           <defs>
@@ -98,7 +98,7 @@ export function AutomakerLogo({ sidebarOpen, navigate }: AutomakerLogoProps) {
               xmlns="http://www.w3.org/2000/svg"
               viewBox="0 0 256 256"
               role="img"
-              aria-label="automaker"
+              aria-label="aboardai"
               className="h-8 w-8 lg:h-[36.8px] lg:w-[36.8px] shrink-0 group-hover:rotate-12 transition-transform duration-300 ease-out"
             >
               <defs>
@@ -138,7 +138,7 @@ export function AutomakerLogo({ sidebarOpen, navigate }: AutomakerLogoProps) {
               </g>
             </svg>
             <span className="font-bold text-foreground text-xl lg:text-[1.7rem] tracking-tight leading-none translate-y-[-2px]">
-              automaker<span className="text-brand-500">.</span>
+              aboardai<span className="text-brand-500">.</span>
             </span>
           </div>
           <span className="text-[0.625rem] text-muted-foreground leading-none font-medium ml-9 lg:ml-[38.8px]">

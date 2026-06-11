@@ -4,9 +4,9 @@
  * This module re-exports terminal theme data for use in the server.
  */
 
-import { terminalThemeColors, getTerminalThemeColors as getThemeColors } from '@automaker/platform';
-import type { ThemeMode } from '@automaker/types';
-import type { TerminalTheme } from '@automaker/platform';
+import { terminalThemeColors, getTerminalThemeColors as getThemeColors } from '@aboardai/platform';
+import type { ThemeMode } from '@aboardai/types';
+import type { TerminalTheme } from '@aboardai/platform';
 
 /**
  * Get terminal theme colors for a given theme mode

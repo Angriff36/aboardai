@@ -2,13 +2,13 @@
  * AutoLoopCoordinator - Manages the auto-mode loop lifecycle and failure tracking
  */
 
-import type { Feature } from '@automaker/types';
-import { createLogger, classifyError } from '@automaker/utils';
-import { areDependenciesSatisfied } from '@automaker/dependency-resolver';
+import type { Feature } from '@aboardai/types';
+import { createLogger, classifyError } from '@aboardai/utils';
+import { areDependenciesSatisfied } from '@aboardai/dependency-resolver';
 import type { TypedEventBus } from './typed-event-bus.js';
 import type { ConcurrencyManager } from './concurrency-manager.js';
 import type { SettingsService } from './settings-service.js';
-import { DEFAULT_MAX_CONCURRENCY } from '@automaker/types';
+import { DEFAULT_MAX_CONCURRENCY } from '@aboardai/types';
 
 const logger = createLogger('AutoLoopCoordinator');
 

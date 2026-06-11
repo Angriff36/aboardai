@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { createLogger } from '@automaker/utils/logger';
+import { createLogger } from '@aboardai/utils/logger';
 import { cn } from '@/lib/utils';
 
 const logger = createLogger('TaskProgressPanel');
@@ -9,7 +9,7 @@ import { Check, Circle, ChevronDown, ChevronRight, FileCode } from 'lucide-react
 import { Spinner } from '@/components/ui/spinner';
 import { getElectronAPI } from '@/lib/electron';
 import type { AutoModeEvent } from '@/types/electron';
-import type { Feature, ParsedTask } from '@automaker/types';
+import type { Feature, ParsedTask } from '@aboardai/types';
 import { Badge } from '@/components/ui/badge';
 
 interface TaskInfo {

@@ -5,8 +5,8 @@ import { AnthropicIcon, CursorIcon, OpenAIIcon, OpenCodeIcon } from '@/component
 import { cn } from '@/lib/utils';
 import { useAppStore } from '@/store/app-store';
 import { useSetupStore } from '@/store/setup-store';
-import { getModelProvider } from '@automaker/types';
-import type { ModelProvider, CursorModelId } from '@automaker/types';
+import { getModelProvider } from '@aboardai/types';
+import type { ModelProvider, CursorModelId } from '@aboardai/types';
 import { CLAUDE_MODELS, CURSOR_MODELS, OPENCODE_MODELS, ModelOption } from './model-constants';
 import { useEffect, useRef } from 'react';
 import { Spinner } from '@/components/ui/spinner';

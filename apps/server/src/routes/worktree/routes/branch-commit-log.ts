@@ -16,7 +16,7 @@ import type { Request, Response } from 'express';
 import type { EventEmitter } from '../../../lib/events.js';
 import { getErrorMessage, logError } from '../common.js';
 import { getBranchCommitLog } from '../../../services/branch-commit-log-service.js';
-import { isValidBranchName } from '@automaker/utils';
+import { isValidBranchName } from '@aboardai/utils';
 
 export function createBranchCommitLogHandler(events: EventEmitter) {
   return async (req: Request, res: Response): Promise<void> => {

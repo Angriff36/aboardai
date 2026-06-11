@@ -29,7 +29,7 @@ const RATE_LIMIT_WINDOW_MS = 60 * 1000; // 1 minute window
 const RATE_LIMIT_MAX_ATTEMPTS = 5; // Max 5 attempts per window
 
 // Check if we're in test mode - disable rate limiting for E2E tests
-const isTestMode = process.env.AUTOMAKER_MOCK_AGENT === 'true';
+const isTestMode = process.env.ABOARDAI_MOCK_AGENT === 'true';
 
 // In-memory rate limit tracking (resets on server restart)
 const loginAttempts = new Map<string, { count: number; windowStart: number }>();
@@ -118,7 +118,7 @@ export function createAuthRoutes(): Router {
    * Returns whether the current request is authenticated.
    * Used by the UI to determine if login is needed.
    *
-   * If AUTOMAKER_AUTO_LOGIN=true is set, automatically creates a session
+   * If ABOARDAI_AUTO_LOGIN=true is set, automatically creates a session
    * for unauthenticated requests (useful for development).
    */
   router.get('/status', async (req, res) => {
@@ -128,7 +128,7 @@ export function createAuthRoutes(): Router {
     // Only works in non-production environments as a safeguard
     if (
       !authenticated &&
-      process.env.AUTOMAKER_AUTO_LOGIN === 'true' &&
+      process.env.ABOARDAI_AUTO_LOGIN === 'true' &&
       process.env.NODE_ENV !== 'production'
     ) {
       const sessionToken = await createSession();

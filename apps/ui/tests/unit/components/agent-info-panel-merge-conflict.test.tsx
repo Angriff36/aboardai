@@ -9,15 +9,15 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { AgentInfoPanel } from '../../../src/components/views/board-view/components/kanban-card/agent-info-panel';
-import { useAppStore } from '@automaker/ui/store/app-store';
-import { useFeature, useAgentOutput } from '@automaker/ui/hooks/queries';
-import { getElectronAPI } from '@automaker/ui/lib/electron';
+import { useAppStore } from '@aboardai/ui/store/app-store';
+import { useFeature, useAgentOutput } from '@aboardai/ui/hooks/queries';
+import { getElectronAPI } from '@aboardai/ui/lib/electron';
 import type { ReactNode } from 'react';
 
 // Mock dependencies
-vi.mock('@automaker/ui/store/app-store');
-vi.mock('@automaker/ui/hooks/queries');
-vi.mock('@automaker/ui/lib/electron');
+vi.mock('@aboardai/ui/store/app-store');
+vi.mock('@aboardai/ui/hooks/queries');
+vi.mock('@aboardai/ui/lib/electron');
 
 const mockUseAppStore = vi.mocked(useAppStore);
 const mockUseFeature = vi.mocked(useFeature);

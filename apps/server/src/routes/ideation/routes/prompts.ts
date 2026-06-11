@@ -5,7 +5,7 @@
 
 import type { Request, Response } from 'express';
 import type { IdeationService } from '../../../services/ideation-service.js';
-import type { IdeaCategory } from '@automaker/types';
+import type { IdeaCategory } from '@aboardai/types';
 import { getErrorMessage, logError } from '../common.js';
 
 export function createPromptsHandler(ideationService: IdeationService) {

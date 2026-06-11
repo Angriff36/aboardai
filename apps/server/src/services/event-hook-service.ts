@@ -17,7 +17,7 @@
 
 import { exec } from 'child_process';
 import { promisify } from 'util';
-import { createLogger } from '@automaker/utils';
+import { createLogger } from '@aboardai/utils';
 import type { EventEmitter } from '../lib/events.js';
 import type { SettingsService } from './settings-service.js';
 import type { EventHistoryService } from './event-history-service.js';
@@ -30,7 +30,7 @@ import type {
   EventHookNtfyAction,
   NtfyEndpointConfig,
   EventHookContext,
-} from '@automaker/types';
+} from '@aboardai/types';
 import { ntfyService, type NtfyContext } from './ntfy-service.js';
 
 const execAsync = promisify(exec);

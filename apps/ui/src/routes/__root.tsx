@@ -2,7 +2,7 @@ import { createRootRoute, Outlet, useLocation, useNavigate } from '@tanstack/rea
 import { useEffect, useState, useCallback, useDeferredValue, useRef } from 'react';
 import { PersistQueryClientProvider } from '@tanstack/react-query-persist-client';
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
-import { createLogger } from '@automaker/utils/logger';
+import { createLogger } from '@aboardai/utils/logger';
 import { Sidebar } from '@/components/layout/sidebar';
 import { ProjectSwitcher } from '@/components/layout/project-switcher';
 import {
@@ -40,7 +40,7 @@ import { LoadingState } from '@/components/ui/loading-state';
 import { useProjectSettingsLoader } from '@/hooks/use-project-settings-loader';
 import { useIsCompact } from '@/hooks/use-media-query';
 import type { Project } from '@/lib/electron';
-import type { GlobalSettings } from '@automaker/types';
+import type { GlobalSettings } from '@aboardai/types';
 import { syncUICache, restoreFromUICache } from '@/store/ui-cache-store';
 import { setItem } from '@/lib/storage';
 
@@ -413,15 +413,15 @@ function RootLayoutContent() {
   // Works for ALL modes (unified flow)
   useEffect(() => {
     const handleLoggedOut = () => {
-      logger.warn('automaker:logged-out event received!');
+      logger.warn('aboardai:logged-out event received!');
       // Only update auth state — the centralized routing effect will handle
       // navigation to /logged-out when it detects isAuthenticated is false
       useAuthStore.getState().setAuthState({ isAuthenticated: false, authChecked: true });
     };
 
-    window.addEventListener('automaker:logged-out', handleLoggedOut);
+    window.addEventListener('aboardai:logged-out', handleLoggedOut);
     return () => {
-      window.removeEventListener('automaker:logged-out', handleLoggedOut);
+      window.removeEventListener('aboardai:logged-out', handleLoggedOut);
     };
   }, []);
 
@@ -430,7 +430,7 @@ function RootLayoutContent() {
   // Redirects to login page which will detect server is offline and show error UI.
   useEffect(() => {
     const handleServerOffline = () => {
-      logger.warn('automaker:server-offline event received!');
+      logger.warn('aboardai:server-offline event received!');
       useAuthStore.getState().setAuthState({ isAuthenticated: false, authChecked: true });
 
       // Navigate to login - the login page will detect server is offline and show appropriate UI
@@ -439,9 +439,9 @@ function RootLayoutContent() {
       }
     };
 
-    window.addEventListener('automaker:server-offline', handleServerOffline);
+    window.addEventListener('aboardai:server-offline', handleServerOffline);
     return () => {
-      window.removeEventListener('automaker:server-offline', handleServerOffline);
+      window.removeEventListener('aboardai:server-offline', handleServerOffline);
     };
   }, [location.pathname, navigate]);
 
@@ -505,7 +505,7 @@ function RootLayoutContent() {
           // discard, page reload), currentProject is already restored from the UI
           // cache (restoreFromUICache ran above). The auto-open effect calls
           // initializeProject() which makes 5+ blocking HTTP calls to verify the
-          // .automaker directory structure — this is needed for first-time opens
+          // .aboardai directory structure — this is needed for first-time opens
           // but redundant for returning users. Marking auto-open as done lets the
           // routing effect navigate to /board immediately without the detour.
           const restoredProject = useAppStore.getState().currentProject;
@@ -590,7 +590,7 @@ function RootLayoutContent() {
                     >[0]
                   );
                   // Persist fresh server data to localStorage for the next cold start
-                  setItem('automaker-settings-cache', JSON.stringify(finalSettings));
+                  setItem('aboardai-settings-cache', JSON.stringify(finalSettings));
                   logger.info(
                     '[FAST_HYDRATE] Background reconcile: cache updated (store untouched)'
                   );

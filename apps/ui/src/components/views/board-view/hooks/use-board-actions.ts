@@ -8,15 +8,15 @@ import {
   PlanningMode,
   useAppStore,
 } from '@/store/app-store';
-import type { ReasoningEffort } from '@automaker/types';
+import type { ReasoningEffort } from '@aboardai/types';
 import { FeatureImagePath as DescriptionImagePath } from '@/components/ui/description-image-dropzone';
 import { getElectronAPI } from '@/lib/electron';
 import { isConnectionError, handleServerOffline, getHttpApiClient } from '@/lib/http-api-client';
 import { toast } from 'sonner';
 import { useVerifyFeature, useResumeFeature } from '@/hooks/mutations';
 import { truncateDescription } from '@/lib/utils';
-import { getBlockingDependencies } from '@automaker/dependency-resolver';
-import { createLogger } from '@automaker/utils/logger';
+import { getBlockingDependencies } from '@aboardai/dependency-resolver';
+import { createLogger } from '@aboardai/utils/logger';
 import {
   markFeatureTransitioning,
   unmarkFeatureTransitioning,

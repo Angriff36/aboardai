@@ -1,6 +1,6 @@
-// Re-export shared types from @automaker/types
-export type { PRState, WorktreePRInfo } from '@automaker/types';
-import type { PRState, WorktreePRInfo } from '@automaker/types';
+// Re-export shared types from @aboardai/types
+export type { PRState, WorktreePRInfo } from '@aboardai/types';
+import type { PRState, WorktreePRInfo } from '@aboardai/types';
 
 export interface WorktreeInfo {
   path: string;

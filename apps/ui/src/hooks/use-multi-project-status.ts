@@ -5,8 +5,8 @@
  */
 
 import { useState, useEffect, useCallback } from 'react';
-import type { MultiProjectOverview } from '@automaker/types';
-import { createLogger } from '@automaker/utils/logger';
+import type { MultiProjectOverview } from '@aboardai/types';
+import { createLogger } from '@aboardai/utils/logger';
 import {
   getApiKey,
   getSessionToken,

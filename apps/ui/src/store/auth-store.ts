@@ -33,7 +33,7 @@ interface AuthActions {
  */
 function getInitialAuthState(): AuthState {
   try {
-    const raw = localStorage.getItem('automaker-settings-cache');
+    const raw = localStorage.getItem('aboardai-settings-cache');
     if (raw) {
       const parsed = JSON.parse(raw) as {
         projects?: unknown[];

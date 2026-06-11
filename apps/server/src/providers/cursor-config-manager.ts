@@ -1,29 +1,29 @@
 /**
  * Cursor CLI Configuration Manager
  *
- * Manages Cursor CLI configuration stored in .automaker/cursor-config.json
+ * Manages Cursor CLI configuration stored in .aboardai/cursor-config.json
  */
 
 import * as fs from 'fs';
 import * as path from 'path';
-import { getAllCursorModelIds, type CursorCliConfig, type CursorModelId } from '@automaker/types';
-import { createLogger } from '@automaker/utils';
-import { getAutomakerDir } from '@automaker/platform';
+import { getAllCursorModelIds, type CursorCliConfig, type CursorModelId } from '@aboardai/types';
+import { createLogger } from '@aboardai/utils';
+import { getAboardAIDir } from '@aboardai/platform';
 
 // Create logger for this module
 const logger = createLogger('CursorConfigManager');
 
 /**
  * Manages Cursor CLI configuration
- * Config location: .automaker/cursor-config.json
+ * Config location: .aboardai/cursor-config.json
  */
 export class CursorConfigManager {
   private configPath: string;
   private config: CursorCliConfig;
 
   constructor(projectPath: string) {
-    // Use getAutomakerDir for consistent path resolution
-    this.configPath = path.join(getAutomakerDir(projectPath), 'cursor-config.json');
+    // Use getAboardAIDir for consistent path resolution
+    this.configPath = path.join(getAboardAIDir(projectPath), 'cursor-config.json');
     this.config = this.loadConfig();
   }
 

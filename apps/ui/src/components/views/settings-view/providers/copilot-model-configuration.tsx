@@ -1,6 +1,6 @@
-import type { CopilotModelId } from '@automaker/types';
+import type { CopilotModelId } from '@aboardai/types';
 import { CopilotIcon } from '@/components/ui/provider-icon';
-import { COPILOT_MODEL_MAP } from '@automaker/types';
+import { COPILOT_MODEL_MAP } from '@aboardai/types';
 import { BaseModelConfiguration, type BaseModelInfo } from './shared/base-model-configuration';
 
 interface CopilotModelConfigurationProps {

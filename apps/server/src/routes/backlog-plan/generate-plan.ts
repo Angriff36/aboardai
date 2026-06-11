@@ -9,16 +9,16 @@
  */
 
 import type { EventEmitter } from '../../lib/events.js';
-import type { Feature, BacklogPlanResult } from '@automaker/types';
+import type { Feature, BacklogPlanResult } from '@aboardai/types';
 import {
   DEFAULT_PHASE_MODELS,
   isCursorModel,
   stripProviderPrefix,
   type ThinkingLevel,
   type SystemPromptPreset,
-} from '@automaker/types';
-import { resolvePhaseModel } from '@automaker/model-resolver';
-import { getCurrentBranch } from '@automaker/git-utils';
+} from '@aboardai/types';
+import { resolvePhaseModel } from '@aboardai/model-resolver';
+import { getCurrentBranch } from '@aboardai/git-utils';
 import { FeatureLoader } from '../../services/feature-loader.js';
 import { ProviderFactory } from '../../providers/provider-factory.js';
 import { extractJsonWithArray } from '../../lib/json-extractor.js';
@@ -223,8 +223,8 @@ export async function generateBacklogPlan(
     // Get the model to use from settings or provided override with provider info
     let effectiveModel = model;
     let thinkingLevel: ThinkingLevel | undefined;
-    let claudeCompatibleProvider: import('@automaker/types').ClaudeCompatibleProvider | undefined;
-    let credentials: import('@automaker/types').Credentials | undefined;
+    let claudeCompatibleProvider: import('@aboardai/types').ClaudeCompatibleProvider | undefined;
+    let credentials: import('@aboardai/types').Credentials | undefined;
 
     if (effectiveModel) {
       // Use explicit override - resolve model alias and get credentials

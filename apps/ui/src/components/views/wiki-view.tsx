@@ -141,11 +141,11 @@ export function WikiView() {
       content: (
         <div className="space-y-3">
           <p>
-            <strong className="text-foreground">Automaker</strong> is an autonomous AI development
+            <strong className="text-foreground">AboardAI</strong> is an autonomous AI development
             studio that helps developers build software faster using AI agents.
           </p>
           <p>
-            At its core, Automaker provides a visual Kanban board to manage features. When you're
+            At its core, AboardAI provides a visual Kanban board to manage features. When you're
             ready, AI agents automatically implement those features in your codebase, complete with
             git worktree isolation for safe parallel development.
           </p>
@@ -164,7 +164,7 @@ export function WikiView() {
       icon: Layers,
       content: (
         <div className="space-y-3">
-          <p>Automaker is built as a monorepo with two main applications and shared libraries:</p>
+          <p>AboardAI is built as a monorepo with two main applications and shared libraries:</p>
           <ul className="list-disc list-inside space-y-2 ml-2">
             <li>
               <strong className="text-foreground">apps/ui</strong> - React + TanStack Router +
@@ -186,7 +186,7 @@ export function WikiView() {
               <li>Real-time communication via WebSocket for live agent updates</li>
               <li>State management with Zustand for reactive UI updates</li>
               <li>Claude Agent SDK for AI capabilities</li>
-              <li>Shared monorepo packages (@automaker/*) for code reuse</li>
+              <li>Shared monorepo packages (@aboardai/*) for code reuse</li>
             </ul>
           </div>
         </div>
@@ -271,7 +271,7 @@ export function WikiView() {
       icon: GitBranch,
       content: (
         <div className="space-y-3">
-          <p>Here's what happens when you use Automaker to implement a feature:</p>
+          <p>Here's what happens when you use AboardAI to implement a feature:</p>
           <ol className="list-decimal list-inside space-y-3 ml-2 mt-4">
             <li className="text-foreground">
               <strong>Create Feature</strong>
@@ -284,7 +284,7 @@ export function WikiView() {
               <p className="text-muted-foreground ml-5 mt-1">
                 Feature saved to{' '}
                 <code className="px-1 py-0.5 bg-muted rounded text-xs">
-                  .automaker/features/&#123;id&#125;/feature.json
+                  .aboardai/features/&#123;id&#125;/feature.json
                 </code>
               </p>
             </li>
@@ -334,9 +334,9 @@ export function WikiView() {
       icon: FolderTree,
       content: (
         <div>
-          <p className="mb-3">The Automaker codebase is organized as follows:</p>
+          <p className="mb-3">The AboardAI codebase is organized as follows:</p>
           <CodeBlock title="Directory Structure">
-            {`automaker/
+            {`aboardai/
 ├─ apps/
 │  ├─ ui/                                    Frontend (React + Electron)
 │  │  └─ src/
@@ -390,7 +390,7 @@ export function WikiView() {
       icon: Component,
       content: (
         <div className="space-y-3">
-          <p>The main UI components that make up Automaker:</p>
+          <p>The main UI components that make up AboardAI:</p>
           <div className="grid gap-2 mt-4">
             {[
               {
@@ -443,8 +443,8 @@ export function WikiView() {
       content: (
         <div className="space-y-3">
           <p>
-            Automaker stores project configuration in the{' '}
-            <code className="px-1 py-0.5 bg-muted rounded text-xs">.automaker/</code> directory:
+            AboardAI stores project configuration in the{' '}
+            <code className="px-1 py-0.5 bg-muted rounded text-xs">.aboardai/</code> directory:
           </p>
           <div className="grid gap-2 mt-4">
             {[
@@ -490,7 +490,7 @@ export function WikiView() {
       icon: PlayCircle,
       content: (
         <div className="space-y-3">
-          <p>Follow these steps to start building with Automaker:</p>
+          <p>Follow these steps to start building with AboardAI:</p>
           <ol className="list-decimal list-inside space-y-4 ml-2 mt-4">
             <li className="text-foreground">
               <strong>Create or Open a Project</strong>
@@ -554,7 +554,7 @@ export function WikiView() {
           <div>
             <h1 className="text-xl font-semibold text-foreground">Wiki</h1>
             <p className="text-sm text-muted-foreground mt-1">
-              Learn how Automaker works and how to use it effectively
+              Learn how AboardAI works and how to use it effectively
             </p>
           </div>
           <div className="flex items-center gap-2">

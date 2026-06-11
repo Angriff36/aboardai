@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import type { ParsedTask } from '@automaker/types';
+import type { ParsedTask } from '@aboardai/types';
 
 /**
  * Test the task parsing logic by reimplementing the parsing functions

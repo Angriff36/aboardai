@@ -21,11 +21,11 @@ vi.mock('@/lib/git.js', () => ({
   execGitCommand: vi.fn(),
 }));
 
-vi.mock('@automaker/git-utils', () => ({
+vi.mock('@aboardai/git-utils', () => ({
   isGitRepo: vi.fn(async () => true),
 }));
 
-vi.mock('@automaker/utils', () => ({
+vi.mock('@aboardai/utils', () => ({
   createLogger: () => ({
     info: vi.fn(),
     warn: vi.fn(),
@@ -34,7 +34,7 @@ vi.mock('@automaker/utils', () => ({
   }),
 }));
 
-vi.mock('@automaker/types', () => ({
+vi.mock('@aboardai/types', () => ({
   validatePRState: vi.fn((state: string) => state),
 }));
 
@@ -70,7 +70,7 @@ import { createListHandler } from '@/routes/worktree/routes/list.js';
 import * as secureFs from '@/lib/secure-fs.js';
 import { execGitCommand } from '@/lib/git.js';
 import { readAllWorktreeMetadata, updateWorktreePRInfo } from '@/lib/worktree-metadata.js';
-import { isGitRepo } from '@automaker/git-utils';
+import { isGitRepo } from '@aboardai/git-utils';
 import { isGhCliAvailable, normalizePath, getErrorMessage } from '@/routes/worktree/common.js';
 import { checkGitHubRemote } from '@/routes/github/routes/check-github-remote.js';
 

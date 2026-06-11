@@ -14,16 +14,16 @@
  */
 
 import path from 'path';
-import type { Feature, FeatureStatusWithPipeline, ParsedTask, PlanSpec } from '@automaker/types';
-import { isPipelineStatus } from '@automaker/types';
+import type { Feature, FeatureStatusWithPipeline, ParsedTask, PlanSpec } from '@aboardai/types';
+import { isPipelineStatus } from '@aboardai/types';
 import {
   atomicWriteJson,
   readJsonWithRecovery,
   logRecoveryWarning,
   DEFAULT_BACKUP_COUNT,
   createLogger,
-} from '@automaker/utils';
-import { getFeatureDir, getFeaturesDir } from '@automaker/platform';
+} from '@aboardai/utils';
+import { getFeatureDir, getFeaturesDir } from '@aboardai/platform';
 import * as secureFs from '../lib/secure-fs.js';
 import type { EventEmitter } from '../lib/events.js';
 import type { AutoModeEventType } from './typed-event-bus.js';

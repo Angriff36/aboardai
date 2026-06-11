@@ -9,7 +9,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import type { MCPServerConfig } from '@automaker/types';
+import type { MCPServerConfig } from '@aboardai/types';
 
 interface JsonEditDialogProps {
   open: boolean;

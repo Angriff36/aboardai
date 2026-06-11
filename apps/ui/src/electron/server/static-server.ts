@@ -7,8 +7,8 @@
 
 import path from 'path';
 import http from 'http';
-import { electronAppExists, electronAppStat, electronAppReadFile } from '@automaker/platform';
-import { createLogger } from '@automaker/utils/logger';
+import { electronAppExists, electronAppStat, electronAppReadFile } from '@aboardai/platform';
+import { createLogger } from '@aboardai/utils/logger';
 import { state } from '../state';
 
 const logger = createLogger('StaticServer');

@@ -12,7 +12,7 @@ import type { AutoModeServiceCompat } from '../../../services/auto-mode/index.js
 import { getErrorMessage, logError } from '../common.js';
 import { execGitCommand } from '../../../lib/git.js';
 import { deleteWorktreeMetadata } from '../../../lib/worktree-metadata.js';
-import { createLogger } from '@automaker/utils';
+import { createLogger } from '@aboardai/utils';
 
 const logger = createLogger('OrphanedFeatures');
 

@@ -11,17 +11,17 @@
 import * as fs from 'fs/promises';
 import * as path from 'path';
 import * as os from 'os';
-import { createLogger } from '@automaker/utils';
+import { createLogger } from '@aboardai/utils';
 import type {
   CursorCliConfigFile,
   CursorCliPermissions,
   CursorPermissionProfile,
-} from '@automaker/types';
+} from '@aboardai/types';
 import {
   CURSOR_STRICT_PROFILE,
   CURSOR_DEVELOPMENT_PROFILE,
   CURSOR_PERMISSION_PROFILES,
-} from '@automaker/types';
+} from '@aboardai/types';
 
 const logger = createLogger('CursorConfigService');
 

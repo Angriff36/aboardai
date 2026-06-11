@@ -4,7 +4,7 @@
 
 import type { ReactNode } from 'react';
 import { cn } from '@/lib/utils';
-import type { ThemeMode } from '@automaker/types';
+import type { ThemeMode } from '@aboardai/types';
 import { getTerminalTheme } from '@/config/terminal-themes';
 
 interface PromptPreviewProps {
@@ -97,8 +97,8 @@ export function PromptPreview({
     }
 
     const user = 'user';
-    const host = 'automaker';
-    const path = formatPath('~/projects/automaker');
+    const host = 'aboardai';
+    const path = formatPath('~/projects/aboardai');
     const branch = showGitBranch ? 'main' : null;
     const dirty = showGitStatus && showGitBranch ? '*' : '';
     const time = showTime ? '[14:32]' : '';

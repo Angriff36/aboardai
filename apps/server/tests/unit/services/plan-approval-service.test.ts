@@ -3,7 +3,7 @@ import { PlanApprovalService } from '@/services/plan-approval-service.js';
 import type { TypedEventBus } from '@/services/typed-event-bus.js';
 import type { FeatureStateManager } from '@/services/feature-state-manager.js';
 import type { SettingsService } from '@/services/settings-service.js';
-import type { Feature } from '@automaker/types';
+import type { Feature } from '@aboardai/types';
 
 describe('PlanApprovalService', () => {
   let service: PlanApprovalService;

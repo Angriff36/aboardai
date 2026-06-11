@@ -14,16 +14,16 @@
 import path from 'path';
 import { exec } from 'child_process';
 import { promisify } from 'util';
-import type { Feature, PlanningMode, ThinkingLevel, ReasoningEffort } from '@automaker/types';
+import type { Feature, PlanningMode, ThinkingLevel, ReasoningEffort } from '@aboardai/types';
 import {
   DEFAULT_MAX_CONCURRENCY,
   DEFAULT_MODELS,
   stripProviderPrefix,
   isPipelineStatus,
-} from '@automaker/types';
-import { resolveModelString } from '@automaker/model-resolver';
-import { createLogger, loadContextFiles, classifyError } from '@automaker/utils';
-import { getFeatureDir } from '@automaker/platform';
+} from '@aboardai/types';
+import { resolveModelString } from '@aboardai/model-resolver';
+import { createLogger, loadContextFiles, classifyError } from '@aboardai/utils';
+import { getFeatureDir } from '@aboardai/platform';
 import * as secureFs from '../../lib/secure-fs.js';
 import { validateWorkingDirectory, createAutoModeOptions } from '../../lib/sdk-options.js';
 import {
@@ -32,7 +32,7 @@ import {
   getMCPServersFromSettings,
   getDefaultMaxTurnsSetting,
 } from '../../lib/settings-helpers.js';
-import { execGitCommand } from '@automaker/git-utils';
+import { execGitCommand } from '@aboardai/git-utils';
 import { TypedEventBus } from '../typed-event-bus.js';
 import { ConcurrencyManager } from '../concurrency-manager.js';
 import { WorktreeResolver } from '../worktree-resolver.js';
@@ -262,9 +262,9 @@ export class AutoModeServiceFacade {
 
         // Resolve custom provider (GLM, MiniMax, etc.) for baseUrl and credentials
         let claudeCompatibleProvider:
-          | import('@automaker/types').ClaudeCompatibleProvider
+          | import('@aboardai/types').ClaudeCompatibleProvider
           | undefined;
-        let credentials: import('@automaker/types').Credentials | undefined;
+        let credentials: import('@aboardai/types').Credentials | undefined;
         let providerResolvedModel: string | undefined;
 
         if (settingsService) {
@@ -311,7 +311,7 @@ export class AutoModeServiceFacade {
           thinkingLevel: opts?.thinkingLevel,
           maxTurns: userMaxTurns,
           mcpServers: mcpServers as
-            | Record<string, import('@automaker/types').McpServerConfig>
+            | Record<string, import('@aboardai/types').McpServerConfig>
             | undefined,
         });
 
@@ -876,7 +876,7 @@ export class AutoModeServiceFacade {
       const feature = await this.featureStateManager.loadFeature(this.projectPath, featureId);
       const title =
         feature?.description?.split('\n')[0]?.substring(0, 60) || `Feature ${featureId}`;
-      const commitMessage = `feat: ${title}\n\nImplemented by Automaker auto-mode`;
+      const commitMessage = `feat: ${title}\n\nImplemented by AboardAI auto-mode`;
 
       await execGitCommand(['add', '-A'], workDir);
       await execGitCommand(['commit', '-m', commitMessage], workDir);

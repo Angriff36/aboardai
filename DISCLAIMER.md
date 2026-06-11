@@ -2,7 +2,7 @@
 
 ## Important Warning
 
-**Automaker uses AI-powered tooling that has access to your operating system and can read, modify, and delete files. Use at your own risk.**
+**AboardAI uses AI-powered tooling that has access to your operating system and can read, modify, and delete files. Use at your own risk.**
 
 ## Risk Assessment
 
@@ -20,19 +20,19 @@ While we have made efforts to review this codebase for security vulnerabilities 
 
 ### 1. Review the Code First
 
-Before running Automaker, we strongly recommend reviewing the source code yourself to understand what operations it performs and ensure you are comfortable with its behavior.
+Before running AboardAI, we strongly recommend reviewing the source code yourself to understand what operations it performs and ensure you are comfortable with its behavior.
 
 ### 2. Use Sandboxing (Highly Recommended)
 
-**We do not recommend running Automaker directly on your local computer** due to the risk of AI agents having access to your entire file system. Instead, consider:
+**We do not recommend running AboardAI directly on your local computer** due to the risk of AI agents having access to your entire file system. Instead, consider:
 
-- **Docker**: Run Automaker in a Docker container to isolate it from your host system
+- **Docker**: Run AboardAI in a Docker container to isolate it from your host system
 - **Virtual Machine**: Use a VM (such as VirtualBox, VMware, or Parallels) to create an isolated environment
 - **Cloud Development Environment**: Use a cloud-based development environment that provides isolation
 
 #### Running in Isolated Docker Container
 
-For maximum security, run Automaker in an isolated Docker container that **cannot access your laptop's files**:
+For maximum security, run AboardAI in an isolated Docker container that **cannot access your laptop's files**:
 
 ```bash
 # 1. Set your API key (bash/Linux/Mac - creates UTF-8 file)
@@ -73,7 +73,7 @@ This software is provided "as is", without warranty of any kind, express or impl
 
 ## Acknowledgment
 
-By using Automaker, you acknowledge that:
+By using AboardAI, you acknowledge that:
 
 1. You have read and understood this disclaimer
 2. You accept full responsibility for any consequences of using this software

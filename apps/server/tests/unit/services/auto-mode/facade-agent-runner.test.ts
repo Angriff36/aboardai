@@ -5,7 +5,7 @@ vi.mock('../../../../src/services/agent-executor.js');
 vi.mock('../../../../src/lib/settings-helpers.js');
 vi.mock('../../../../src/providers/provider-factory.js');
 vi.mock('../../../../src/lib/sdk-options.js');
-vi.mock('@automaker/model-resolver', () => ({
+vi.mock('@aboardai/model-resolver', () => ({
   resolveModelString: vi.fn((model, fallback) => model || fallback),
   DEFAULT_MODELS: { claude: 'claude-3-5-sonnet' },
 }));

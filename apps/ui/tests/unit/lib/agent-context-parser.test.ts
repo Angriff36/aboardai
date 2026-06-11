@@ -9,7 +9,7 @@ import {
   DEFAULT_MODEL,
   type FormatModelNameOptions,
 } from '../../../src/lib/agent-context-parser';
-import type { ClaudeCompatibleProvider, ProviderModel } from '@automaker/types';
+import type { ClaudeCompatibleProvider, ProviderModel } from '@aboardai/types';
 
 describe('agent-context-parser.ts', () => {
   describe('DEFAULT_MODEL', () => {

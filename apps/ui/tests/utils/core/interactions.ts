@@ -126,7 +126,7 @@ export async function handleLoginScreenIfPresent(page: Page): Promise<boolean> {
     // Wait for login input to be visible if we were redirected
     await loginInput.waitFor({ state: 'visible', timeout: 5000 }).catch(() => {});
 
-    const apiKey = process.env.AUTOMAKER_API_KEY || 'test-api-key-for-e2e-tests';
+    const apiKey = process.env.ABOARDAI_API_KEY || 'test-api-key-for-e2e-tests';
     await loginInput.fill(apiKey);
 
     // Wait for button to be enabled (it's disabled when input is empty)

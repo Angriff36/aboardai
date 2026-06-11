@@ -4,9 +4,9 @@ import type { Project } from '@/lib/electron';
 import type { ThemeMode } from '../types/ui-types';
 
 // LocalStorage keys for persistence (fallback when server settings aren't available)
-export const THEME_STORAGE_KEY = 'automaker:theme';
-const FONT_SANS_STORAGE_KEY = 'automaker:font-sans';
-const FONT_MONO_STORAGE_KEY = 'automaker:font-mono';
+export const THEME_STORAGE_KEY = 'aboardai:theme';
+const FONT_SANS_STORAGE_KEY = 'aboardai:font-sans';
+const FONT_MONO_STORAGE_KEY = 'aboardai:font-mono';
 
 /**
  * Get the theme from localStorage as a fallback
@@ -20,7 +20,7 @@ export function getStoredTheme(): ThemeMode | null {
   // We intentionally keep reading it as a fallback so users don't get a "default theme flash"
   // on login/logged-out pages if THEME_STORAGE_KEY hasn't been written yet.
   try {
-    const legacy = getItem('automaker-storage');
+    const legacy = getItem('aboardai-storage');
     if (!legacy) return null;
     interface LegacyStorageFormat {
       state?: { theme?: string };

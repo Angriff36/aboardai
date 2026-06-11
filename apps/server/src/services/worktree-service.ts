@@ -8,7 +8,7 @@
 
 import path from 'path';
 import fs from 'fs/promises';
-import { execGitCommand } from '@automaker/git-utils';
+import { execGitCommand } from '@aboardai/git-utils';
 import type { EventEmitter } from '../lib/events.js';
 import type { SettingsService } from './settings-service.js';
 

@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef } from 'react';
 import { getElectronAPI } from '@/lib/electron';
-import { createLogger } from '@automaker/utils/logger';
+import { createLogger } from '@aboardai/utils/logger';
 import type { Feature } from '@/store/app-store';
 
 const logger = createLogger('BoardEffects');

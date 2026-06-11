@@ -11,7 +11,7 @@ import { Button } from '@/components/ui/button';
 import { JsonSyntaxEditor } from '@/components/ui/json-syntax-editor';
 import { apiGet, apiPut } from '@/lib/api-fetch';
 import { toast } from 'sonner';
-import type { GlobalSettings } from '@automaker/types';
+import type { GlobalSettings } from '@aboardai/types';
 
 interface ImportExportDialogProps {
   open: boolean;

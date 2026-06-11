@@ -9,7 +9,7 @@ import type {
   ParsedTask,
   ClaudeCompatibleProvider,
   Credentials,
-} from '@automaker/types';
+} from '@aboardai/types';
 import type { BaseProvider } from '../providers/base-provider.js';
 
 export interface AgentExecutionOptions {

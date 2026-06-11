@@ -1,5 +1,5 @@
 /**
- * RC File Manager - Manage shell configuration files in .automaker/terminal/
+ * RC File Manager - Manage shell configuration files in .aboardai/terminal/
  *
  * This module handles file I/O operations for generating and managing shell RC files,
  * including version checking and regeneration logic.
@@ -8,7 +8,7 @@
 import * as fs from 'node:fs/promises';
 import * as path from 'node:path';
 import { createHash } from 'node:crypto';
-import type { ThemeMode } from '@automaker/types';
+import type { ThemeMode } from '@aboardai/types';
 import {
   generateBashrc,
   generateZshrc,
@@ -29,7 +29,7 @@ const RC_SIGNATURE_FILENAME = 'config.sha256';
  * Get the terminal directory path
  */
 export function getTerminalDir(projectPath: string): string {
-  return path.join(projectPath, '.automaker', 'terminal');
+  return path.join(projectPath, '.aboardai', 'terminal');
 }
 
 /**
@@ -293,9 +293,9 @@ export async function ensureUserCustomFile(projectPath: string): Promise<void> {
   } catch {
     // File doesn't exist, create it
     const content = `#!/bin/sh
-# Automaker User Customizations
+# AboardAI User Customizations
 # Add your custom shell configuration here
-# This file will not be overwritten by Automaker
+# This file will not be overwritten by AboardAI
 
 # Example: Add custom aliases
 # alias myalias='command'

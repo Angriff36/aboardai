@@ -4,7 +4,7 @@
  */
 
 import type { AutoModeEvent } from '@/types/electron';
-import type { BacklogPlanEvent } from '@automaker/types';
+import type { BacklogPlanEvent } from '@aboardai/types';
 
 /**
  * Format auto mode event content for display

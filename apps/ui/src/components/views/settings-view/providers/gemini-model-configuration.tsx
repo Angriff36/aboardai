@@ -1,6 +1,6 @@
-import type { GeminiModelId } from '@automaker/types';
+import type { GeminiModelId } from '@aboardai/types';
 import { GeminiIcon } from '@/components/ui/provider-icon';
-import { GEMINI_MODEL_MAP } from '@automaker/types';
+import { GEMINI_MODEL_MAP } from '@aboardai/types';
 import { BaseModelConfiguration, type BaseModelInfo } from './shared/base-model-configuration';
 
 interface GeminiModelConfigurationProps {

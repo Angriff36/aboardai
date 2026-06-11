@@ -1,13 +1,13 @@
 /**
- * POST /save-image endpoint - Save image to .automaker images directory
+ * POST /save-image endpoint - Save image to .aboardai images directory
  */
 
 import type { Request, Response } from 'express';
 import * as secureFs from '../../../lib/secure-fs.js';
 import path from 'path';
 import { getErrorMessage, logError } from '../common.js';
-import { getImagesDir } from '@automaker/platform';
-import { sanitizeFilename } from '@automaker/utils';
+import { getImagesDir } from '@aboardai/platform';
+import { sanitizeFilename } from '@aboardai/utils';
 
 export function createSaveImageHandler() {
   return async (req: Request, res: Response): Promise<void> => {

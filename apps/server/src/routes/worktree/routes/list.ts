@@ -12,7 +12,7 @@ import { exec } from 'child_process';
 import { promisify } from 'util';
 import path from 'path';
 import * as secureFs from '../../../lib/secure-fs.js';
-import { isGitRepo } from '@automaker/git-utils';
+import { isGitRepo } from '@aboardai/git-utils';
 import {
   getErrorMessage,
   logError,
@@ -26,8 +26,8 @@ import {
   updateWorktreePRInfo,
   type WorktreePRInfo,
 } from '../../../lib/worktree-metadata.js';
-import { createLogger } from '@automaker/utils';
-import { validatePRState } from '@automaker/types';
+import { createLogger } from '@aboardai/utils';
+import { validatePRState } from '@aboardai/types';
 import {
   checkGitHubRemote,
   type GitHubRemoteStatus,

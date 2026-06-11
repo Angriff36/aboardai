@@ -1,6 +1,6 @@
 /**
- * @automaker/utils
- * Shared utility functions for AutoMaker
+ * @aboardai/utils
+ * Shared utility functions for AboardAI
  */
 
 // Error handling

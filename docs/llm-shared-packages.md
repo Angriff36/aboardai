@@ -1,10 +1,10 @@
-# AutoMaker Shared Packages - LLM Guide
+# AboardAI Shared Packages - LLM Guide
 
-This guide helps AI assistants understand how to use AutoMaker's shared packages effectively.
+This guide helps AI assistants understand how to use AboardAI's shared packages effectively.
 
 ## Package Overview
 
-AutoMaker uses a monorepo structure with shared packages in `libs/`:
+AboardAI uses a monorepo structure with shared packages in `libs/`:
 
 ```
 libs/
@@ -19,9 +19,9 @@ libs/
 
 ## When to Use Each Package
 
-### @automaker/types
+### @aboardai/types
 
-**Use when:** You need type definitions for any AutoMaker concept.
+**Use when:** You need type definitions for any AboardAI concept.
 
 **Import for:**
 
@@ -35,12 +35,12 @@ libs/
 **Example:**
 
 ```typescript
-import type { Feature, ExecuteOptions } from '@automaker/types';
+import type { Feature, ExecuteOptions } from '@aboardai/types';
 ```
 
 **Never import from:** `services/feature-loader`, `providers/types`
 
-### @automaker/utils
+### @aboardai/utils
 
 **Use when:** You need common utilities like logging, error handling, or image processing.
 
@@ -56,12 +56,12 @@ import type { Feature, ExecuteOptions } from '@automaker/types';
 **Example:**
 
 ```typescript
-import { createLogger, classifyError } from '@automaker/utils';
+import { createLogger, classifyError } from '@aboardai/utils';
 ```
 
 **Never import from:** `lib/logger`, `lib/error-handler`, `lib/prompt-builder`, `lib/image-handler`
 
-### @automaker/prompts
+### @aboardai/prompts
 
 **Use when:** You need AI prompt templates for text enhancement or other AI-powered features.
 
@@ -80,7 +80,7 @@ import { createLogger, classifyError } from '@automaker/utils';
 **Example:**
 
 ```typescript
-import { getEnhancementPrompt, isValidEnhancementMode } from '@automaker/prompts';
+import { getEnhancementPrompt, isValidEnhancementMode } from '@aboardai/prompts';
 
 if (isValidEnhancementMode('improve')) {
   const { systemPrompt, userPrompt } = getEnhancementPrompt('improve', description);
@@ -97,28 +97,28 @@ if (isValidEnhancementMode('improve')) {
 - `simplify` - Make verbose descriptions concise and focused
 - `acceptance` - Add testable acceptance criteria
 
-### @automaker/platform
+### @aboardai/platform
 
-**Use when:** You need to work with AutoMaker's directory structure or spawn processes.
+**Use when:** You need to work with AboardAI's directory structure or spawn processes.
 
 **Import for:**
 
-- `getAutomakerDir(projectPath)` - Get .automaker directory
+- `getAboardAIDir(projectPath)` - Get .aboardai directory
 - `getFeaturesDir(projectPath)` - Get features directory
 - `getFeatureDir(projectPath, featureId)` - Get specific feature directory
-- `ensureAutomakerDir(projectPath)` - Create .automaker if needed
+- `ensureAboardAIDir(projectPath)` - Create .aboardai if needed
 - `spawnJSONLProcess()` - Spawn process with JSONL output
 - `initAllowedPaths()` - Security path validation
 
 **Example:**
 
 ```typescript
-import { getFeatureDir, ensureAutomakerDir } from '@automaker/platform';
+import { getFeatureDir, ensureAboardAIDir } from '@aboardai/platform';
 ```
 
-**Never import from:** `lib/automaker-paths`, `lib/subprocess-manager`, `lib/security`
+**Never import from:** `lib/aboardai-paths`, `lib/subprocess-manager`, `lib/security`
 
-### @automaker/model-resolver
+### @aboardai/model-resolver
 
 **Use when:** You need to convert model aliases to full model IDs.
 
@@ -130,7 +130,7 @@ import { getFeatureDir, ensureAutomakerDir } from '@automaker/platform';
 **Example:**
 
 ```typescript
-import { resolveModelString, DEFAULT_MODELS } from '@automaker/model-resolver';
+import { resolveModelString, DEFAULT_MODELS } from '@aboardai/model-resolver';
 
 // Convert user input to model ID
 const modelId = resolveModelString('sonnet'); // → 'claude-sonnet-4-20250514'
@@ -144,7 +144,7 @@ const modelId = resolveModelString('sonnet'); // → 'claude-sonnet-4-20250514'
 - `sonnet` → `claude-sonnet-4-20250514` (balanced, recommended)
 - `opus` → `claude-opus-4-6` (maximum capability)
 
-### @automaker/dependency-resolver
+### @aboardai/dependency-resolver
 
 **Use when:** You need to order features by dependencies or check if dependencies are satisfied.
 
@@ -157,7 +157,7 @@ const modelId = resolveModelString('sonnet'); // → 'claude-sonnet-4-20250514'
 **Example:**
 
 ```typescript
-import { resolveDependencies, areDependenciesSatisfied } from '@automaker/dependency-resolver';
+import { resolveDependencies, areDependenciesSatisfied } from '@aboardai/dependency-resolver';
 
 const { orderedFeatures, hasCycle } = resolveDependencies(features);
 if (!hasCycle) {
@@ -176,7 +176,7 @@ if (!hasCycle) {
 - Auto-mode feature execution (server)
 - Board view feature ordering (UI)
 
-### @automaker/git-utils
+### @aboardai/git-utils
 
 **Use when:** You need git operations, status parsing, or diff generation.
 
@@ -191,7 +191,7 @@ if (!hasCycle) {
 **Example:**
 
 ```typescript
-import { isGitRepo, getGitRepositoryDiffs } from '@automaker/git-utils';
+import { isGitRepo, getGitRepositoryDiffs } from '@aboardai/git-utils';
 
 if (await isGitRepo(projectPath)) {
   const { diff, files, hasChanges } = await getGitRepositoryDiffs(projectPath);
@@ -213,11 +213,11 @@ if (await isGitRepo(projectPath)) {
 ### Creating a Feature Executor
 
 ```typescript
-import type { Feature, ExecuteOptions } from '@automaker/types';
-import { createLogger, classifyError } from '@automaker/utils';
-import { resolveModelString, DEFAULT_MODELS } from '@automaker/model-resolver';
-import { areDependenciesSatisfied } from '@automaker/dependency-resolver';
-import { getFeatureDir } from '@automaker/platform';
+import type { Feature, ExecuteOptions } from '@aboardai/types';
+import { createLogger, classifyError } from '@aboardai/utils';
+import { resolveModelString, DEFAULT_MODELS } from '@aboardai/model-resolver';
+import { areDependenciesSatisfied } from '@aboardai/dependency-resolver';
+import { getFeatureDir } from '@aboardai/platform';
 
 const logger = createLogger('FeatureExecutor');
 
@@ -254,8 +254,8 @@ async function executeFeature(feature: Feature, allFeatures: Feature[], projectP
 ### Analyzing Git Changes
 
 ```typescript
-import { getGitRepositoryDiffs, parseGitStatus } from '@automaker/git-utils';
-import { createLogger } from '@automaker/utils';
+import { getGitRepositoryDiffs, parseGitStatus } from '@aboardai/git-utils';
+import { createLogger } from '@aboardai/utils';
 
 const logger = createLogger('GitAnalyzer');
 
@@ -284,9 +284,9 @@ async function analyzeChanges(projectPath: string) {
 ### Ordering Features for Execution
 
 ```typescript
-import type { Feature } from '@automaker/types';
-import { resolveDependencies, getBlockingDependencies } from '@automaker/dependency-resolver';
-import { createLogger } from '@automaker/utils';
+import type { Feature } from '@aboardai/types';
+import { resolveDependencies, getBlockingDependencies } from '@aboardai/dependency-resolver';
+import { createLogger } from '@aboardai/utils';
 
 const logger = createLogger('FeatureOrdering');
 
@@ -318,29 +318,29 @@ function orderAndFilterFeatures(features: Feature[]): Feature[] {
 ### ✅ DO
 
 ```typescript
-// Import types from @automaker/types
-import type { Feature, ExecuteOptions } from '@automaker/types';
+// Import types from @aboardai/types
+import type { Feature, ExecuteOptions } from '@aboardai/types';
 
-// Import constants from @automaker/types
-import { CLAUDE_MODEL_MAP, DEFAULT_MODELS } from '@automaker/types';
+// Import constants from @aboardai/types
+import { CLAUDE_MODEL_MAP, DEFAULT_MODELS } from '@aboardai/types';
 
-// Import utilities from @automaker/utils
-import { createLogger, classifyError } from '@automaker/utils';
+// Import utilities from @aboardai/utils
+import { createLogger, classifyError } from '@aboardai/utils';
 
-// Import prompts from @automaker/prompts
-import { getEnhancementPrompt, isValidEnhancementMode } from '@automaker/prompts';
+// Import prompts from @aboardai/prompts
+import { getEnhancementPrompt, isValidEnhancementMode } from '@aboardai/prompts';
 
-// Import platform utils from @automaker/platform
-import { getFeatureDir, ensureAutomakerDir } from '@automaker/platform';
+// Import platform utils from @aboardai/platform
+import { getFeatureDir, ensureAboardAIDir } from '@aboardai/platform';
 
-// Import model resolution from @automaker/model-resolver
-import { resolveModelString } from '@automaker/model-resolver';
+// Import model resolution from @aboardai/model-resolver
+import { resolveModelString } from '@aboardai/model-resolver';
 
-// Import dependency resolution from @automaker/dependency-resolver
-import { resolveDependencies } from '@automaker/dependency-resolver';
+// Import dependency resolution from @aboardai/dependency-resolver
+import { resolveDependencies } from '@aboardai/dependency-resolver';
 
-// Import git utils from @automaker/git-utils
-import { getGitRepositoryDiffs } from '@automaker/git-utils';
+// Import git utils from @aboardai/git-utils
+import { getGitRepositoryDiffs } from '@aboardai/git-utils';
 ```
 
 ### ❌ DON'T
@@ -356,25 +356,25 @@ import { resolveDependencies } from '../lib/dependency-resolver'; // ❌
 import { getEnhancementPrompt } from '../lib/enhancement-prompts'; // ❌
 
 // DON'T import from old lib/ paths
-import { getFeatureDir } from '../lib/automaker-paths';         // ❌
+import { getFeatureDir } from '../lib/aboardai-paths';         // ❌
 import { classifyError } from '../lib/error-handler';           // ❌
 
-// DON'T define types that exist in @automaker/types
-interface Feature { ... }  // ❌ Use: import type { Feature } from '@automaker/types';
+// DON'T define types that exist in @aboardai/types
+interface Feature { ... }  // ❌ Use: import type { Feature } from '@aboardai/types';
 ```
 
 ## Migration Checklist
 
 When refactoring server code, check:
 
-- [ ] All `Feature` imports use `@automaker/types`
-- [ ] All `ExecuteOptions` imports use `@automaker/types`
-- [ ] All logger usage uses `@automaker/utils`
-- [ ] All prompt templates use `@automaker/prompts`
-- [ ] All path operations use `@automaker/platform`
-- [ ] All model resolution uses `@automaker/model-resolver`
-- [ ] All dependency checks use `@automaker/dependency-resolver`
-- [ ] All git operations use `@automaker/git-utils`
+- [ ] All `Feature` imports use `@aboardai/types`
+- [ ] All `ExecuteOptions` imports use `@aboardai/types`
+- [ ] All logger usage uses `@aboardai/utils`
+- [ ] All prompt templates use `@aboardai/prompts`
+- [ ] All path operations use `@aboardai/platform`
+- [ ] All model resolution uses `@aboardai/model-resolver`
+- [ ] All dependency checks use `@aboardai/dependency-resolver`
+- [ ] All git operations use `@aboardai/git-utils`
 - [ ] No imports from old `lib/` paths
 - [ ] No imports from `services/feature-loader` for types
 - [ ] No imports from `providers/types`
@@ -384,18 +384,18 @@ When refactoring server code, check:
 Understanding the dependency chain helps prevent circular dependencies:
 
 ```
-@automaker/types (no dependencies)
+@aboardai/types (no dependencies)
     ↓
-@automaker/utils
-@automaker/prompts
-@automaker/platform
-@automaker/model-resolver
-@automaker/dependency-resolver
+@aboardai/utils
+@aboardai/prompts
+@aboardai/platform
+@aboardai/model-resolver
+@aboardai/dependency-resolver
     ↓
-@automaker/git-utils
+@aboardai/git-utils
     ↓
-@automaker/server
-@automaker/ui
+@aboardai/server
+@aboardai/ui
 ```
 
 **Rule:** Packages can only depend on packages above them in the chain.
@@ -426,8 +426,8 @@ When writing tests:
 
 ```typescript
 // ✅ Import from packages
-import type { Feature } from '@automaker/types';
-import { createLogger } from '@automaker/utils';
+import type { Feature } from '@aboardai/types';
+import { createLogger } from '@aboardai/utils';
 
 // ❌ Don't import from src
 import { Feature } from '../../../src/services/feature-loader';
@@ -437,13 +437,13 @@ import { Feature } from '../../../src/services/feature-loader';
 
 **Quick reference:**
 
-- Types → `@automaker/types`
-- Logging/Errors/Utils → `@automaker/utils`
-- AI Prompts → `@automaker/prompts`
-- Paths/Security → `@automaker/platform`
-- Model Resolution → `@automaker/model-resolver`
-- Dependency Ordering → `@automaker/dependency-resolver`
-- Git Operations → `@automaker/git-utils`
+- Types → `@aboardai/types`
+- Logging/Errors/Utils → `@aboardai/utils`
+- AI Prompts → `@aboardai/prompts`
+- Paths/Security → `@aboardai/platform`
+- Model Resolution → `@aboardai/model-resolver`
+- Dependency Ordering → `@aboardai/dependency-resolver`
+- Git Operations → `@aboardai/git-utils`
 
 **Never import from:** `lib/*`, `services/feature-loader` (for types), `providers/types`, `routes/common`
 

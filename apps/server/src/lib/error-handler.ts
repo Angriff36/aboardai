@@ -5,7 +5,7 @@
  * across all AI providers (Claude, Codex, Cursor)
  */
 
-import { createLogger } from '@automaker/utils';
+import { createLogger } from '@aboardai/utils';
 
 const logger = createLogger('ErrorHandler');
 

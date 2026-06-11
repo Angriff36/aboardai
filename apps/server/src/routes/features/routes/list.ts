@@ -11,7 +11,7 @@ import type { Request, Response } from 'express';
 import { FeatureLoader } from '../../../services/feature-loader.js';
 import type { AutoModeServiceCompat } from '../../../services/auto-mode/index.js';
 import { getErrorMessage, logError } from '../common.js';
-import { createLogger } from '@automaker/utils';
+import { createLogger } from '@aboardai/utils';
 
 const logger = createLogger('FeaturesListRoute');
 

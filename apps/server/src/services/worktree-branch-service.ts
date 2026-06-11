@@ -17,7 +17,7 @@
  * rebase-service.ts.
  */
 
-import { createLogger, getErrorMessage } from '@automaker/utils';
+import { createLogger, getErrorMessage } from '@aboardai/utils';
 import { execGitCommand } from '../lib/git.js';
 import type { EventEmitter } from '../lib/events.js';
 import { hasAnyChanges, stashChanges, popStash, localBranchExists } from './branch-utils.js';
@@ -232,7 +232,7 @@ export async function performSwitchBranch(
       targetBranch,
       action: 'push',
     });
-    const stashMessage = `automaker-branch-switch: ${previousBranch} → ${targetBranch}`;
+    const stashMessage = `aboardai-branch-switch: ${previousBranch} → ${targetBranch}`;
     try {
       didStash = await stashChanges(worktreePath, stashMessage, true);
     } catch (stashError) {

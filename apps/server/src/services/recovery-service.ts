@@ -3,20 +3,20 @@
  */
 
 import path from 'path';
-import type { Feature, FeatureStatusWithPipeline } from '@automaker/types';
-import { DEFAULT_MAX_CONCURRENCY } from '@automaker/types';
+import type { Feature, FeatureStatusWithPipeline } from '@aboardai/types';
+import { DEFAULT_MAX_CONCURRENCY } from '@aboardai/types';
 import {
   createLogger,
   readJsonWithRecovery,
   logRecoveryWarning,
   DEFAULT_BACKUP_COUNT,
-} from '@automaker/utils';
+} from '@aboardai/utils';
 import {
   getFeatureDir,
   getFeaturesDir,
   getExecutionStatePath,
-  ensureAutomakerDir,
-} from '@automaker/platform';
+  ensureAboardAIDir,
+} from '@aboardai/platform';
 import * as secureFs from '../lib/secure-fs.js';
 import { getPromptCustomization } from '../lib/settings-helpers.js';
 import type { TypedEventBus } from './typed-event-bus.js';
@@ -95,7 +95,7 @@ export class RecoveryService {
     maxConcurrency: number
   ): Promise<void> {
     try {
-      await ensureAutomakerDir(projectPath);
+      await ensureAboardAIDir(projectPath);
       const runningFeatureIds = this.concurrencyManager
         .getAllRunning()
         .filter((f) => f.projectPath === projectPath)
@@ -125,7 +125,7 @@ export class RecoveryService {
     maxConcurrency = DEFAULT_MAX_CONCURRENCY
   ): Promise<void> {
     try {
-      await ensureAutomakerDir(projectPath);
+      await ensureAboardAIDir(projectPath);
       const state: ExecutionState = {
         version: 1,
         autoLoopWasRunning,

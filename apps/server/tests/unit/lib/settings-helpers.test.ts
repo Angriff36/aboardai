@@ -9,8 +9,8 @@ import {
 import type { SettingsService } from '@/services/settings-service.js';
 
 // Mock the logger
-vi.mock('@automaker/utils', async () => {
-  const actual = await vi.importActual('@automaker/utils');
+vi.mock('@aboardai/utils', async () => {
+  const actual = await vi.importActual('@aboardai/utils');
   const mockLogger = {
     info: vi.fn(),
     error: vi.fn(),

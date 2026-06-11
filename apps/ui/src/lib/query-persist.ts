@@ -11,11 +11,11 @@
 
 import { get, set, del } from 'idb-keyval';
 import type { PersistedClient, Persister } from '@tanstack/react-query-persist-client';
-import { createLogger } from '@automaker/utils/logger';
+import { createLogger } from '@aboardai/utils/logger';
 
 const logger = createLogger('QueryPersist');
 
-const IDB_KEY = 'automaker-react-query-cache';
+const IDB_KEY = 'aboardai-react-query-cache';
 
 /**
  * Maximum age of persisted cache before it's discarded (24 hours).

@@ -27,8 +27,8 @@ import { toast } from 'sonner';
 import { cn, normalizeModelEntry } from '@/lib/utils';
 import { useAppStore } from '@/store/app-store';
 import type { ThinkingLevel, PlanningMode, Feature, FeatureImage } from '@/store/types';
-import type { ReasoningEffort, PhaseModelEntry, AgentModel } from '@automaker/types';
-import { normalizeThinkingLevelForModel, getThinkingLevelsForModel } from '@automaker/types';
+import type { ReasoningEffort, PhaseModelEntry, AgentModel } from '@aboardai/types';
+import { normalizeThinkingLevelForModel, getThinkingLevelsForModel } from '@aboardai/types';
 import {
   PrioritySelector,
   WorkModeSelector,
@@ -46,7 +46,7 @@ import {
   getAncestors,
   formatAncestorContextForPrompt,
   type AncestorContext,
-} from '@automaker/dependency-resolver';
+} from '@aboardai/dependency-resolver';
 
 /**
  * Determines the default work mode based on global settings and current worktree selection.

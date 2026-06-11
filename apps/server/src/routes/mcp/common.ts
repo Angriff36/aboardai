@@ -2,7 +2,7 @@
  * Common utilities for MCP routes
  */
 
-import { createLogger } from '@automaker/utils';
+import { createLogger } from '@aboardai/utils';
 
 const logger = createLogger('MCP');
 

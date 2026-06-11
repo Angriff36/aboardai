@@ -12,7 +12,7 @@ import {
   SkipForward,
   FileCheck,
 } from 'lucide-react';
-import { getBlockingDependencies } from '@automaker/dependency-resolver';
+import { getBlockingDependencies } from '@aboardai/dependency-resolver';
 import { useShallow } from 'zustand/react/shallow';
 import { usePipelineConfig } from '@/hooks/queries/use-pipeline';
 

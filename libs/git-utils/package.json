@@ -1,8 +1,8 @@
 {
-  "name": "@automaker/git-utils",
+  "name": "@aboardai/git-utils",
   "version": "1.0.0",
   "type": "module",
-  "description": "Git operations utilities for AutoMaker",
+  "description": "Git operations utilities for AboardAI",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "scripts": {
@@ -12,19 +12,19 @@
     "test:watch": "vitest"
   },
   "keywords": [
-    "automaker",
+    "aboardai",
     "git",
     "utils"
   ],
-  "author": "AutoMaker Team",
+  "author": "AboardAI Team",
   "license": "SEE LICENSE IN LICENSE",
   "engines": {
     "node": ">=22.0.0 <23.0.0"
   },
   "dependencies": {
-    "@automaker/platform": "1.0.0",
-    "@automaker/types": "1.0.0",
-    "@automaker/utils": "1.0.0"
+    "@aboardai/platform": "1.0.0",
+    "@aboardai/types": "1.0.0",
+    "@aboardai/utils": "1.0.0"
   },
   "devDependencies": {
     "@types/node": "22.19.3",

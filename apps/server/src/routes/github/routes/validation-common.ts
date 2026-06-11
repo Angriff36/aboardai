@@ -7,7 +7,7 @@
  * - Preventing duplicate validations for the same issue
  */
 
-import { createLogger } from '@automaker/utils';
+import { createLogger } from '@aboardai/utils';
 import { getErrorMessage as getErrorMessageShared, createLogError } from '../../common.js';
 
 const logger = createLogger('IssueValidation');

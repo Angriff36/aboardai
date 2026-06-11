@@ -3,31 +3,31 @@ services:
     volumes:
       # Mount your workspace directory to /projects inside the container
       # Example: mount your local /workspace to /projects inside the container
-      - /Users/webdevcody/Workspace/automaker-workspace:/projects:rw
+      - /Users/webdevcody/Workspace/aboardai-workspace:/projects:rw
 
       # ===== CLI Authentication (Optional) =====
       # Mount host CLI credentials to avoid re-authenticating in container
 
       # Claude CLI - mount your ~/.claude directory (Linux/Windows)
       # This shares your 'claude login' OAuth session with the container
-      # - ~/.claude:/home/automaker/.claude
+      # - ~/.claude:/home/aboardai/.claude
 
       # Cursor CLI - mount your ~/.cursor directory (Linux/Windows)
       # This shares your 'cursor-agent login' OAuth session with the container
-      # - ~/.cursor:/home/automaker/.cursor
+      # - ~/.cursor:/home/aboardai/.cursor
 
       # OpenCode CLI - mount your ~/.local/share/opencode directory
       # This shares your 'opencode auth login' session with the container
-      # - ~/.local/share/opencode:/home/automaker/.local/share/opencode
-      # - ~/.config/opencode:/home/automaker/.config/opencode
+      # - ~/.local/share/opencode:/home/aboardai/.local/share/opencode
+      # - ~/.config/opencode:/home/aboardai/.config/opencode
 
       # ===== Playwright Browser Cache (Optional) =====
       # Playwright Chromium is PRE-INSTALLED in the Docker image for automated testing.
       # Uncomment below to persist browser cache across container rebuilds (saves ~300MB download):
-      # - playwright-cache:/home/automaker/.cache/ms-playwright
+      # - playwright-cache:/home/aboardai/.cache/ms-playwright
       #
       # To update Playwright browsers manually:
-      #   docker exec --user automaker -w /app automaker-server npx playwright install chromium
+      #   docker exec --user aboardai -w /app aboardai-server npx playwright install chromium
     environment:
       # Set root directory for all projects and file operations
       # Users can only create/open projects within this directory
@@ -44,4 +44,4 @@ volumes:
   # Playwright cache volume - optional, persists browser updates across container rebuilds
   # Uncomment if you mounted the playwright-cache volume above
   # playwright-cache:
-  #   name: automaker-playwright-cache
+  #   name: aboardai-playwright-cache

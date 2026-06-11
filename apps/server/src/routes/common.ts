@@ -2,7 +2,7 @@
  * Common utilities shared across all route modules
  */
 
-import { createLogger } from '@automaker/utils';
+import { createLogger } from '@aboardai/utils';
 
 // Re-export git utilities from shared package
 export {
@@ -16,7 +16,7 @@ export {
   listAllFilesInDirectory,
   generateDiffsForNonGitDirectory,
   getGitRepositoryDiffs,
-} from '@automaker/git-utils';
+} from '@aboardai/git-utils';
 
 type Logger = ReturnType<typeof createLogger>;
 

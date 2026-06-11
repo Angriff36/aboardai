@@ -2,8 +2,8 @@
  * Terminal Config Section - Custom terminal configurations with theme synchronization
  *
  * This component provides UI for enabling custom terminal prompts that automatically
- * sync with Automaker's 40 themes. It's an opt-in feature that generates shell configs
- * in .automaker/terminal/ without modifying user's existing RC files.
+ * sync with AboardAI's 40 themes. It's an opt-in feature that generates shell configs
+ * in .aboardai/terminal/ without modifying user's existing RC files.
  */
 
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -24,7 +24,7 @@ import { cn } from '@/lib/utils';
 import { useAppStore } from '@/store/app-store';
 import { toast } from 'sonner';
 import { PromptPreview } from './prompt-preview';
-import type { TerminalPromptTheme } from '@automaker/types';
+import type { TerminalPromptTheme } from '@aboardai/types';
 import {
   PROMPT_THEME_CUSTOM_ID,
   PROMPT_THEME_PRESETS,
@@ -148,7 +148,7 @@ export function TerminalConfigSection() {
             {
               description: enabled
                 ? 'New terminals will use custom prompts'
-                : '.automaker/terminal/ will be cleaned up',
+                : '.aboardai/terminal/ will be cleaned up',
             }
           );
         },
@@ -297,7 +297,7 @@ export function TerminalConfigSection() {
         </div>
         <p className="text-sm text-muted-foreground/80 ml-12">
           Generate custom shell prompts that automatically sync with your app theme. Opt-in feature
-          that creates configs in .automaker/terminal/ without modifying your existing RC files.
+          that creates configs in .aboardai/terminal/ without modifying your existing RC files.
         </p>
       </div>
 
@@ -307,7 +307,7 @@ export function TerminalConfigSection() {
           <div className="space-y-1">
             <Label className="text-foreground font-medium">Enable Custom Configurations</Label>
             <p className="text-xs text-muted-foreground">
-              Create theme-synced shell configs in .automaker/terminal/
+              Create theme-synced shell configs in .aboardai/terminal/
             </p>
           </div>
           <Switch checked={terminalConfig.enabled} onCheckedChange={handleToggleEnabled} />
@@ -641,14 +641,14 @@ export function TerminalConfigSection() {
         open={showEnableConfirm}
         onOpenChange={setShowEnableConfirm}
         title="Enable custom terminal configurations"
-        description="Automaker will generate per-project shell configuration files for your terminal."
+        description="AboardAI will generate per-project shell configuration files for your terminal."
         icon={Info}
         confirmText="Enable"
         onConfirm={() => applyEnabledUpdate(true)}
       >
         <div className="space-y-3 text-sm text-muted-foreground">
           <ul className="list-disc space-y-1 pl-5">
-            <li>Creates shell config files in `.automaker/terminal/`</li>
+            <li>Creates shell config files in `.aboardai/terminal/`</li>
             <li>Applies prompts and colors that match your app theme</li>
             <li>Leaves your existing `~/.bashrc` and `~/.zshrc` untouched</li>
           </ul>

@@ -55,7 +55,7 @@ export function SpecHeader({
           <FileText className="w-5 h-5 text-muted-foreground" />
           <div>
             <h1 className="text-xl font-bold">App Specification</h1>
-            <p className="text-sm text-muted-foreground">{projectPath}/.automaker/app_spec.txt</p>
+            <p className="text-sm text-muted-foreground">{projectPath}/.aboardai/app_spec.txt</p>
           </div>
         </div>
         <div className="flex items-center gap-3">

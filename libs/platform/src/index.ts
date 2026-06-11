@@ -1,11 +1,11 @@
 /**
- * @automaker/platform
- * Platform-specific utilities for AutoMaker
+ * @aboardai/platform
+ * Platform-specific utilities for AboardAI
  */
 
 // Path utilities
 export {
-  getAutomakerDir,
+  getAboardAIDir,
   getFeaturesDir,
   getFeatureDir,
   getFeatureImagesDir,
@@ -25,7 +25,7 @@ export {
   getEventHistoryIndexPath,
   getEventPath,
   ensureEventHistoryDir,
-  ensureAutomakerDir,
+  ensureAboardAIDir,
   getGlobalSettingsPath,
   getCredentialsPath,
   getProjectSettingsPath,

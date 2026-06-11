@@ -1,8 +1,8 @@
 /**
- * Centralized port configuration for AutoMaker
+ * Centralized port configuration for AboardAI
  *
- * Re-exports from @automaker/types for backward compatibility.
- * The canonical definition is in @automaker/types to allow browser-safe imports.
+ * Re-exports from @aboardai/types for backward compatibility.
+ * The canonical definition is in @aboardai/types to allow browser-safe imports.
  */
 
-export { STATIC_PORT, SERVER_PORT, RESERVED_PORTS } from '@automaker/types';
+export { STATIC_PORT, SERVER_PORT, RESERVED_PORTS } from '@aboardai/types';

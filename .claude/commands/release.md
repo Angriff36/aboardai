@@ -30,7 +30,7 @@ This command accepts a version bump type as input:
      npm run build:electron --workspace=apps/ui
      ```
    - The build process automatically:
-     - Uses the version from `package.json` for artifact names (e.g., `Automaker-1.2.3-x64.zip`)
+     - Uses the version from `package.json` for artifact names (e.g., `AboardAI-1.2.3-x64.zip`)
      - Injects the version into the app via Vite's `__APP_VERSION__` constant
      - Displays the version below the logo in the sidebar
 
@@ -71,7 +71,7 @@ The version is centralized and synchronized in both `apps/ui/package.json` and `
 
 This ensures consistency across:
 
-- Build artifact names (e.g., `Automaker-1.2.3-x64.zip`)
-- App UI display (shown as `v1.2.3` below the logo in `apps/ui/src/components/layout/sidebar/components/automaker-logo.tsx`)
+- Build artifact names (e.g., `AboardAI-1.2.3-x64.zip`)
+- App UI display (shown as `v1.2.3` below the logo in `apps/ui/src/components/layout/sidebar/components/aboardai-logo.tsx`)
 - Server health endpoints (`/` and `/detailed`)
 - Package metadata (both UI and server packages stay in sync)

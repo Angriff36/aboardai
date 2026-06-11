@@ -4,14 +4,14 @@ import fs from 'fs';
 import path from 'path';
 
 /**
- * Note: auth.ts reads AUTOMAKER_API_KEY at module load time.
+ * Note: auth.ts reads ABOARDAI_API_KEY at module load time.
  * We need to reset modules and reimport for each test to get fresh state.
  */
 describe('auth.ts', () => {
   beforeEach(() => {
     vi.resetModules();
-    delete process.env.AUTOMAKER_API_KEY;
-    delete process.env.AUTOMAKER_HIDE_API_KEY;
+    delete process.env.ABOARDAI_API_KEY;
+    delete process.env.ABOARDAI_HIDE_API_KEY;
     delete process.env.NODE_ENV;
   });
 
@@ -31,7 +31,7 @@ describe('auth.ts', () => {
     });
 
     it('should reject request with invalid API key', async () => {
-      process.env.AUTOMAKER_API_KEY = 'test-secret-key';
+      process.env.ABOARDAI_API_KEY = 'test-secret-key';
 
       const { authMiddleware } = await import('@/lib/auth.js');
       const { req, res, next } = createMockExpressContext();
@@ -48,7 +48,7 @@ describe('auth.ts', () => {
     });
 
     it('should call next() with valid API key', async () => {
-      process.env.AUTOMAKER_API_KEY = 'test-secret-key';
+      process.env.ABOARDAI_API_KEY = 'test-secret-key';
 
       const { authMiddleware } = await import('@/lib/auth.js');
       const { req, res, next } = createMockExpressContext();
@@ -88,7 +88,7 @@ describe('auth.ts', () => {
     });
 
     it('should authenticate with API key in query parameter', async () => {
-      process.env.AUTOMAKER_API_KEY = 'test-secret-key';
+      process.env.ABOARDAI_API_KEY = 'test-secret-key';
 
       const { authMiddleware } = await import('@/lib/auth.js');
       const { req, res, next } = createMockExpressContext();
@@ -228,7 +228,7 @@ describe('auth.ts', () => {
 
   describe('validateApiKey', () => {
     it('should validate correct API key', async () => {
-      process.env.AUTOMAKER_API_KEY = 'test-secret-key';
+      process.env.ABOARDAI_API_KEY = 'test-secret-key';
 
       const { validateApiKey } = await import('@/lib/auth.js');
 
@@ -236,7 +236,7 @@ describe('auth.ts', () => {
     });
 
     it('should reject incorrect API key', async () => {
-      process.env.AUTOMAKER_API_KEY = 'test-secret-key';
+      process.env.ABOARDAI_API_KEY = 'test-secret-key';
 
       const { validateApiKey } = await import('@/lib/auth.js');
 
@@ -244,7 +244,7 @@ describe('auth.ts', () => {
     });
 
     it('should reject empty string', async () => {
-      process.env.AUTOMAKER_API_KEY = 'test-secret-key';
+      process.env.ABOARDAI_API_KEY = 'test-secret-key';
 
       const { validateApiKey } = await import('@/lib/auth.js');
 
@@ -252,7 +252,7 @@ describe('auth.ts', () => {
     });
 
     it('should reject null/undefined', async () => {
-      process.env.AUTOMAKER_API_KEY = 'test-secret-key';
+      process.env.ABOARDAI_API_KEY = 'test-secret-key';
 
       const { validateApiKey } = await import('@/lib/auth.js');
 
@@ -261,7 +261,7 @@ describe('auth.ts', () => {
     });
 
     it('should use timing-safe comparison for different lengths', async () => {
-      process.env.AUTOMAKER_API_KEY = 'test-secret-key';
+      process.env.ABOARDAI_API_KEY = 'test-secret-key';
 
       const { validateApiKey } = await import('@/lib/auth.js');
 
@@ -306,13 +306,13 @@ describe('auth.ts', () => {
       const { getSessionCookieName } = await import('@/lib/auth.js');
       const name = getSessionCookieName();
 
-      expect(name).toBe('automaker_session');
+      expect(name).toBe('aboardai_session');
     });
   });
 
   describe('isRequestAuthenticated', () => {
     it('should return true for authenticated request with API key', async () => {
-      process.env.AUTOMAKER_API_KEY = 'test-secret-key';
+      process.env.ABOARDAI_API_KEY = 'test-secret-key';
 
       const { isRequestAuthenticated } = await import('@/lib/auth.js');
       const { req } = createMockExpressContext();
@@ -340,7 +340,7 @@ describe('auth.ts', () => {
 
   describe('checkRawAuthentication', () => {
     it('should return true for valid API key in headers', async () => {
-      process.env.AUTOMAKER_API_KEY = 'test-secret-key';
+      process.env.ABOARDAI_API_KEY = 'test-secret-key';
 
       const { checkRawAuthentication } = await import('@/lib/auth.js');
 
@@ -355,7 +355,7 @@ describe('auth.ts', () => {
     });
 
     it('should return true for valid API key in query', async () => {
-      process.env.AUTOMAKER_API_KEY = 'test-secret-key';
+      process.env.ABOARDAI_API_KEY = 'test-secret-key';
 
       const { checkRawAuthentication } = await import('@/lib/auth.js');
 

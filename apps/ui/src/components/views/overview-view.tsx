@@ -7,7 +7,7 @@
 
 import { useState, useCallback } from 'react';
 import { useNavigate } from '@tanstack/react-router';
-import { createLogger } from '@automaker/utils/logger';
+import { createLogger } from '@aboardai/utils/logger';
 import { useMultiProjectStatus } from '@/hooks/use-multi-project-status';
 import { useAppStore } from '@/store/app-store';
 import { isElectron, getElectronAPI } from '@/lib/electron';
@@ -131,7 +131,7 @@ export function OverviewView() {
         }
 
         await api.writeFile(
-          `${projectPath}/.automaker/app_spec.txt`,
+          `${projectPath}/.aboardai/app_spec.txt`,
           `<project_specification>
   <project_name>${projectName}</project_name>
   <overview>Describe your project here.</overview>
@@ -260,7 +260,7 @@ export function OverviewView() {
                 <LayoutDashboard className="w-4 h-4 text-brand-500" />
               </div>
               <div>
-                <h1 className="text-lg font-semibold text-foreground">Automaker Dashboard</h1>
+                <h1 className="text-lg font-semibold text-foreground">AboardAI Dashboard</h1>
                 <p className="text-xs text-muted-foreground">
                   {overview ? `${overview.aggregate.projectCounts.total} projects` : 'Loading...'}
                 </p>

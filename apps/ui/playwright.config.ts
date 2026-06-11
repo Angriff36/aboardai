@@ -82,12 +82,12 @@ export default defineConfig({
                     // Ensure server can find git in CI/minimal env (worktree list, etc.)
                     PATH: e2eServerPath,
                     // Enable mock agent in CI to avoid real API calls
-                    AUTOMAKER_MOCK_AGENT: mockAgent ? 'true' : 'false',
+                    ABOARDAI_MOCK_AGENT: mockAgent ? 'true' : 'false',
                     // Set a test API key for web mode authentication
-                    AUTOMAKER_API_KEY:
-                      process.env.AUTOMAKER_API_KEY || 'test-api-key-for-e2e-tests',
+                    ABOARDAI_API_KEY:
+                      process.env.ABOARDAI_API_KEY || 'test-api-key-for-e2e-tests',
                     // Hide the API key banner to reduce log noise
-                    AUTOMAKER_HIDE_API_KEY: 'true',
+                    ABOARDAI_HIDE_API_KEY: 'true',
                     // Explicitly unset ALLOWED_ROOT_DIRECTORY to allow all paths for testing
                     // (prevents inheriting /projects from Docker or other environments)
                     ALLOWED_ROOT_DIRECTORY: '',
@@ -108,10 +108,10 @@ export default defineConfig({
             timeout: 120000,
             env: {
               ...process.env,
-              // Must set AUTOMAKER_WEB_PORT to match the port Playwright waits for
-              AUTOMAKER_WEB_PORT: String(port),
-              // Must set AUTOMAKER_SERVER_PORT so Vite proxy forwards to the correct backend port
-              AUTOMAKER_SERVER_PORT: String(serverPort),
+              // Must set ABOARDAI_WEB_PORT to match the port Playwright waits for
+              ABOARDAI_WEB_PORT: String(port),
+              // Must set ABOARDAI_SERVER_PORT so Vite proxy forwards to the correct backend port
+              ABOARDAI_SERVER_PORT: String(serverPort),
               VITE_SKIP_SETUP: 'true',
               // Always skip electron plugin during tests - prevents duplicate server spawning
               VITE_SKIP_ELECTRON: 'true',

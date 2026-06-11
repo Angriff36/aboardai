@@ -11,7 +11,7 @@ export function createAuthOpencodeHandler() {
   return async (_req: Request, res: Response): Promise<void> => {
     try {
       // Remove the disconnected marker file to reconnect the app to the CLI
-      const markerPath = path.join(process.cwd(), '.automaker', '.opencode-disconnected');
+      const markerPath = path.join(process.cwd(), '.aboardai', '.opencode-disconnected');
       if (fs.existsSync(markerPath)) {
         fs.unlinkSync(markerPath);
       }

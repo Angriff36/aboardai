@@ -1,7 +1,7 @@
 import { Router, Request, Response } from 'express';
 import { GeminiProvider } from '../../providers/gemini-provider.js';
 import { GeminiUsageService } from '../../services/gemini-usage-service.js';
-import { createLogger } from '@automaker/utils';
+import { createLogger } from '@aboardai/utils';
 import type { EventEmitter } from '../../lib/events.js';
 
 const logger = createLogger('Gemini');

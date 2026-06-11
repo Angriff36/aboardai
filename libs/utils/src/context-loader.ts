@@ -1,8 +1,8 @@
 /**
  * Context Loader - Loads project context files for agent prompts
  *
- * Provides a shared utility to load context files from .automaker/context/
- * and memory files from .automaker/memory/, formatting them as system prompt
+ * Provides a shared utility to load context files from .aboardai/context/
+ * and memory files from .aboardai/memory/, formatting them as system prompt
  * content. Used by both auto-mode-service and agent-service to ensure all
  * agents are aware of project context and past learnings.
  *
@@ -14,7 +14,7 @@
  */
 
 import path from 'path';
-import { secureFs } from '@automaker/platform';
+import { secureFs } from '@aboardai/platform';
 import {
   getMemoryDir,
   parseFrontmatter,
@@ -29,7 +29,7 @@ import {
 
 /**
  * Metadata structure for context files
- * Stored in {projectPath}/.automaker/context/context-metadata.json
+ * Stored in {projectPath}/.aboardai/context/context-metadata.json
  */
 export interface ContextMetadata {
   files: Record<string, { description: string }>;
@@ -46,7 +46,7 @@ export interface ContextFileInfo {
 }
 
 /**
- * Memory file info (from .automaker/memory/)
+ * Memory file info (from .aboardai/memory/)
  */
 export interface MemoryFileInfo {
   name: string;
@@ -66,7 +66,7 @@ export interface ContextFilesResult {
 
 /**
  * File system module interface for context loading
- * Compatible with secureFs from @automaker/platform
+ * Compatible with secureFs from @aboardai/platform
  * Includes write methods needed for memory initialization
  */
 export interface ContextFsModule {
@@ -97,9 +97,9 @@ export interface LoadContextFilesOptions {
   projectPath: string;
   /** Optional custom secure fs module (for dependency injection) */
   fsModule?: ContextFsModule;
-  /** Whether to include context files from .automaker/context/ (default: true) */
+  /** Whether to include context files from .aboardai/context/ (default: true) */
   includeContextFiles?: boolean;
-  /** Whether to include memory files from .automaker/memory/ (default: true) */
+  /** Whether to include memory files from .aboardai/memory/ (default: true) */
   includeMemory?: boolean;
   /** Whether to initialize memory folder if it doesn't exist (default: true) */
   initializeMemory?: boolean;
@@ -113,7 +113,7 @@ export interface LoadContextFilesOptions {
  * Get the context directory path for a project
  */
 function getContextDir(projectPath: string): string {
-  return path.join(projectPath, '.automaker', 'context');
+  return path.join(projectPath, '.aboardai', 'context');
 }
 
 /**
@@ -180,8 +180,8 @@ ${formattedFiles.join('\n\n---\n\n')}
 }
 
 /**
- * Load context files from a project's .automaker/context/ directory
- * and optionally memory files from .automaker/memory/
+ * Load context files from a project's .aboardai/context/ directory
+ * and optionally memory files from .aboardai/memory/
  *
  * This function loads all .md and .txt files from the context directory,
  * along with their metadata (descriptions), and formats them into a

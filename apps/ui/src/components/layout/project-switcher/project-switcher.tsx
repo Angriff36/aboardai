@@ -17,7 +17,7 @@ import {
 } from '@/components/layout/sidebar/constants';
 import type { Project } from '@/lib/electron';
 import { getElectronAPI, isElectron } from '@/lib/electron';
-import { initializeProject, hasAppSpec, hasAutomakerDir } from '@/lib/project-init';
+import { initializeProject, hasAppSpec, hasAboardAIDir } from '@/lib/project-init';
 import { toast } from 'sonner';
 import { CreateSpecDialog } from '@/components/views/spec-view/dialogs';
 import type { FeatureCount } from '@/components/views/spec-view/types';
@@ -107,7 +107,7 @@ export function ProjectSwitcher() {
         return;
       }
       try {
-        // Ensure .automaker directory structure exists before switching
+        // Ensure .aboardai directory structure exists before switching
         await initializeProject(project.path);
       } catch (error) {
         console.error('Failed to initialize project during switch:', error);
@@ -141,7 +141,7 @@ export function ProjectSwitcher() {
 
   const handleBugReportClick = useCallback(() => {
     const api = getElectronAPI();
-    api.openExternalLink('https://github.com/AutoMaker-Org/automaker/issues');
+    api.openExternalLink('https://github.com/AboardAI-Org/aboardai/issues');
   }, []);
 
   const handleWikiClick = useCallback(() => {
@@ -161,10 +161,10 @@ export function ProjectSwitcher() {
       const name = path.split(/[/\\]/).filter(Boolean).pop() || 'Untitled Project';
 
       try {
-        // Check if this is a brand new project (no .automaker directory)
-        const hadAutomakerDir = await hasAutomakerDir(path);
+        // Check if this is a brand new project (no .aboardai directory)
+        const hadAboardAIDir = await hasAboardAIDir(path);
 
-        // Initialize the .automaker directory structure
+        // Initialize the .aboardai directory structure
         const initResult = await initializeProject(path);
 
         if (!initResult.success) {
@@ -181,7 +181,7 @@ export function ProjectSwitcher() {
         // Check if app_spec.txt exists
         const specExists = await hasAppSpec(path);
 
-        if (!hadAutomakerDir && !specExists) {
+        if (!hadAboardAIDir && !specExists) {
           // This is a brand new project - show setup dialog
           setSetupProjectPath(path);
           setShowSetupDialog(true);
@@ -190,7 +190,7 @@ export function ProjectSwitcher() {
           });
         } else if (initResult.createdFiles && initResult.createdFiles.length > 0) {
           toast.success(initResult.isNewProject ? 'Project initialized' : 'Project updated', {
-            description: `Set up ${initResult.createdFiles.length} file(s) in .automaker`,
+            description: `Set up ${initResult.createdFiles.length} file(s) in .aboardai`,
           });
         } else {
           toast.success('Project opened', {
@@ -299,7 +299,7 @@ export function ProjectSwitcher() {
         )}
         data-testid="project-switcher"
       >
-        {/* Automaker Logo and Version */}
+        {/* AboardAI Logo and Version */}
         <div
           className={cn(
             'flex flex-col items-center pb-2 px-2',
@@ -315,7 +315,7 @@ export function ProjectSwitcher() {
               xmlns="http://www.w3.org/2000/svg"
               viewBox="0 0 256 256"
               role="img"
-              aria-label="Automaker Logo"
+              aria-label="AboardAI Logo"
               className="size-10 group-hover:rotate-12 transition-transform duration-300 ease-out"
             >
               <defs>

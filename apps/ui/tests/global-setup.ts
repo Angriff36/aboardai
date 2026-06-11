@@ -56,7 +56,7 @@ async function authenticateAndSaveState(_config: FullConfig) {
   // Ensure auth directory exists
   fs.mkdirSync(AUTH_DIR, { recursive: true });
 
-  const apiKey = process.env.AUTOMAKER_API_KEY || 'test-api-key-for-e2e-tests';
+  const apiKey = process.env.ABOARDAI_API_KEY || 'test-api-key-for-e2e-tests';
 
   // Wait for backend to be ready (exponential backoff: 250ms → 500ms → 1s → 2s)
   const start = Date.now();
@@ -104,14 +104,14 @@ async function authenticateAndSaveState(_config: FullConfig) {
     if (!response?.success || !response.token) {
       throw new Error(
         '[GlobalSetup] Login failed - cannot proceed without authentication. ' +
-          'Check that the backend is running and AUTOMAKER_API_KEY is set correctly.'
+          'Check that the backend is running and ABOARDAI_API_KEY is set correctly.'
       );
     }
 
     // Set the session cookie
     await context.addCookies([
       {
-        name: 'automaker_session',
+        name: 'aboardai_session',
         value: response.token,
         domain: '127.0.0.1',
         path: '/',

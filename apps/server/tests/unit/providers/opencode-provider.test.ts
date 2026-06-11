@@ -3,11 +3,11 @@ import {
   OpencodeProvider,
   resetToolUseIdCounter,
 } from '../../../src/providers/opencode-provider.js';
-import type { ProviderMessage, ModelDefinition } from '@automaker/types';
+import type { ProviderMessage, ModelDefinition } from '@aboardai/types';
 import { collectAsyncGenerator } from '../../utils/helpers.js';
-import { spawnJSONLProcess, getOpenCodeAuthIndicators } from '@automaker/platform';
+import { spawnJSONLProcess, getOpenCodeAuthIndicators } from '@aboardai/platform';
 
-vi.mock('@automaker/platform', () => ({
+vi.mock('@aboardai/platform', () => ({
   spawnJSONLProcess: vi.fn(),
   isWslAvailable: vi.fn().mockReturnValue(false),
   findCliInWsl: vi.fn().mockReturnValue(null),

@@ -4,7 +4,7 @@
  * Tests opening an existing project directory from the welcome view.
  * This verifies that:
  * 1. An existing directory can be opened as a project
- * 2. The .automaker directory is initialized if it doesn't exist
+ * 2. The .aboardai directory is initialized if it doesn't exist
  * 3. The project is loaded and shown in the board view
  */
 
@@ -181,25 +181,25 @@ test.describe('Open Project', () => {
     // Only verify filesystem if we opened our specific test project
     // (not a fallback project from previous test runs)
     if (targetProjectName === projectName) {
-      // Verify .automaker directory was created (initialized for the first time)
+      // Verify .aboardai directory was created (initialized for the first time)
       // Use polling since file creation may be async
-      const automakerDir = path.join(projectPath, '.automaker');
+      const aboardaiDir = path.join(projectPath, '.aboardai');
       await expect(async () => {
-        expect(fs.existsSync(automakerDir)).toBe(true);
+        expect(fs.existsSync(aboardaiDir)).toBe(true);
       }).toPass({ timeout: 10000 });
 
       // Verify the required structure was created by initializeProject:
-      // - .automaker/categories.json
-      // - .automaker/features directory
-      // - .automaker/context directory
-      const categoriesPath = path.join(automakerDir, 'categories.json');
+      // - .aboardai/categories.json
+      // - .aboardai/features directory
+      // - .aboardai/context directory
+      const categoriesPath = path.join(aboardaiDir, 'categories.json');
       await expect(async () => {
         expect(fs.existsSync(categoriesPath)).toBe(true);
       }).toPass({ timeout: 10000 });
 
       // Verify subdirectories were created
-      expect(fs.existsSync(path.join(automakerDir, 'features'))).toBe(true);
-      expect(fs.existsSync(path.join(automakerDir, 'context'))).toBe(true);
+      expect(fs.existsSync(path.join(aboardaiDir, 'features'))).toBe(true);
+      expect(fs.existsSync(path.join(aboardaiDir, 'context'))).toBe(true);
 
       // Verify the original project files still exist (weren't modified)
       expect(fs.existsSync(path.join(projectPath, 'package.json'))).toBe(true);

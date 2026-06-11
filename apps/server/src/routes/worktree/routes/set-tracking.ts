@@ -8,7 +8,7 @@
  */
 
 import type { Request, Response } from 'express';
-import { execGitCommand } from '@automaker/git-utils';
+import { execGitCommand } from '@aboardai/git-utils';
 import { getErrorMessage, logError } from '../common.js';
 import { getCurrentBranch } from '../../../lib/git.js';
 

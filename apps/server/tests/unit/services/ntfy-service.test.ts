@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { NtfyService } from '../../../src/services/ntfy-service.js';
-import type { NtfyEndpointConfig } from '@automaker/types';
+import type { NtfyEndpointConfig } from '@aboardai/types';
 
 // Mock global fetch
 const originalFetch = global.fetch;

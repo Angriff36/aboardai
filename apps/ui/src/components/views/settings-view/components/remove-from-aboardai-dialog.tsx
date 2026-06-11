@@ -2,19 +2,19 @@ import { Folder, LogOut } from 'lucide-react';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import type { Project } from '@/lib/electron';
 
-interface RemoveFromAutomakerDialogProps {
+interface RemoveFromAboardAIDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   project: Project | null;
   onConfirm: (projectId: string) => void;
 }
 
-export function RemoveFromAutomakerDialog({
+export function RemoveFromAboardAIDialog({
   open,
   onOpenChange,
   project,
   onConfirm,
-}: RemoveFromAutomakerDialogProps) {
+}: RemoveFromAboardAIDialogProps) {
   const handleConfirm = () => {
     if (project) {
       onConfirm(project.id);
@@ -26,11 +26,11 @@ export function RemoveFromAutomakerDialog({
       open={open}
       onOpenChange={onOpenChange}
       onConfirm={handleConfirm}
-      title="Remove from Automaker"
-      description="Remove this project from Automaker? The folder will remain on disk and can be re-added later."
+      title="Remove from AboardAI"
+      description="Remove this project from AboardAI? The folder will remain on disk and can be re-added later."
       icon={LogOut}
       iconClassName="text-muted-foreground"
-      confirmText="Remove from Automaker"
+      confirmText="Remove from AboardAI"
       confirmVariant="secondary"
     >
       {project && (

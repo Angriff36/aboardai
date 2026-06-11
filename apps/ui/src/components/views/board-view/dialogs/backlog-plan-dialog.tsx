@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from 'react';
-import { createLogger } from '@automaker/utils/logger';
+import { createLogger } from '@aboardai/utils/logger';
 import {
   Dialog,
   DialogContent,
@@ -22,7 +22,7 @@ import type {
   ModelAlias,
   CursorModelId,
   PhaseModelEntry,
-} from '@automaker/types';
+} from '@aboardai/types';
 import { ModelOverrideTrigger } from '@/components/shared/model-override-trigger';
 import { useAppStore } from '@/store/app-store';
 

@@ -64,7 +64,7 @@ test.describe('Delete Context File', () => {
 
     // Verify the file is deleted from the filesystem
     const fixturePath = getFixturePath();
-    const contextPath = path.join(fixturePath, '.automaker', 'context', fileName);
+    const contextPath = path.join(fixturePath, '.aboardai', 'context', fileName);
     expect(fs.existsSync(contextPath)).toBe(false);
   });
 });

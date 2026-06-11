@@ -1,27 +1,27 @@
 <p align="center">
-  <img src="apps/ui/public/readme_logo.svg" alt="Automaker Logo" height="80" />
+  <img src="apps/ui/public/readme_logo.svg" alt="AboardAI Logo" height="80" />
 </p>
 
 > **[!TIP]**
 >
 > **Learn more about Agentic Coding!**
 >
-> Automaker itself was built by a group of engineers using AI and agentic coding techniques to build features faster than ever. By leveraging tools like Cursor IDE and Claude Code CLI, the team orchestrated AI agents to implement complex functionality in days instead of weeks.
+> AboardAI itself was built by a group of engineers using AI and agentic coding techniques to build features faster than ever. By leveraging tools like Cursor IDE and Claude Code CLI, the team orchestrated AI agents to implement complex functionality in days instead of weeks.
 >
-> **Learn how:** Master these same techniques and workflows in the [Agentic Jumpstart course](https://agenticjumpstart.com/?utm=automaker-gh).
+> **Learn how:** Master these same techniques and workflows in the [Agentic Jumpstart course](https://agenticjumpstart.com/?utm=aboardai-gh).
 
-# Automaker
+# AboardAI
 
 **Stop typing code. Start directing AI agents.**
 
 > **[!IMPORTANT]**
 >
-> **Claude Agent SDK billing changes on June 15, 2026.** If you use Automaker's **Claude** provider, agent usage moves to a separate monthly credit pool (no longer your subscription limits) that you must claim once. Other providers (Codex, Copilot, Cursor, Gemini, OpenCode) are unaffected. → [See details](#powered-by-claude-agent-sdk)
+> **Claude Agent SDK billing changes on June 15, 2026.** If you use AboardAI's **Claude** provider, agent usage moves to a separate monthly credit pool (no longer your subscription limits) that you must claim once. Other providers (Codex, Copilot, Cursor, Gemini, OpenCode) are unaffected. → [See details](#powered-by-claude-agent-sdk)
 
 <details open>
 <summary><h2>Table of Contents</h2></summary>
 
-- [What Makes Automaker Different?](#what-makes-automaker-different)
+- [What Makes AboardAI Different?](#what-makes-aboardai-different)
   - [The Workflow](#the-workflow)
   - [Powered by Claude Agent SDK](#powered-by-claude-agent-sdk)
   - [Why This Matters](#why-this-matters)
@@ -62,31 +62,31 @@
 
 </details>
 
-Automaker is an autonomous AI development studio that transforms how you build software. Instead of manually writing every line of code, you describe features on a Kanban board and watch as AI agents powered by Claude Agent SDK automatically implement them. Built with React, Vite, Electron, and Express, Automaker provides a complete workflow for managing AI agents through a desktop application (or web browser), with features like real-time streaming, git worktree isolation, plan approval, and multi-agent task execution.
+AboardAI is an autonomous AI development studio that transforms how you build software. Instead of manually writing every line of code, you describe features on a Kanban board and watch as AI agents powered by Claude Agent SDK automatically implement them. Built with React, Vite, Electron, and Express, AboardAI provides a complete workflow for managing AI agents through a desktop application (or web browser), with features like real-time streaming, git worktree isolation, plan approval, and multi-agent task execution.
 
-![Automaker UI](https://i.imgur.com/jdwKydM.png)
+![AboardAI UI](https://i.imgur.com/jdwKydM.png)
 
-## What Makes Automaker Different?
+## What Makes AboardAI Different?
 
-Traditional development tools help you write code. Automaker helps you **orchestrate AI agents** to build entire features autonomously. Think of it as having a team of AI developers working for you—you define what needs to be built, and Automaker handles the implementation.
+Traditional development tools help you write code. AboardAI helps you **orchestrate AI agents** to build entire features autonomously. Think of it as having a team of AI developers working for you—you define what needs to be built, and AboardAI handles the implementation.
 
 ### The Workflow
 
 1. **Add Features** - Describe features you want built (with text, images, or screenshots)
-2. **Move to "In Progress"** - Automaker automatically assigns an AI agent to implement the feature
+2. **Move to "In Progress"** - AboardAI automatically assigns an AI agent to implement the feature
 3. **Watch It Build** - See real-time progress as the agent writes code, runs tests, and makes changes
 4. **Review & Verify** - Review the changes, run tests, and approve when ready
 5. **Ship Faster** - Build entire applications in days, not weeks
 
 ### Powered by Claude Agent SDK
 
-Automaker leverages the [Claude Agent SDK](https://www.npmjs.com/package/@anthropic-ai/claude-agent-sdk) to give AI agents full access to your codebase. Agents can read files, write code, execute commands, run tests, and make git commits—all while working in isolated git worktrees to keep your main branch safe. The SDK provides autonomous AI agents that can use tools, make decisions, and complete complex multi-step tasks without constant human intervention.
+AboardAI leverages the [Claude Agent SDK](https://www.npmjs.com/package/@anthropic-ai/claude-agent-sdk) to give AI agents full access to your codebase. Agents can read files, write code, execute commands, run tests, and make git commits—all while working in isolated git worktrees to keep your main branch safe. The SDK provides autonomous AI agents that can use tools, make decisions, and complete complex multi-step tasks without constant human intervention.
 
 > **[!IMPORTANT]**
 >
 > **Claude Agent SDK billing change (effective June 15, 2026)**
 >
-> This applies **only to Automaker's Claude provider**, which is built on the Claude Agent SDK. If you run agents with other providers (Codex, Copilot, Cursor, Gemini, OpenCode), they are billed through those services and are unaffected. Anthropic is moving programmatic Agent SDK usage out of your normal subscription rate limits and onto a **separate, dollar-denominated monthly credit pool**. Interactive use (Claude.ai chat, Claude Code in your terminal/IDE) keeps using your existing subscription limits, but the Agent SDK, the `claude -p` command, and apps built on it like Automaker draw from this new credit instead.
+> This applies **only to AboardAI's Claude provider**, which is built on the Claude Agent SDK. If you run agents with other providers (Codex, Copilot, Cursor, Gemini, OpenCode), they are billed through those services and are unaffected. Anthropic is moving programmatic Agent SDK usage out of your normal subscription rate limits and onto a **separate, dollar-denominated monthly credit pool**. Interactive use (Claude.ai chat, Claude Code in your terminal/IDE) keeps using your existing subscription limits, but the Agent SDK, the `claude -p` command, and apps built on it like AboardAI draw from this new credit instead.
 >
 > - **Monthly credit by plan:** Pro `$20`, Max 5x `$100`, Max 20x `$200` (Team Standard `$20`, Team Premium `$100`, Enterprise `$20–$200`). Credit is metered at standard API rates, refreshes each billing cycle, and does **not** roll over.
 > - **You must claim the credit once.** It is a one-time opt-in through your Claude account; after that it refreshes automatically each cycle. Team/Enterprise admins receive instructions by email, and each member claims their own credit.
@@ -96,7 +96,7 @@ Automaker leverages the [Claude Agent SDK](https://www.npmjs.com/package/@anthro
 
 ### Why This Matters
 
-The future of software development is **agentic coding**—where developers become architects directing AI agents rather than manual coders. Automaker puts this future in your hands today, letting you experience what it's like to build software 10x faster with AI agents handling the implementation while you focus on architecture and business logic.
+The future of software development is **agentic coding**—where developers become architects directing AI agents rather than manual coders. AboardAI puts this future in your hands today, letting you experience what it's like to build software 10x faster with AI agents handling the implementation while you focus on architecture and business logic.
 
 ## Community & Support
 
@@ -106,7 +106,7 @@ In the Discord, you can:
 
 - 💬 Discuss agentic coding patterns and best practices
 - 🧠 Share ideas for AI-driven development workflows
-- 🛠️ Get help setting up or extending Automaker
+- 🛠️ Get help setting up or extending AboardAI
 - 🚀 Show off projects built with AI agents
 - 🤝 Collaborate with other developers and contributors
 
@@ -120,26 +120,26 @@ In the Discord, you can:
 
 - **Node.js 22+** (required: >=22.0.0 <23.0.0)
 - **npm** (comes with Node.js)
-- **[Claude Code CLI](https://code.claude.com/docs/en/overview)** - Install and authenticate with your Anthropic subscription. Automaker integrates with your authenticated Claude Code CLI to access Claude models.
+- **[Claude Code CLI](https://code.claude.com/docs/en/overview)** - Install and authenticate with your Anthropic subscription. AboardAI integrates with your authenticated Claude Code CLI to access Claude models.
 
 ### Quick Start
 
 ```bash
 # 1. Clone the repository
-git clone https://github.com/AutoMaker-Org/automaker.git
-cd automaker
+git clone https://github.com/AboardAI-Org/aboardai.git
+cd aboardai
 
 # 2. Install dependencies
 npm install
 
-# 3. Start Automaker
+# 3. Start AboardAI
 npm run dev
 # Choose between:
 #   1. Web Application (browser at localhost:3007)
 #   2. Desktop Application (Electron - recommended)
 ```
 
-**Authentication:** Automaker integrates with your authenticated Claude Code CLI. Make sure you have [installed and authenticated](https://code.claude.com/docs/en/quickstart) the Claude Code CLI before running Automaker. Your CLI credentials will be detected automatically.
+**Authentication:** AboardAI integrates with your authenticated Claude Code CLI. Make sure you have [installed and authenticated](https://code.claude.com/docs/en/quickstart) the Claude Code CLI before running AboardAI. Your CLI credentials will be detected automatically.
 
 **For Development:** `npm run dev` starts the development server with Vite live reload and hot module replacement for fast refresh and instant updates as you make changes.
 
@@ -147,7 +147,7 @@ npm run dev
 
 ### Development Mode
 
-Start Automaker in development mode:
+Start AboardAI in development mode:
 
 ```bash
 npm run dev
@@ -184,19 +184,19 @@ For a user-friendly interactive menu, use the built-in TUI launcher script:
 
 ```bash
 # Show interactive menu with all launch options
-./start-automaker.sh
+./start-aboardai.sh
 
 # Or launch directly without menu
-./start-automaker.sh web          # Web browser
-./start-automaker.sh electron     # Desktop app
-./start-automaker.sh electron-debug  # Desktop + DevTools
+./start-aboardai.sh web          # Web browser
+./start-aboardai.sh electron     # Desktop app
+./start-aboardai.sh electron-debug  # Desktop + DevTools
 
 # Additional options
-./start-automaker.sh --help       # Show all available options
-./start-automaker.sh --version    # Show version information
-./start-automaker.sh --check-deps # Verify project dependencies
-./start-automaker.sh --no-colors  # Disable colored output
-./start-automaker.sh --no-history # Don't remember last choice
+./start-aboardai.sh --help       # Show all available options
+./start-aboardai.sh --version    # Show version information
+./start-aboardai.sh --check-deps # Verify project dependencies
+./start-aboardai.sh --no-colors  # Disable colored output
+./start-aboardai.sh --no-history # Don't remember last choice
 ```
 
 **Features:**
@@ -210,7 +210,7 @@ For a user-friendly interactive menu, use the built-in TUI launcher script:
 - 🌐 Cross-shell compatible (bash/zsh)
 
 **History File:**
-Your last selected mode is saved in `~/.automaker_launcher_history` for quick re-runs.
+Your last selected mode is saved in `~/.aboardai_launcher_history` for quick re-runs.
 
 ### Building for Production
 
@@ -245,18 +245,18 @@ npm run build:electron:linux   # Linux (AppImage + DEB + RPM, x64)
 
 ```bash
 # Download the RPM package
-wget https://github.com/AutoMaker-Org/automaker/releases/latest/download/Automaker-<version>-x86_64.rpm
+wget https://github.com/AboardAI-Org/aboardai/releases/latest/download/AboardAI-<version>-x86_64.rpm
 
 # Install with dnf (Fedora)
-sudo dnf install ./Automaker-<version>-x86_64.rpm
+sudo dnf install ./AboardAI-<version>-x86_64.rpm
 
 # Or with yum (RHEL/CentOS)
-sudo yum localinstall ./Automaker-<version>-x86_64.rpm
+sudo yum localinstall ./AboardAI-<version>-x86_64.rpm
 ```
 
 #### Docker Deployment
 
-Docker provides the most secure way to run Automaker by isolating it from your host filesystem.
+Docker provides the most secure way to run AboardAI by isolating it from your host filesystem.
 
 ```bash
 # Build and run with Docker Compose
@@ -274,7 +274,7 @@ docker-compose down
 
 ##### Authentication
 
-Automaker integrates with your authenticated Claude Code CLI. To use CLI authentication in Docker, mount your Claude CLI config directory (see [Claude CLI Authentication](#claude-cli-authentication) below).
+AboardAI integrates with your authenticated Claude Code CLI. To use CLI authentication in Docker, mount your Claude CLI config directory (see [Claude CLI Authentication](#claude-cli-authentication) below).
 
 ##### Working with Projects (Host Directory Access)
 
@@ -297,9 +297,9 @@ services:
   server:
     volumes:
       # Linux/macOS
-      - ~/.claude:/home/automaker/.claude
+      - ~/.claude:/home/aboardai/.claude
       # Windows
-      - C:/Users/YourName/.claude:/home/automaker/.claude
+      - C:/Users/YourName/.claude:/home/aboardai/.claude
 ```
 
 **Note:** The Claude CLI config must be writable (do not use `:ro` flag) as the CLI writes debug files.
@@ -314,7 +314,7 @@ services:
 > id -g  # outputs your GID (e.g., 1000)
 > ```
 >
-> Create a `.env` file in the automaker directory:
+> Create a `.env` file in the aboardai directory:
 >
 > ```
 > UID=1000
@@ -339,12 +339,12 @@ services:
     volumes:
       # Mount GitHub CLI config
       # Linux/macOS
-      - ~/.config/gh:/home/automaker/.config/gh
+      - ~/.config/gh:/home/aboardai/.config/gh
       # Windows
-      - 'C:/Users/YourName/AppData/Roaming/GitHub CLI:/home/automaker/.config/gh'
+      - 'C:/Users/YourName/AppData/Roaming/GitHub CLI:/home/aboardai/.config/gh'
 
       # Mount git config for user identity (name, email)
-      - ~/.gitconfig:/home/automaker/.gitconfig:ro
+      - ~/.gitconfig:/home/aboardai/.gitconfig:ro
     environment:
       # GitHub token (required on Windows where tokens are in Credential Manager)
       # Get your token with: gh auth token
@@ -368,9 +368,9 @@ services:
       - /path/to/project2:/projects/project2
 
       # Authentication configs
-      - ~/.claude:/home/automaker/.claude
-      - ~/.config/gh:/home/automaker/.config/gh
-      - ~/.gitconfig:/home/automaker/.gitconfig:ro
+      - ~/.claude:/home/aboardai/.claude
+      - ~/.config/gh:/home/aboardai/.config/gh
+      - ~/.gitconfig:/home/aboardai/.gitconfig:ro
     environment:
       - GH_TOKEN=${GH_TOKEN}
 ```
@@ -393,7 +393,7 @@ By default, Playwright Chromium is pre-installed in the Docker image. If you nee
 
 ```bash
 # After adding the volume mount for the first time
-docker exec --user automaker -w /app automaker-server npx playwright install chromium
+docker exec --user aboardai -w /app aboardai-server npx playwright install chromium
 ```
 
 Add this to your `docker-compose.override.yml`:
@@ -402,17 +402,17 @@ Add this to your `docker-compose.override.yml`:
 services:
   server:
     volumes:
-      - playwright-cache:/home/automaker/.cache/ms-playwright
+      - playwright-cache:/home/aboardai/.cache/ms-playwright
 
 volumes:
   playwright-cache:
-    name: automaker-playwright-cache
+    name: aboardai-playwright-cache
 ```
 
 **Updating browsers manually:**
 
 ```bash
-docker exec --user automaker -w /app automaker-server npx playwright install chromium
+docker exec --user aboardai -w /app aboardai-server npx playwright install chromium
 ```
 
 ### Testing
@@ -438,7 +438,7 @@ npm run test:all                 # Packages + server tests
 - E2E tests run on ports 3007 (UI) and 3008 (server)
 - Automatically starts test servers before running
 - Uses Chromium browser via Playwright
-- Mock agent mode available in CI with `AUTOMAKER_MOCK_AGENT=true`
+- Mock agent mode available in CI with `ABOARDAI_MOCK_AGENT=true`
 
 ### Linting
 
@@ -457,7 +457,7 @@ npm run lint
 
 #### Optional - Security
 
-- `AUTOMAKER_API_KEY` - Optional API authentication for the server
+- `ABOARDAI_API_KEY` - Optional API authentication for the server
 - `ALLOWED_ROOT_DIRECTORY` - Restrict file operations to specific directory
 - `CORS_ORIGIN` - CORS allowed origins (comma-separated list; defaults to localhost only)
 
@@ -465,18 +465,18 @@ npm run lint
 
 - `VITE_SKIP_ELECTRON` - Skip Electron in dev mode
 - `OPEN_DEVTOOLS` - Auto-open DevTools in Electron
-- `AUTOMAKER_SKIP_SANDBOX_WARNING` - Skip sandbox warning dialog (useful for dev/CI)
-- `AUTOMAKER_AUTO_LOGIN=true` - Skip login prompt in development (ignored when NODE_ENV=production)
+- `ABOARDAI_SKIP_SANDBOX_WARNING` - Skip sandbox warning dialog (useful for dev/CI)
+- `ABOARDAI_AUTO_LOGIN=true` - Skip login prompt in development (ignored when NODE_ENV=production)
 
 ### Authentication Setup
 
-Automaker integrates with your authenticated Claude Code CLI and uses your Anthropic subscription.
+AboardAI integrates with your authenticated Claude Code CLI and uses your Anthropic subscription.
 
 Install and authenticate the Claude Code CLI following the [official quickstart guide](https://code.claude.com/docs/en/quickstart).
 
-Once authenticated, Automaker will automatically detect and use your CLI credentials. No additional configuration needed!
+Once authenticated, AboardAI will automatically detect and use your CLI credentials. No additional configuration needed!
 
-> **Note:** As of **June 15, 2026**, Claude Agent SDK usage (used by Automaker's **Claude** provider) is billed from a separate monthly credit pool rather than your interactive subscription limits, and the credit must be claimed once via your Claude account. See [Claude Agent SDK billing change](#powered-by-claude-agent-sdk) above for details.
+> **Note:** As of **June 15, 2026**, Claude Agent SDK usage (used by AboardAI's **Claude** provider) is billed from a separate monthly credit pool rather than your interactive subscription limits, and the credit must be claimed once via your Claude account. See [Claude Agent SDK billing change](#powered-by-claude-agent-sdk) above for details.
 
 ## Features
 
@@ -529,7 +529,7 @@ Once authenticated, Automaker will automatically detect and use your CLI credent
 - 🎯 **Worktree Management** - Create, switch, commit, and create PRs from worktrees
 - 📊 **Usage Tracking** - Monitor Claude API usage with detailed metrics
 - 🔊 **Audio Notifications** - Optional completion sounds (mutable in settings)
-- 💾 **Auto-save** - All work automatically persisted to `.automaker/` directory
+- 💾 **Auto-save** - All work automatically persisted to `.aboardai/` directory
 
 ## Tech Stack
 
@@ -568,17 +568,17 @@ Once authenticated, Automaker will automatically detect and use your CLI credent
 
 ### Shared Libraries
 
-- **@automaker/types** - Shared TypeScript definitions
-- **@automaker/utils** - Logging, error handling, image processing
-- **@automaker/prompts** - AI prompt templates
-- **@automaker/platform** - Path management and security
-- **@automaker/model-resolver** - Claude model alias resolution
-- **@automaker/dependency-resolver** - Feature dependency ordering
-- **@automaker/git-utils** - Git operations and worktree management
+- **@aboardai/types** - Shared TypeScript definitions
+- **@aboardai/utils** - Logging, error handling, image processing
+- **@aboardai/prompts** - AI prompt templates
+- **@aboardai/platform** - Path management and security
+- **@aboardai/model-resolver** - Claude model alias resolution
+- **@aboardai/dependency-resolver** - Feature dependency ordering
+- **@aboardai/git-utils** - Git operations and worktree management
 
 ## Available Views
 
-Automaker provides several specialized views accessible via the sidebar or keyboard shortcuts:
+AboardAI provides several specialized views accessible via the sidebar or keyboard shortcuts:
 
 | View               | Shortcut | Description                                                                                      |
 | ------------------ | -------- | ------------------------------------------------------------------------------------------------ |
@@ -609,10 +609,10 @@ All shortcuts are customizable in Settings. Default shortcuts:
 
 ### Monorepo Structure
 
-Automaker is built as an npm workspace monorepo with two main applications and seven shared packages:
+AboardAI is built as an npm workspace monorepo with two main applications and seven shared packages:
 
 ```text
-automaker/
+aboardai/
 ├── apps/
 │   ├── ui/          # React + Vite + Electron frontend
 │   └── server/      # Express + WebSocket backend
@@ -643,7 +643,7 @@ automaker/
 - **Provider Pattern** - Extensible AI provider system (currently Claude, designed for future providers)
 - **Service-Oriented Backend** - Modular services for agent management, features, terminals, settings
 - **State Management** - Zustand with persistence for frontend state across restarts
-- **File-Based Storage** - No database; features stored as JSON files in `.automaker/` directory
+- **File-Based Storage** - No database; features stored as JSON files in `.aboardai/` directory
 
 ### Security & Isolation
 
@@ -654,14 +654,14 @@ automaker/
 
 ### Data Storage
 
-Automaker uses a file-based storage system (no database required):
+AboardAI uses a file-based storage system (no database required):
 
 #### Per-Project Data
 
-Stored in `{projectPath}/.automaker/`:
+Stored in `{projectPath}/.aboardai/`:
 
 ```text
-.automaker/
+.aboardai/
 ├── features/              # Feature JSON files and images
 │   └── {featureId}/
 │       ├── feature.json   # Feature metadata
@@ -703,7 +703,7 @@ data/
 >
 > We have reviewed this codebase for security vulnerabilities, but you assume all risk when running this software. You should review the code yourself before running it.
 >
-> **We do not recommend running Automaker directly on your local computer** due to the risk of AI agents having access to your entire file system. Please sandbox this application using Docker or a virtual machine.
+> **We do not recommend running AboardAI directly on your local computer** due to the risk of AI agents having access to your entire file system. Please sandbox this application using Docker or a virtual machine.
 >
 > **[Read the full disclaimer](./DISCLAIMER.md)**
 
@@ -713,7 +713,7 @@ data/
 
 ### Documentation
 
-- [Contributing Guide](./CONTRIBUTING.md) - How to contribute to Automaker
+- [Contributing Guide](./CONTRIBUTING.md) - How to contribute to AboardAI
 - [Project Documentation](./docs/) - Architecture guides, patterns, and developer docs
 - [Shared Packages Guide](./docs/llm-shared-packages.md) - Using monorepo packages
 

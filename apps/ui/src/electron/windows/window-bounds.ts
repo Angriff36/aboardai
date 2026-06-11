@@ -10,8 +10,8 @@ import {
   electronUserDataExists,
   electronUserDataReadFileSync,
   electronUserDataWriteFileSync,
-} from '@automaker/platform';
-import { createLogger } from '@automaker/utils/logger';
+} from '@aboardai/platform';
+import { createLogger } from '@aboardai/utils/logger';
 import {
   WindowBounds,
   WINDOW_BOUNDS_FILENAME,

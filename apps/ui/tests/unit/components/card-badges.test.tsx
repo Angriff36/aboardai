@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { CardBadges } from '../../../src/components/views/board-view/components/kanban-card/card-badges';
 import { TooltipProvider } from '../../../src/components/ui/tooltip';
-import type { Feature } from '@automaker/types';
+import type { Feature } from '@aboardai/types';
 
 describe('CardBadges', () => {
   it('renders merge conflict warning badge when status is merge_conflict', () => {

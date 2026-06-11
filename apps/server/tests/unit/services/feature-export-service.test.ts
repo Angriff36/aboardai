@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { FeatureExportService, FEATURE_EXPORT_VERSION } from '@/services/feature-export-service.js';
-import type { Feature, FeatureExport } from '@automaker/types';
+import type { Feature, FeatureExport } from '@aboardai/types';
 import type { FeatureLoader } from '@/services/feature-loader.js';
 
 describe('feature-export-service.ts', () => {

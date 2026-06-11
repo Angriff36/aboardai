@@ -1,14 +1,14 @@
 /**
  * Branch tracking utilities
  *
- * Tracks active branches in .automaker so users
+ * Tracks active branches in .aboardai so users
  * can switch between branches even after worktrees are removed.
  */
 
 import * as secureFs from '../../../lib/secure-fs.js';
 import path from 'path';
-import { getBranchTrackingPath, ensureAutomakerDir } from '@automaker/platform';
-import { createLogger } from '@automaker/utils';
+import { getBranchTrackingPath, ensureAboardAIDir } from '@aboardai/platform';
+import { createLogger } from '@aboardai/utils';
 
 const logger = createLogger('BranchTracking');
 
@@ -44,8 +44,8 @@ export async function getTrackedBranches(projectPath: string): Promise<TrackedBr
  * Save tracked branches to file
  */
 async function saveTrackedBranches(projectPath: string, branches: TrackedBranch[]): Promise<void> {
-  const automakerDir = await ensureAutomakerDir(projectPath);
-  const filePath = path.join(automakerDir, 'active-branches.json');
+  const aboardaiDir = await ensureAboardAIDir(projectPath);
+  const filePath = path.join(aboardaiDir, 'active-branches.json');
   const data: BranchTrackingData = { branches };
   await secureFs.writeFile(filePath, JSON.stringify(data, null, 2), 'utf-8');
 }

@@ -1,25 +1,25 @@
 /**
  * Feature Loader - Handles loading and managing features from individual feature folders
- * Each feature is stored in .automaker/features/{featureId}/feature.json
+ * Each feature is stored in .aboardai/features/{featureId}/feature.json
  */
 
 import path from 'path';
-import type { Feature, DescriptionHistoryEntry } from '@automaker/types';
+import type { Feature, DescriptionHistoryEntry } from '@aboardai/types';
 import {
   createLogger,
   atomicWriteJson,
   readJsonWithRecovery,
   logRecoveryWarning,
   DEFAULT_BACKUP_COUNT,
-} from '@automaker/utils';
+} from '@aboardai/utils';
 import * as secureFs from '../lib/secure-fs.js';
 import {
   getFeaturesDir,
   getFeatureDir,
   getFeatureImagesDir,
   getAppSpecPath,
-  ensureAutomakerDir,
-} from '@automaker/platform';
+  ensureAboardAIDir,
+} from '@aboardai/platform';
 import { addImplementedFeature, type ImplementedFeature } from '../lib/xml-extractor.js';
 
 const logger = createLogger('FeatureLoader');
@@ -349,8 +349,8 @@ export class FeatureLoader {
     const featureDir = this.getFeatureDir(projectPath, featureId);
     const featureJsonPath = this.getFeatureJsonPath(projectPath, featureId);
 
-    // Ensure automaker directory exists
-    await ensureAutomakerDir(projectPath);
+    // Ensure aboardai directory exists
+    await ensureAboardAIDir(projectPath);
 
     // Create feature directory
     await secureFs.mkdir(featureDir, { recursive: true });

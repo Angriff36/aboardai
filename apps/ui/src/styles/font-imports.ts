@@ -185,7 +185,7 @@ export async function loadFont(fontFamily: string): Promise<void> {
  */
 export function loadUserFonts(): void {
   try {
-    const stored = localStorage.getItem('automaker-storage');
+    const stored = localStorage.getItem('aboardai-storage');
     if (!stored) return;
 
     const data = JSON.parse(stored);

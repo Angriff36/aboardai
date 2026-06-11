@@ -9,7 +9,7 @@ import { useGeminiCliStatus } from '@/hooks/queries';
 import { queryKeys } from '@/lib/query-keys';
 import type { CliStatus as SharedCliStatus } from '../shared/types';
 import type { GeminiAuthStatus } from '../cli-status/gemini-cli-status';
-import type { GeminiModelId } from '@automaker/types';
+import type { GeminiModelId } from '@aboardai/types';
 
 export function GeminiSettingsTab() {
   const queryClient = useQueryClient();

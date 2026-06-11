@@ -20,7 +20,7 @@
  * 7. Handle error recovery (restore stash if checkout fails)
  */
 
-import { createLogger, getErrorMessage } from '@automaker/utils';
+import { createLogger, getErrorMessage } from '@aboardai/utils';
 import { execGitCommand } from '../lib/git.js';
 import type { EventEmitter } from '../lib/events.js';
 import { hasAnyChanges, stashChanges, popStash, localBranchExists } from './branch-utils.js';

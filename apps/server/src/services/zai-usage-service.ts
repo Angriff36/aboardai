@@ -1,4 +1,4 @@
-import { createLogger } from '@automaker/utils';
+import { createLogger } from '@aboardai/utils';
 import { createEventEmitter } from '../lib/events.js';
 import type { SettingsService } from './settings-service.js';
 

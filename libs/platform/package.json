@@ -1,8 +1,8 @@
 {
-  "name": "@automaker/platform",
+  "name": "@aboardai/platform",
   "version": "1.0.0",
   "type": "module",
-  "description": "Platform-specific utilities for AutoMaker",
+  "description": "Platform-specific utilities for AboardAI",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "scripts": {
@@ -12,16 +12,16 @@
     "test:watch": "vitest"
   },
   "keywords": [
-    "automaker",
+    "aboardai",
     "platform"
   ],
-  "author": "AutoMaker Team",
+  "author": "AboardAI Team",
   "license": "SEE LICENSE IN LICENSE",
   "engines": {
     "node": ">=22.0.0 <23.0.0"
   },
   "dependencies": {
-    "@automaker/types": "1.0.0",
+    "@aboardai/types": "1.0.0",
     "p-limit": "6.2.0"
   },
   "devDependencies": {

@@ -1,6 +1,6 @@
 import { ImageDropZone } from '@/components/ui/image-drop-zone';
 import type { ImageAttachment, TextFileAttachment } from '@/store/app-store';
-import type { PhaseModelEntry } from '@automaker/types';
+import type { PhaseModelEntry } from '@aboardai/types';
 import { FilePreview } from './file-preview';
 import { QueueDisplay } from './queue-display';
 import { InputControls } from './input-controls';

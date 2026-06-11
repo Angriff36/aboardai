@@ -69,7 +69,7 @@ export function SandboxRiskDialog({ open, onConfirm, onDeny }: SandboxRiskDialog
               </div>
 
               <p className="text-sm text-muted-foreground">
-                For safer operation, consider running Automaker in Docker. See the README for
+                For safer operation, consider running AboardAI in Docker. See the README for
                 instructions.
               </p>
 
@@ -85,7 +85,7 @@ export function SandboxRiskDialog({ open, onConfirm, onDeny }: SandboxRiskDialog
                   <li>
                     Verify the server container has the environment variable:{' '}
                     <code className="bg-muted px-1 rounded">
-                      docker exec automaker-server printenv IS_CONTAINERIZED
+                      docker exec aboardai-server printenv IS_CONTAINERIZED
                     </code>
                   </li>
                   <li>Rebuild and restart containers if you recently changed the configuration</li>

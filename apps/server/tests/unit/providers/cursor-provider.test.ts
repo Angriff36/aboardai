@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { CursorProvider } from '@/providers/cursor-provider.js';
-import { validateBareModelId } from '@automaker/types';
+import { validateBareModelId } from '@aboardai/types';
 
 describe('cursor-provider.ts', () => {
   describe('buildCliArgs', () => {

@@ -10,7 +10,7 @@
 
 import { useEffect, useCallback, useMemo } from 'react';
 import { useShallow } from 'zustand/react/shallow';
-import { createLogger } from '@automaker/utils/logger';
+import { createLogger } from '@aboardai/utils/logger';
 import { getElectronAPI } from '@/lib/electron';
 import { useTestRunnersStore, type TestSession } from '@/store/test-runners-store';
 import type {

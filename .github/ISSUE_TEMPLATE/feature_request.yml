@@ -1,5 +1,5 @@
 name: Feature Request
-description: Suggest a new feature or enhancement for Automaker
+description: Suggest a new feature or enhancement for AboardAI
 title: '[Feature]: '
 labels: ['enhancement']
 body:
@@ -12,7 +12,7 @@ body:
     id: feature-area
     attributes:
       label: Feature Area
-      description: Which area of Automaker does this feature relate to?
+      description: Which area of AboardAI does this feature relate to?
       options:
         - UI/UX (User Interface)
         - Agent/AI

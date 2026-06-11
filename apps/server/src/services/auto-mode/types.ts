@@ -8,7 +8,7 @@
  */
 
 import type { EventEmitter } from '../../lib/events.js';
-import type { Feature, ModelProvider } from '@automaker/types';
+import type { Feature, ModelProvider } from '@aboardai/types';
 import type { SettingsService } from '../settings-service.js';
 import type { FeatureLoader } from '../feature-loader.js';
 import type { ConcurrencyManager } from '../concurrency-manager.js';
@@ -121,7 +121,7 @@ export interface FacadeError {
   /** The facade method where the error originated */
   method: string;
   /** Classified error type from the error handler */
-  errorType: import('@automaker/types').ErrorType;
+  errorType: import('@aboardai/types').ErrorType;
   /** Human-readable error message */
   message: string;
   /** Feature ID if the error is associated with a specific feature */

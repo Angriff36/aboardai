@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from 'react';
-import { createLogger } from '@automaker/utils/logger';
+import { createLogger } from '@aboardai/utils/logger';
 import { useAppStore } from '@/store/app-store';
 import { getElectronAPI } from '@/lib/electron';
 import { Button } from '@/components/ui/button';
@@ -87,7 +87,7 @@ export function MemoryView() {
   // Get memory directory path
   const getMemoryPath = useCallback(() => {
     if (!currentProject) return null;
-    return `${currentProject.path}/.automaker/memory`;
+    return `${currentProject.path}/.aboardai/memory`;
   }, [currentProject]);
 
   // Load memory files

@@ -3,7 +3,7 @@ import { Feature, useAppStore } from '@/store/app-store';
 import { GraphCanvas } from './graph-canvas';
 import { useBoardBackground } from '../board-view/hooks';
 import { NodeActionCallbacks } from './hooks';
-import { wouldCreateCircularDependency, dependencyExists } from '@automaker/dependency-resolver';
+import { wouldCreateCircularDependency, dependencyExists } from '@aboardai/dependency-resolver';
 import { toast } from 'sonner';
 
 interface GraphViewProps {

@@ -20,7 +20,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { cn } from '@/lib/utils';
-import type { FeatureTemplate, PhaseModelEntry } from '@automaker/types';
+import type { FeatureTemplate, PhaseModelEntry } from '@aboardai/types';
 import { PhaseModelSelector } from '../model-defaults/phase-model-selector';
 import { useAppStore } from '@/store/app-store';
 import { toast } from 'sonner';

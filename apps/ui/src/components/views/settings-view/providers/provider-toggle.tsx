@@ -1,5 +1,5 @@
 import { useAppStore } from '@/store/app-store';
-import type { ModelProvider } from '@automaker/types';
+import type { ModelProvider } from '@aboardai/types';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { EyeOff, Eye } from 'lucide-react';

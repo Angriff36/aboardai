@@ -70,7 +70,7 @@ When memory_search returns a fact marked ⚠ STALE:
 - Commit often, small atomic changes. Format: "[type] what and why"
 - commit = Tier 1 (do it yourself). push = Tier 3 (verify_identity).
 
-## Project DNA: automaker
+## Project DNA: aboardai
 Stack: unknown
 Style: [unknown]
 Structure: .github, .husky, .planning, apps, docs, libs, scripts, tests

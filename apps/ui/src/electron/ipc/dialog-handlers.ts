@@ -5,7 +5,7 @@
  */
 
 import { ipcMain, dialog } from 'electron';
-import { isPathAllowed, getAllowedRootDirectory } from '@automaker/platform';
+import { isPathAllowed, getAllowedRootDirectory } from '@aboardai/platform';
 import { IPC_CHANNELS } from './channels';
 import { state } from '../state';
 

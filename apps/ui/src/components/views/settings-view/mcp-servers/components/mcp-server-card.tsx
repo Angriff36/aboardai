@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { cn } from '@/lib/utils';
-import type { MCPServerConfig } from '@automaker/types';
+import type { MCPServerConfig } from '@aboardai/types';
 import type { ServerTestState } from '../types';
 import { getServerIcon, getTestStatusIcon, maskSensitiveUrl } from '../utils';
 import { MCPToolsList } from '../mcp-tools-list';

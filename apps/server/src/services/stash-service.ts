@@ -14,7 +14,7 @@
  * merge-service.ts.
  */
 
-import { createLogger, getErrorMessage } from '@automaker/utils';
+import { createLogger, getErrorMessage } from '@aboardai/utils';
 import type { EventEmitter } from '../lib/events.js';
 import { execGitCommand, execGitCommandWithLockRetry } from '../lib/git.js';
 

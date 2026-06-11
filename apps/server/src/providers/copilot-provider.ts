@@ -28,9 +28,9 @@ import {
   COPILOT_MODEL_MAP,
   type CopilotAuthStatus,
   type CopilotRuntimeModel,
-} from '@automaker/types';
-import { createLogger, isAbortError } from '@automaker/utils';
-import { resolveModelString } from '@automaker/model-resolver';
+} from '@aboardai/types';
+import { createLogger, isAbortError } from '@aboardai/utils';
+import { resolveModelString } from '@aboardai/model-resolver';
 import { CopilotClient, type PermissionRequest } from '@github/copilot-sdk';
 import {
   normalizeTodos,
@@ -326,7 +326,7 @@ export class CopilotProvider extends CliProvider {
   }
 
   /**
-   * Convert SDK event to AutoMaker ProviderMessage format
+   * Convert SDK event to AboardAI ProviderMessage format
    */
   normalizeEvent(event: unknown): ProviderMessage | null {
     const sdkEvent = event as SdkEvent;
@@ -603,7 +603,7 @@ export class CopilotProvider extends CliProvider {
         model: bareModel,
         streaming: true,
         // AUTONOMOUS MODE: Auto-approve all permission requests.
-        // AutoMaker is designed for fully autonomous AI agent operation.
+        // AboardAI is designed for fully autonomous AI agent operation.
         // Security boundary is provided by Docker containerization (see CLAUDE.md).
         // User is warned about this at app startup.
         onPermissionRequest: async (

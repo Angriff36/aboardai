@@ -14,7 +14,7 @@ import {
   secureFs,
   getDataDirectory,
   getCodexConfigDir,
-} from '@automaker/platform';
+} from '@aboardai/platform';
 import { checkCodexAuthentication } from '../lib/codex-auth.js';
 import {
   formatHistoryAsText,
@@ -22,7 +22,7 @@ import {
   classifyError,
   getUserFriendlyErrorMessage,
   createLogger,
-} from '@automaker/utils';
+} from '@aboardai/utils';
 import type {
   ExecuteOptions,
   ProviderMessage,
@@ -36,7 +36,7 @@ import {
   type CodexApprovalPolicy,
   type CodexSandboxMode,
   type CodexAuthStatus,
-} from '@automaker/types';
+} from '@aboardai/types';
 import { CodexConfigManager } from './codex-config-manager.js';
 import { executeCodexSdkQuery } from './codex-sdk-client.js';
 import {
@@ -96,7 +96,7 @@ const TEXT_ENCODING = 'utf-8';
  * For feature generation (which can generate 50+ features), we use a much longer
  * base timeout (5 minutes) since Codex models are slower at generating large JSON responses.
  *
- * @see calculateReasoningTimeout from @automaker/types
+ * @see calculateReasoningTimeout from @aboardai/types
  */
 const CODEX_CLI_TIMEOUT_MS = 120000; // 2 minutes — matches CLI provider base timeout
 const CODEX_FEATURE_GENERATION_BASE_TIMEOUT_MS = 300000; // 5 minutes for feature generation
@@ -223,13 +223,13 @@ async function resolveCodexExecutionPlan(options: ExecuteOptions): Promise<Codex
   // use the CLI regardless of whether an API key is also stored.
   // hasOAuthToken = OAuth session from `codex login`
   // authIndicators.hasApiKey = API key stored in Codex's own auth file (via `codex login --api-key`)
-  // Both are "CLI-native" auth — distinct from an API key stored in Automaker's credentials.
+  // Both are "CLI-native" auth — distinct from an API key stored in AboardAI's credentials.
   const hasCliNativeAuth = authIndicators.hasOAuthToken || authIndicators.hasApiKey;
   const sdkEligible = isSdkEligible(options);
 
   // If CLI is available and the user authenticated via the CLI (`codex login`),
   // prefer CLI mode over SDK. This ensures `codex login` sessions take priority
-  // over API keys stored in Automaker's credentials.
+  // over API keys stored in AboardAI's credentials.
   if (cliAvailable && hasCliNativeAuth) {
     return {
       mode: CODEX_EXECUTION_MODE_CLI,

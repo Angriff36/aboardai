@@ -10,7 +10,7 @@ import { formatShortcut, useAppStore } from '@/store/app-store';
 import { getAuthenticatedImageUrl } from '@/lib/api-fetch';
 import type { NavSection } from '../types';
 import type { Project } from '@/lib/electron';
-import type { SidebarStyle } from '@automaker/types';
+import type { SidebarStyle } from '@aboardai/types';
 import { Spinner } from '@/components/ui/spinner';
 import {
   DropdownMenu,

@@ -11,13 +11,13 @@ export function createAuthClaudeHandler() {
   return async (_req: Request, res: Response): Promise<void> => {
     try {
       // Remove the disconnected marker file to reconnect the app to the CLI
-      const markerPath = path.join(process.cwd(), '.automaker', '.claude-disconnected');
+      const markerPath = path.join(process.cwd(), '.aboardai', '.claude-disconnected');
       if (fs.existsSync(markerPath)) {
         fs.unlinkSync(markerPath);
       }
 
       // Check if CLI is already authenticated by checking auth indicators
-      const { getClaudeAuthIndicators } = await import('@automaker/platform');
+      const { getClaudeAuthIndicators } = await import('@aboardai/platform');
       const indicators = await getClaudeAuthIndicators();
       const isAlreadyAuthenticated =
         indicators.hasStatsCacheWithActivity ||

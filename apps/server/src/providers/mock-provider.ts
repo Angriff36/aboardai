@@ -1,11 +1,11 @@
 /**
  * Mock Provider - No-op AI provider for E2E and CI testing
  *
- * When AUTOMAKER_MOCK_AGENT=true, the server uses this provider instead of
+ * When ABOARDAI_MOCK_AGENT=true, the server uses this provider instead of
  * real backends (Claude, Codex, etc.) so tests never call external APIs.
  */
 
-import type { ExecuteOptions } from '@automaker/types';
+import type { ExecuteOptions } from '@aboardai/types';
 import { BaseProvider } from './base-provider.js';
 import type { ProviderMessage, InstallationStatus, ModelDefinition } from './types.js';
 

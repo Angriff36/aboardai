@@ -13,7 +13,7 @@ const DISCONNECTED_MARKER_FILE = '.copilot-disconnected';
 async function isCopilotDisconnectedFromApp(): Promise<boolean> {
   try {
     const projectRoot = process.cwd();
-    const markerPath = path.join(projectRoot, '.automaker', DISCONNECTED_MARKER_FILE);
+    const markerPath = path.join(projectRoot, '.aboardai', DISCONNECTED_MARKER_FILE);
     await fs.access(markerPath);
     return true;
   } catch {

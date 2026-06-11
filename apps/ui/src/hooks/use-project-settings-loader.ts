@@ -132,7 +132,7 @@ export function useProjectSettingsLoader() {
       | null
       | undefined;
     const phaseModelOverrides = settingsWithExtras.phaseModelOverrides as
-      | import('@automaker/types').PhaseModelConfig
+      | import('@aboardai/types').PhaseModelConfig
       | undefined;
 
     // Check if we need to update the project

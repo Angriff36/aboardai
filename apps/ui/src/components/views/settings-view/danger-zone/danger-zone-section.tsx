@@ -6,13 +6,13 @@ import type { Project } from '../shared/types';
 interface DangerZoneSectionProps {
   project: Project | null;
   onDeleteClick: () => void;
-  onRemoveFromAutomakerClick?: () => void;
+  onRemoveFromAboardAIClick?: () => void;
 }
 
 export function DangerZoneSection({
   project,
   onDeleteClick,
-  onRemoveFromAutomakerClick,
+  onRemoveFromAboardAIClick,
 }: DangerZoneSectionProps) {
   return (
     <div
@@ -35,20 +35,20 @@ export function DangerZoneSection({
       <div className="p-6 space-y-4">
         {project ? (
           <>
-            {/* Remove from Automaker */}
-            {onRemoveFromAutomakerClick && (
+            {/* Remove from AboardAI */}
+            {onRemoveFromAboardAIClick && (
               <div className="flex items-start justify-between gap-4 p-4 rounded-xl bg-muted/30 border border-border">
                 <div className="min-w-0">
-                  <p className="font-medium text-foreground">Remove from Automaker</p>
+                  <p className="font-medium text-foreground">Remove from AboardAI</p>
                   <p className="text-xs text-muted-foreground mt-0.5">
-                    Remove this project from Automaker without deleting any files from disk. You can
+                    Remove this project from AboardAI without deleting any files from disk. You can
                     re-add it later by opening the folder.
                   </p>
                 </div>
                 <Button
                   variant="secondary"
-                  onClick={onRemoveFromAutomakerClick}
-                  data-testid="remove-from-automaker-button"
+                  onClick={onRemoveFromAboardAIClick}
+                  data-testid="remove-from-aboardai-button"
                   className="shrink-0 transition-all duration-200 ease-out hover:scale-[1.02] active:scale-[0.98]"
                 >
                   <LogOut className="w-4 h-4 mr-2" />

@@ -7,7 +7,7 @@
  * This is a TEMPORARY shim - routes should be updated to use the new interface directly.
  */
 
-import type { Feature } from '@automaker/types';
+import type { Feature } from '@aboardai/types';
 import type { EventEmitter } from '../../lib/events.js';
 import { GlobalAutoModeService } from './global-service.js';
 import { AutoModeServiceFacade } from './facade.js';

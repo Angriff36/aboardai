@@ -8,7 +8,7 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
 import { useBoardColumnFeatures } from '../../../src/components/views/board-view/hooks/use-board-column-features';
 import { useAppStore } from '../../../src/store/app-store';
-import type { Feature } from '@automaker/types';
+import type { Feature } from '@aboardai/types';
 
 // Helper to create mock features
 function createMockFeature(id: string, status: string, options: Partial<Feature> = {}): Feature {

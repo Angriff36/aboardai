@@ -6,7 +6,7 @@
  * These colors are used by both UI (xterm.js) and server (RC file generation).
  */
 
-import type { ThemeMode } from '@automaker/types';
+import type { ThemeMode } from '@aboardai/types';
 import type { TerminalTheme } from './rc-generator.js';
 
 // Dark theme (default) - true black background with white foreground

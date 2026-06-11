@@ -16,7 +16,7 @@ import type {
   ClaudeCompatibleProvider,
   ProviderModel,
   ClaudeModelAlias,
-} from '@automaker/types';
+} from '@aboardai/types';
 import {
   STANDALONE_CURSOR_MODELS,
   getModelGroup,
@@ -24,7 +24,7 @@ import {
   getSelectedVariant,
   codexModelHasThinking,
   getThinkingLevelsForModel,
-} from '@automaker/types';
+} from '@aboardai/types';
 import {
   CLAUDE_MODELS,
   CURSOR_MODELS,

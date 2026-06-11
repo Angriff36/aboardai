@@ -9,7 +9,7 @@
  * not hardcoded, to ensure compatibility with CLI updates.
  */
 
-import { createLogger } from '@automaker/utils';
+import { createLogger } from '@aboardai/utils';
 import * as fs from 'fs';
 import * as path from 'path';
 import * as os from 'os';

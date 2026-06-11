@@ -24,7 +24,7 @@ interface ListViewPersistedState {
 }
 
 /** Storage key for list view preferences */
-const STORAGE_KEY = 'automaker:list-view-state';
+const STORAGE_KEY = 'aboardai:list-view-state';
 
 /** Default sort configuration */
 const DEFAULT_SORT_CONFIG: SortConfig = {

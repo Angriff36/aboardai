@@ -3,7 +3,7 @@ import path from 'path';
 import fs from 'fs/promises';
 import os from 'os';
 import {
-  getAutomakerDir,
+  getAboardAIDir,
   getFeaturesDir,
   getFeatureDir,
   getFeatureImagesDir,
@@ -12,43 +12,43 @@ import {
   getWorktreesDir,
   getAppSpecPath,
   getBranchTrackingPath,
-  ensureAutomakerDir,
+  ensureAboardAIDir,
   getGlobalSettingsPath,
   getCredentialsPath,
   getProjectSettingsPath,
   ensureDataDir,
-} from '@automaker/platform';
+} from '@aboardai/platform';
 
-describe('automaker-paths.ts', () => {
+describe('aboardai-paths.ts', () => {
   const projectPath = path.join('/test', 'project');
 
-  describe('getAutomakerDir', () => {
-    it('should return path to .automaker directory', () => {
-      expect(getAutomakerDir(projectPath)).toBe(path.join(projectPath, '.automaker'));
+  describe('getAboardAIDir', () => {
+    it('should return path to .aboardai directory', () => {
+      expect(getAboardAIDir(projectPath)).toBe(path.join(projectPath, '.aboardai'));
     });
 
     it('should handle paths with trailing slashes', () => {
       const pathWithSlash = path.join('/test', 'project') + path.sep;
-      expect(getAutomakerDir(pathWithSlash)).toBe(path.join(pathWithSlash, '.automaker'));
+      expect(getAboardAIDir(pathWithSlash)).toBe(path.join(pathWithSlash, '.aboardai'));
     });
   });
 
   describe('getFeaturesDir', () => {
     it('should return path to features directory', () => {
-      expect(getFeaturesDir(projectPath)).toBe(path.join(projectPath, '.automaker', 'features'));
+      expect(getFeaturesDir(projectPath)).toBe(path.join(projectPath, '.aboardai', 'features'));
     });
   });
 
   describe('getFeatureDir', () => {
     it('should return path to specific feature directory', () => {
       expect(getFeatureDir(projectPath, 'feature-123')).toBe(
-        path.join(projectPath, '.automaker', 'features', 'feature-123')
+        path.join(projectPath, '.aboardai', 'features', 'feature-123')
       );
     });
 
     it('should handle feature IDs with special characters', () => {
       expect(getFeatureDir(projectPath, 'my-feature_v2')).toBe(
-        path.join(projectPath, '.automaker', 'features', 'my-feature_v2')
+        path.join(projectPath, '.aboardai', 'features', 'my-feature_v2')
       );
     });
   });
@@ -56,33 +56,33 @@ describe('automaker-paths.ts', () => {
   describe('getFeatureImagesDir', () => {
     it('should return path to feature images directory', () => {
       expect(getFeatureImagesDir(projectPath, 'feature-123')).toBe(
-        path.join(projectPath, '.automaker', 'features', 'feature-123', 'images')
+        path.join(projectPath, '.aboardai', 'features', 'feature-123', 'images')
       );
     });
   });
 
   describe('getBoardDir', () => {
     it('should return path to board directory', () => {
-      expect(getBoardDir(projectPath)).toBe(path.join(projectPath, '.automaker', 'board'));
+      expect(getBoardDir(projectPath)).toBe(path.join(projectPath, '.aboardai', 'board'));
     });
   });
 
   describe('getImagesDir', () => {
     it('should return path to images directory', () => {
-      expect(getImagesDir(projectPath)).toBe(path.join(projectPath, '.automaker', 'images'));
+      expect(getImagesDir(projectPath)).toBe(path.join(projectPath, '.aboardai', 'images'));
     });
   });
 
   describe('getWorktreesDir', () => {
     it('should return path to worktrees directory', () => {
-      expect(getWorktreesDir(projectPath)).toBe(path.join(projectPath, '.automaker', 'worktrees'));
+      expect(getWorktreesDir(projectPath)).toBe(path.join(projectPath, '.aboardai', 'worktrees'));
     });
   });
 
   describe('getAppSpecPath', () => {
     it('should return path to app_spec.txt file', () => {
       expect(getAppSpecPath(projectPath)).toBe(
-        path.join(projectPath, '.automaker', 'app_spec.txt')
+        path.join(projectPath, '.aboardai', 'app_spec.txt')
       );
     });
   });
@@ -90,16 +90,16 @@ describe('automaker-paths.ts', () => {
   describe('getBranchTrackingPath', () => {
     it('should return path to active-branches.json file', () => {
       expect(getBranchTrackingPath(projectPath)).toBe(
-        path.join(projectPath, '.automaker', 'active-branches.json')
+        path.join(projectPath, '.aboardai', 'active-branches.json')
       );
     });
   });
 
-  describe('ensureAutomakerDir', () => {
+  describe('ensureAboardAIDir', () => {
     let testDir: string;
 
     beforeEach(async () => {
-      testDir = path.join(os.tmpdir(), `automaker-paths-test-${Date.now()}`);
+      testDir = path.join(os.tmpdir(), `aboardai-paths-test-${Date.now()}`);
       await fs.mkdir(testDir, { recursive: true });
     });
 
@@ -111,21 +111,21 @@ describe('automaker-paths.ts', () => {
       }
     });
 
-    it('should create automaker directory and return path', async () => {
-      const result = await ensureAutomakerDir(testDir);
+    it('should create aboardai directory and return path', async () => {
+      const result = await ensureAboardAIDir(testDir);
 
-      expect(result).toBe(path.join(testDir, '.automaker'));
+      expect(result).toBe(path.join(testDir, '.aboardai'));
       const stats = await fs.stat(result);
       expect(stats.isDirectory()).toBe(true);
     });
 
     it('should succeed if directory already exists', async () => {
-      const automakerDir = path.join(testDir, '.automaker');
-      await fs.mkdir(automakerDir, { recursive: true });
+      const aboardaiDir = path.join(testDir, '.aboardai');
+      await fs.mkdir(aboardaiDir, { recursive: true });
 
-      const result = await ensureAutomakerDir(testDir);
+      const result = await ensureAboardAIDir(testDir);
 
-      expect(result).toBe(automakerDir);
+      expect(result).toBe(aboardaiDir);
     });
   });
 
@@ -158,16 +158,16 @@ describe('automaker-paths.ts', () => {
   });
 
   describe('getProjectSettingsPath', () => {
-    it('should return path to settings.json in project .automaker directory', () => {
+    it('should return path to settings.json in project .aboardai directory', () => {
       const projectPath = '/test/project';
       const result = getProjectSettingsPath(projectPath);
-      expect(result).toBe(path.join(projectPath, '.automaker', 'settings.json'));
+      expect(result).toBe(path.join(projectPath, '.aboardai', 'settings.json'));
     });
 
     it('should handle paths with trailing slashes', () => {
       const projectPath = '/test/project' + path.sep;
       const result = getProjectSettingsPath(projectPath);
-      expect(result).toBe(path.join(projectPath, '.automaker', 'settings.json'));
+      expect(result).toBe(path.join(projectPath, '.aboardai', 'settings.json'));
     });
   });
 

@@ -11,7 +11,7 @@ import { SSEClientTransport } from '@modelcontextprotocol/sdk/client/sse.js';
 import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js';
 import { exec } from 'child_process';
 import { promisify } from 'util';
-import type { MCPServerConfig, MCPToolInfo } from '@automaker/types';
+import type { MCPServerConfig, MCPToolInfo } from '@aboardai/types';
 import type { SettingsService } from './settings-service.js';
 
 const execAsync = promisify(exec);
@@ -53,7 +53,7 @@ export class MCPTestService {
 
     try {
       client = new Client({
-        name: 'automaker-mcp-test',
+        name: 'aboardai-mcp-test',
         version: '1.0.0',
       });
 

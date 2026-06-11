@@ -4,7 +4,7 @@
 
 import { exec } from 'child_process';
 import { promisify } from 'util';
-import { getClaudeCliPaths, getClaudeAuthIndicators, systemPathAccess } from '@automaker/platform';
+import { getClaudeCliPaths, getClaudeAuthIndicators, systemPathAccess } from '@aboardai/platform';
 import { getApiKey } from './common.js';
 import * as fs from 'fs';
 import * as path from 'path';
@@ -17,7 +17,7 @@ function isDisconnectedFromApp(): boolean {
   try {
     // Check if we're in a project directory
     const projectRoot = process.cwd();
-    const markerPath = path.join(projectRoot, '.automaker', DISCONNECTED_MARKER_FILE);
+    const markerPath = path.join(projectRoot, '.aboardai', DISCONNECTED_MARKER_FILE);
     return fs.existsSync(markerPath);
   } catch {
     return false;

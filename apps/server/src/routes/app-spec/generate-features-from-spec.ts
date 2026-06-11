@@ -7,13 +7,13 @@
 
 import * as secureFs from '../../lib/secure-fs.js';
 import type { EventEmitter } from '../../lib/events.js';
-import { createLogger } from '@automaker/utils';
-import { DEFAULT_PHASE_MODELS, supportsStructuredOutput, isCodexModel } from '@automaker/types';
-import { resolvePhaseModel } from '@automaker/model-resolver';
+import { createLogger } from '@aboardai/utils';
+import { DEFAULT_PHASE_MODELS, supportsStructuredOutput, isCodexModel } from '@aboardai/types';
+import { resolvePhaseModel } from '@aboardai/model-resolver';
 import { streamingQuery } from '../../providers/simple-query-service.js';
 import { parseAndCreateFeatures } from './parse-and-create-features.js';
 import { extractJsonWithArray } from '../../lib/json-extractor.js';
-import { getAppSpecPath } from '@automaker/platform';
+import { getAppSpecPath } from '@aboardai/platform';
 import type { SettingsService } from '../../services/settings-service.js';
 import {
   getAutoLoadClaudeMdSetting,
@@ -96,7 +96,7 @@ export async function generateFeaturesFromSpec(
   logger.debug('projectPath:', projectPath);
   logger.debug('maxFeatures:', featureCount);
 
-  // Read existing spec from .automaker directory
+  // Read existing spec from .aboardai directory
   const specPath = getAppSpecPath(projectPath);
   let spec: string;
 

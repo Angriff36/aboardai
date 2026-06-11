@@ -1,15 +1,15 @@
 {
-  "name": "@automaker/ui",
+  "name": "@aboardai/ui",
   "version": "1.0.0",
   "description": "An autonomous AI development studio that helps you build software faster using AI-powered agents",
-  "homepage": "https://github.com/AutoMaker-Org/automaker",
+  "homepage": "https://github.com/AboardAI-Org/aboardai",
   "repository": {
     "type": "git",
-    "url": "https://github.com/AutoMaker-Org/automaker.git"
+    "url": "https://github.com/AboardAI-Org/aboardai.git"
   },
-  "author": "AutoMaker Team",
+  "author": "AboardAI Team",
   "license": "SEE LICENSE IN LICENSE",
-  "desktopName": "automaker.desktop",
+  "desktopName": "aboardai.desktop",
   "private": true,
   "engines": {
     "node": ">=22.0.0 <23.0.0"
@@ -40,9 +40,9 @@
     "dev:electron:wsl:gpu": "cross-env MESA_D3D12_DEFAULT_ADAPTER_NAME=NVIDIA vite"
   },
   "dependencies": {
-    "@automaker/dependency-resolver": "1.0.0",
-    "@automaker/spec-parser": "1.0.0",
-    "@automaker/types": "1.0.0",
+    "@aboardai/dependency-resolver": "1.0.0",
+    "@aboardai/spec-parser": "1.0.0",
+    "@aboardai/types": "1.0.0",
     "@codemirror/lang-cpp": "^6.0.3",
     "@codemirror/lang-css": "^6.3.1",
     "@codemirror/lang-html": "^6.4.11",
@@ -169,8 +169,8 @@
     "vite-plugin-electron-renderer": "0.14.6"
   },
   "build": {
-    "appId": "com.automaker.app",
-    "productName": "Automaker",
+    "appId": "com.aboardai.app",
+    "productName": "AboardAI",
     "artifactName": "${productName}-${version}-${arch}.${ext}",
     "npmRebuild": false,
     "publish": null,
@@ -268,12 +268,12 @@
       "category": "Development",
       "icon": "public/logo_larger.png",
       "maintainer": "webdevcody@gmail.com",
-      "executableName": "automaker",
+      "executableName": "aboardai",
       "description": "An autonomous AI development studio that helps you build software faster using AI-powered agents",
       "synopsis": "AI-powered autonomous development studio",
       "desktop": {
         "entry": {
-          "Icon": "/opt/Automaker/resources/logo_larger.png"
+          "Icon": "/opt/AboardAI/resources/logo_larger.png"
         }
       }
     },
@@ -289,7 +289,7 @@
         "libuuid"
       ],
       "compression": "xz",
-      "vendor": "AutoMaker Team",
+      "vendor": "AboardAI Team",
       "afterInstall": "scripts/rpm-after-install.sh"
     },
     "nsis": {

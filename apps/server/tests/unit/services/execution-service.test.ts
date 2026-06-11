@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import path from 'path';
-import type { Feature } from '@automaker/types';
+import type { Feature } from '@aboardai/types';
 
 /**
  * Helper to normalize paths for cross-platform test compatibility.
@@ -30,7 +30,7 @@ import type { WorktreeResolver } from '../../../src/services/worktree-resolver.j
 import type { SettingsService } from '../../../src/services/settings-service.js';
 import { pipelineService } from '../../../src/services/pipeline-service.js';
 import * as secureFs from '../../../src/lib/secure-fs.js';
-import { getFeatureDir } from '@automaker/platform';
+import { getFeatureDir } from '@aboardai/platform';
 import {
   getPromptCustomization,
   getAutoLoadClaudeMdSetting,
@@ -38,7 +38,7 @@ import {
   filterClaudeMdFromContext,
 } from '../../../src/lib/settings-helpers.js';
 import { extractSummary } from '../../../src/services/spec-parser.js';
-import { resolveModelString } from '@automaker/model-resolver';
+import { resolveModelString } from '@aboardai/model-resolver';
 
 // Mock pipelineService
 vi.mock('../../../src/services/pipeline-service.js', () => ({
@@ -78,16 +78,16 @@ vi.mock('../../../src/lib/sdk-options.js', () => ({
 }));
 
 // Mock platform
-vi.mock('@automaker/platform', () => ({
+vi.mock('@aboardai/platform', () => ({
   getFeatureDir: vi
     .fn()
     .mockImplementation(
-      (projectPath: string, featureId: string) => `${projectPath}/.automaker/features/${featureId}`
+      (projectPath: string, featureId: string) => `${projectPath}/.aboardai/features/${featureId}`
     ),
 }));
 
 // Mock model-resolver
-vi.mock('@automaker/model-resolver', () => ({
+vi.mock('@aboardai/model-resolver', () => ({
   resolveModelString: vi.fn().mockReturnValue('claude-sonnet-4'),
   DEFAULT_MODELS: { claude: 'claude-sonnet-4' },
 }));
@@ -104,8 +104,8 @@ vi.mock('../../../src/services/spec-parser.js', () => ({
   extractSummary: vi.fn().mockReturnValue('Test summary'),
 }));
 
-// Mock @automaker/utils
-vi.mock('@automaker/utils', () => ({
+// Mock @aboardai/utils
+vi.mock('@aboardai/utils', () => ({
   createLogger: vi.fn().mockReturnValue({
     info: vi.fn(),
     warn: vi.fn(),
@@ -223,7 +223,7 @@ describe('execution-service.ts', () => {
 
     // Re-setup platform mocks
     vi.mocked(getFeatureDir).mockImplementation(
-      (projectPath: string, featureId: string) => `${projectPath}/.automaker/features/${featureId}`
+      (projectPath: string, featureId: string) => `${projectPath}/.aboardai/features/${featureId}`
     );
 
     // Default pipeline config (no steps)
@@ -1844,7 +1844,7 @@ describe('execution-service.ts', () => {
 
       // Verify readFile was called with the correct path derived from getFeatureDir
       expect(secureFs.readFile).toHaveBeenCalledWith(
-        '/test/project/.automaker/features/feature-1/agent-output.md',
+        '/test/project/.aboardai/features/feature-1/agent-output.md',
         'utf-8'
       );
     });
@@ -1909,7 +1909,7 @@ describe('execution-service.ts', () => {
 
     it('does not call recordMemoryUsage when output is empty and memoryFiles is empty', async () => {
       vi.mocked(secureFs.readFile).mockResolvedValue('');
-      const { recordMemoryUsage } = await import('@automaker/utils');
+      const { recordMemoryUsage } = await import('@aboardai/utils');
 
       const svc = createServiceWithMocks();
       await svc.executeFeature('/test/project', 'feature-1');

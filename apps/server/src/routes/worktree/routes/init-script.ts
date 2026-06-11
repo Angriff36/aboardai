@@ -11,13 +11,13 @@ import type { Request, Response } from 'express';
 import path from 'path';
 import * as secureFs from '../../../lib/secure-fs.js';
 import { getErrorMessage, logError, isValidBranchName } from '../common.js';
-import { createLogger } from '@automaker/utils';
+import { createLogger } from '@aboardai/utils';
 import type { EventEmitter } from '../../../lib/events.js';
 import { forceRunInitScript } from '../../../services/init-script-service.js';
 
 const logger = createLogger('InitScript');
 
-/** Fixed path for init script within .automaker directory */
+/** Fixed path for init script within .aboardai directory */
 const INIT_SCRIPT_FILENAME = 'worktree-init.sh';
 
 /** Maximum allowed size for init scripts (1MB) */
@@ -27,7 +27,7 @@ const MAX_SCRIPT_SIZE_BYTES = 1024 * 1024;
  * Get the full path to the init script for a project
  */
 function getInitScriptPath(projectPath: string): string {
-  return path.join(projectPath, '.automaker', INIT_SCRIPT_FILENAME);
+  return path.join(projectPath, '.aboardai', INIT_SCRIPT_FILENAME);
 }
 
 /**
@@ -138,10 +138,10 @@ export function createPutInitScriptHandler() {
       }
 
       const scriptPath = getInitScriptPath(projectPath);
-      const automakerDir = path.dirname(scriptPath);
+      const aboardaiDir = path.dirname(scriptPath);
 
-      // Ensure .automaker directory exists
-      await secureFs.mkdir(automakerDir, { recursive: true });
+      // Ensure .aboardai directory exists
+      await secureFs.mkdir(aboardaiDir, { recursive: true });
 
       // Write the script content
       await secureFs.writeFile(scriptPath, content, 'utf-8');

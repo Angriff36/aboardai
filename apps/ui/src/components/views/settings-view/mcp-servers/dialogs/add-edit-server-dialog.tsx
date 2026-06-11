@@ -17,7 +17,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import type { MCPServerConfig } from '@automaker/types';
+import type { MCPServerConfig } from '@aboardai/types';
 import type { ServerFormData, ServerType } from '../types';
 
 interface AddEditServerDialogProps {

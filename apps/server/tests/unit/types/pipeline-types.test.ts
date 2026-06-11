@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { isPipelineStatus } from '@automaker/types';
+import { isPipelineStatus } from '@aboardai/types';
 
 describe('isPipelineStatus', () => {
   it('should return true for valid pipeline statuses', () => {

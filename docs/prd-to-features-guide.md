@@ -1,13 +1,13 @@
-# PRD to Automaker Features Guide
+# PRD to AboardAI Features Guide
 
-This guide helps Claude generate properly structured Automaker features from a Product Requirements Document (PRD). Use this in new projects to create feature folders that Automaker can execute.
+This guide helps Claude generate properly structured AboardAI features from a Product Requirements Document (PRD). Use this in new projects to create feature folders that AboardAI can execute.
 
 ## Quick Start
 
-1. Place your PRD file in the project (e.g., `PRD.md` or `.automaker/context/PRD.md`)
-2. Create `.automaker/features/` directory
+1. Place your PRD file in the project (e.g., `PRD.md` or `.aboardai/context/PRD.md`)
+2. Create `.aboardai/features/` directory
 3. Use this guide to generate `feature.json` files for each feature phase
-4. Run features in Automaker sequentially or in parallel based on dependencies
+4. Run features in AboardAI sequentially or in parallel based on dependencies
 
 ---
 
@@ -68,10 +68,10 @@ This guide helps Claude generate properly structured Automaker features from a P
 | `category`      | string | Yes      | Grouping category for the feature                                                 |
 | `title`         | string | Yes      | Short, descriptive title (3-8 words)                                              |
 | `description`   | string | Yes      | Detailed implementation requirements                                              |
-| `status`        | string | Yes      | Current state. **Must be `backlog` for Automaker to execute**                     |
+| `status`        | string | Yes      | Current state. **Must be `backlog` for AboardAI to execute**                     |
 | `priority`      | number | Yes      | Execution priority (1 = highest, higher numbers = lower priority)                 |
-| `imagePaths`    | array  | Yes      | Must be empty `[]` - Automaker populates this automatically                       |
-| `textFilePaths` | array  | Yes      | Must be empty `[]` - Automaker populates this automatically                       |
+| `imagePaths`    | array  | Yes      | Must be empty `[]` - AboardAI populates this automatically                       |
+| `textFilePaths` | array  | Yes      | Must be empty `[]` - AboardAI populates this automatically                       |
 
 ### Optional Fields
 
@@ -195,7 +195,7 @@ The system should support session management and secure token storage.
   "id": "phase-1-auth-types",
   "category": "Core",
   "title": "Authentication Types and Schema",
-  "description": "Define TypeScript types and database schema for authentication.\n\nRequirements:\n- Add User, Session, and AuthToken types to @automaker/types\n- Create database migration for users and sessions tables\n- Define AuthProvider enum (email, google, github)\n\nFiles:\n- libs/types/src/auth.ts\n- libs/types/src/index.ts\n- apps/server/src/db/migrations/",
+  "description": "Define TypeScript types and database schema for authentication.\n\nRequirements:\n- Add User, Session, and AuthToken types to @aboardai/types\n- Create database migration for users and sessions tables\n- Define AuthProvider enum (email, google, github)\n\nFiles:\n- libs/types/src/auth.ts\n- libs/types/src/index.ts\n- apps/server/src/db/migrations/",
   "status": "backlog",
   "priority": 1,
   "complexity": "simple",
@@ -303,7 +303,7 @@ Features with dependencies won't start until all dependencies are completed.
 ## Directory Structure
 
 ```
-.automaker/
+.aboardai/
 └── features/
     ├── phase-1-foundation/
     │   └── feature.json
@@ -332,8 +332,8 @@ TITLE=$2
 DESCRIPTION=$3
 PRIORITY=${4:-1}
 
-mkdir -p ".automaker/features/$FEATURE_ID"
-cat > ".automaker/features/$FEATURE_ID/feature.json" << EOF
+mkdir -p ".aboardai/features/$FEATURE_ID"
+cat > ".aboardai/features/$FEATURE_ID/feature.json" << EOF
 {
   "id": "$FEATURE_ID",
   "category": "Core",
@@ -375,7 +375,7 @@ echo "Created feature: $FEATURE_ID"
 - Use `ultrathink` for simple tasks (wastes tokens)
 - Create circular dependencies
 - Put multiple unrelated changes in one feature
-- Put values in `imagePaths` or `textFilePaths` (must be empty `[]`, Automaker populates them)
+- Put values in `imagePaths` or `textFilePaths` (must be empty `[]`, AboardAI populates them)
 
 ---
 
@@ -401,7 +401,7 @@ backlog → pending → running → completed → verified
                            ↘ waiting_approval → completed
 ```
 
-**Important:** Features must start in `backlog` status to be executable by Automaker. The system moves them through the pipeline automatically.
+**Important:** Features must start in `backlog` status to be executable by AboardAI. The system moves them through the pipeline automatically.
 
 ---
 

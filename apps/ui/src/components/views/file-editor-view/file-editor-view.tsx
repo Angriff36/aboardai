@@ -14,8 +14,8 @@ import {
   Diff,
   FolderKanban,
 } from 'lucide-react';
-import { createLogger } from '@automaker/utils/logger';
-import { resolveModelString } from '@automaker/model-resolver';
+import { createLogger } from '@aboardai/utils/logger';
+import { resolveModelString } from '@aboardai/model-resolver';
 import { useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from '@tanstack/react-router';
 import { useAppStore } from '@/store/app-store';

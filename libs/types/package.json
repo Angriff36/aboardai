@@ -1,8 +1,8 @@
 {
-  "name": "@automaker/types",
+  "name": "@aboardai/types",
   "version": "1.0.0",
   "type": "module",
-  "description": "Shared type definitions for AutoMaker",
+  "description": "Shared type definitions for AboardAI",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "scripts": {
@@ -11,10 +11,10 @@
     "test": "vitest"
   },
   "keywords": [
-    "automaker",
+    "aboardai",
     "types"
   ],
-  "author": "AutoMaker Team",
+  "author": "AboardAI Team",
   "license": "SEE LICENSE IN LICENSE",
   "engines": {
     "node": ">=22.0.0 <23.0.0"

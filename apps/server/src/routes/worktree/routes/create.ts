@@ -16,7 +16,7 @@ import * as secureFs from '../../../lib/secure-fs.js';
 import type { EventEmitter } from '../../../lib/events.js';
 import type { SettingsService } from '../../../services/settings-service.js';
 import { WorktreeService } from '../../../services/worktree-service.js';
-import { isGitRepo } from '@automaker/git-utils';
+import { isGitRepo } from '@aboardai/git-utils';
 import {
   getErrorMessage,
   logError,
@@ -26,7 +26,7 @@ import {
 } from '../common.js';
 import { execGitCommand } from '../../../lib/git.js';
 import { trackBranch } from './branch-tracking.js';
-import { createLogger } from '@automaker/utils';
+import { createLogger } from '@aboardai/utils';
 import { runInitScript } from '../../../services/init-script-service.js';
 import {
   syncBaseBranch,
@@ -141,10 +141,10 @@ export function createCreateHandler(events: EventEmitter, settingsService?: Sett
       // Ensure the repository has at least one commit so worktree commands referencing HEAD succeed
       // Pass git identity env vars so commits work without global git config
       const gitEnv = {
-        GIT_AUTHOR_NAME: 'Automaker',
-        GIT_AUTHOR_EMAIL: 'automaker@localhost',
-        GIT_COMMITTER_NAME: 'Automaker',
-        GIT_COMMITTER_EMAIL: 'automaker@localhost',
+        GIT_AUTHOR_NAME: 'AboardAI',
+        GIT_AUTHOR_EMAIL: 'aboardai@localhost',
+        GIT_COMMITTER_NAME: 'AboardAI',
+        GIT_COMMITTER_EMAIL: 'aboardai@localhost',
       };
       await ensureInitialCommit(projectPath, gitEnv);
 
@@ -266,7 +266,7 @@ export function createCreateHandler(events: EventEmitter, settingsService?: Sett
         );
       }
 
-      // Note: We intentionally do NOT symlink .automaker to worktrees
+      // Note: We intentionally do NOT symlink .aboardai to worktrees
       // Features and config are always accessed from the main project path
       // This avoids symlink loop issues when activating worktrees
 

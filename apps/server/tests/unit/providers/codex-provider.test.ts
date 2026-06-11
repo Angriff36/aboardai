@@ -10,13 +10,13 @@ import {
   secureFs,
   getCodexConfigDir,
   getCodexAuthIndicators,
-} from '@automaker/platform';
+} from '@aboardai/platform';
 import {
   calculateReasoningTimeout,
   REASONING_TIMEOUT_MULTIPLIERS,
   DEFAULT_TIMEOUT_MS,
   validateBareModelId,
-} from '@automaker/types';
+} from '@aboardai/types';
 
 const OPENAI_API_KEY_ENV = 'OPENAI_API_KEY';
 const originalOpenAIKey = process.env[OPENAI_API_KEY_ENV];
@@ -43,7 +43,7 @@ vi.mock('@openai/codex-sdk', () => ({
 
 const EXEC_SUBCOMMAND = 'exec';
 
-vi.mock('@automaker/platform', () => ({
+vi.mock('@aboardai/platform', () => ({
   spawnJSONLProcess: vi.fn(),
   spawnProcess: vi.fn(),
   findCodexCliPath: vi.fn(),

@@ -1,15 +1,15 @@
-# @automaker/types
+# @aboardai/types
 
-Shared TypeScript type definitions for AutoMaker.
+Shared TypeScript type definitions for AboardAI.
 
 ## Overview
 
-This package contains all core type definitions used across AutoMaker's server and UI components. It has no dependencies and serves as the foundation for other packages.
+This package contains all core type definitions used across AboardAI's server and UI components. It has no dependencies and serves as the foundation for other packages.
 
 ## Installation
 
 ```bash
-npm install @automaker/types
+npm install @aboardai/types
 ```
 
 ## Exports
@@ -35,7 +35,7 @@ import type {
   McpStdioServerConfig,
   McpSSEServerConfig,
   McpHttpServerConfig,
-} from '@automaker/types';
+} from '@aboardai/types';
 ```
 
 ### Codex CLI Types
@@ -51,7 +51,7 @@ import type {
   CodexEventType,
   CodexItemType,
   CodexEvent,
-} from '@automaker/types';
+} from '@aboardai/types';
 ```
 
 ### Feature Types
@@ -59,7 +59,7 @@ import type {
 Feature management and workflow types.
 
 ```typescript
-import type { Feature, FeatureStatus, PlanningMode, PlanSpec } from '@automaker/types';
+import type { Feature, FeatureStatus, PlanningMode, PlanSpec } from '@aboardai/types';
 ```
 
 **Feature Interface:**
@@ -82,7 +82,7 @@ import type {
   SessionListItem,
   CreateSessionParams,
   UpdateSessionParams,
-} from '@automaker/types';
+} from '@aboardai/types';
 ```
 
 ### Error Types
@@ -90,7 +90,7 @@ import type {
 Error classification and handling.
 
 ```typescript
-import type { ErrorType, ErrorInfo } from '@automaker/types';
+import type { ErrorType, ErrorInfo } from '@aboardai/types';
 ```
 
 ### Image Types
@@ -98,7 +98,7 @@ import type { ErrorType, ErrorInfo } from '@automaker/types';
 Image handling for prompts.
 
 ```typescript
-import type { ImageData, ImageContentBlock } from '@automaker/types';
+import type { ImageData, ImageContentBlock } from '@aboardai/types';
 ```
 
 ### Model Types
@@ -106,13 +106,13 @@ import type { ImageData, ImageContentBlock } from '@automaker/types';
 Claude model definitions and mappings.
 
 ```typescript
-import { CLAUDE_MODEL_MAP, DEFAULT_MODELS, type ModelAlias } from '@automaker/types';
+import { CLAUDE_MODEL_MAP, DEFAULT_MODELS, type ModelAlias } from '@aboardai/types';
 ```
 
 ## Usage Example
 
 ```typescript
-import type { Feature, ExecuteOptions } from '@automaker/types';
+import type { Feature, ExecuteOptions } from '@aboardai/types';
 
 const feature: Feature = {
   id: 'auth-feature',
@@ -133,33 +133,33 @@ const options: ExecuteOptions = {
 
 None - this is a pure types package.
 
-**IMPORTANT**: This package must NEVER depend on other `@automaker/*` packages to prevent circular dependencies. All other packages depend on this one, making it the foundation of the dependency tree.
+**IMPORTANT**: This package must NEVER depend on other `@aboardai/*` packages to prevent circular dependencies. All other packages depend on this one, making it the foundation of the dependency tree.
 
 ## Used By
 
-- `@automaker/utils`
-- `@automaker/platform`
-- `@automaker/model-resolver`
-- `@automaker/dependency-resolver`
-- `@automaker/git-utils`
-- `@automaker/server`
-- `@automaker/ui`
+- `@aboardai/utils`
+- `@aboardai/platform`
+- `@aboardai/model-resolver`
+- `@aboardai/dependency-resolver`
+- `@aboardai/git-utils`
+- `@aboardai/server`
+- `@aboardai/ui`
 
 ## Circular Dependency Prevention
 
 To maintain the package dependency hierarchy and prevent circular dependencies:
 
-1. **Never add dependencies** to other `@automaker/*` packages in `package.json`
-2. **Keep result types here** - For example, `DependencyResolutionResult` should stay in `@automaker/dependency-resolver`, not be moved here
+1. **Never add dependencies** to other `@aboardai/*` packages in `package.json`
+2. **Keep result types here** - For example, `DependencyResolutionResult` should stay in `@aboardai/dependency-resolver`, not be moved here
 3. **Import only base types** - Other packages can import from here, but this package cannot import from them
 4. **Document the rule** - When adding new functionality, ensure it follows this constraint
 
 This constraint ensures a clean one-way dependency flow:
 
 ```
-@automaker/types (foundation - no dependencies)
+@aboardai/types (foundation - no dependencies)
     ↓
-@automaker/utils, @automaker/platform, etc.
+@aboardai/utils, @aboardai/platform, etc.
     ↓
-@automaker/server, @automaker/ui
+@aboardai/server, @aboardai/ui
 ```

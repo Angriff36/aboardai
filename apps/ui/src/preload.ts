@@ -6,7 +6,7 @@
  */
 
 import { contextBridge, ipcRenderer, OpenDialogOptions, SaveDialogOptions } from 'electron';
-import { createLogger } from '@automaker/utils/logger';
+import { createLogger } from '@aboardai/utils/logger';
 import { IPC_CHANNELS } from './electron/ipc/channels';
 
 const logger = createLogger('Preload');

@@ -12,7 +12,7 @@ import * as path from 'path';
 // secureFs is used for user-controllable paths (working directory validation)
 // to enforce ALLOWED_ROOT_DIRECTORY security boundary
 import * as secureFs from '../lib/secure-fs.js';
-import { createLogger } from '@automaker/utils';
+import { createLogger } from '@aboardai/utils';
 import type { SettingsService } from './settings-service.js';
 import { getTerminalThemeColors, getAllTerminalThemes } from '../lib/terminal-themes-data.js';
 import {
@@ -20,7 +20,7 @@ import {
   getTerminalDir,
   ensureRcFilesUpToDate,
   type TerminalConfig,
-} from '@automaker/platform';
+} from '@aboardai/platform';
 
 const logger = createLogger('Terminal');
 // System paths module handles shell binary checks and WSL detection
@@ -30,7 +30,7 @@ import {
   systemPathReadFileSync,
   getWslVersionPath,
   getShellPaths,
-} from '@automaker/platform';
+} from '@aboardai/platform';
 
 const BASH_LOGIN_ARG = '--login';
 const BASH_RCFILE_ARG = '--rcfile';
@@ -51,7 +51,7 @@ const DEFAULT_CUSTOM_ALIASES = '';
 const DEFAULT_CUSTOM_ENV_VARS: Record<string, string> = {};
 const PROMPT_THEME_CUSTOM = 'custom';
 const PROMPT_THEME_PREFIX = 'omp-';
-const OMP_THEME_ENV_VAR = 'AUTOMAKER_OMP_THEME';
+const OMP_THEME_ENV_VAR = 'ABOARDAI_OMP_THEME';
 
 // Maximum scrollback buffer size (characters)
 const MAX_SCROLLBACK_SIZE = 50000; // ~50KB per terminal
@@ -451,12 +451,12 @@ export class TerminalService extends EventEmitter {
 
     // Build environment with some useful defaults
     // These settings ensure consistent terminal behavior across platforms
-    // First, create a clean copy of process.env excluding Automaker-specific variables
+    // First, create a clean copy of process.env excluding AboardAI-specific variables
     // that could pollute user shells (e.g., PORT would affect Next.js/other dev servers)
-    const automakerEnvVars = ['PORT', 'DATA_DIR', 'AUTOMAKER_API_KEY', 'NODE_PATH'];
+    const aboardaiEnvVars = ['PORT', 'DATA_DIR', 'ABOARDAI_API_KEY', 'NODE_PATH'];
     const cleanEnv: Record<string, string> = {};
     for (const [key, value] of Object.entries(process.env)) {
-      if (value !== undefined && !automakerEnvVars.includes(key)) {
+      if (value !== undefined && !aboardaiEnvVars.includes(key)) {
         cleanEnv[key] = value;
       }
     }
@@ -513,23 +513,23 @@ export class TerminalService extends EventEmitter {
           if (shellName.includes(SHELL_NAME_BASH)) {
             const bashRcFilePath = getRcFilePath(options.cwd || cwd, SHELL_NAME_BASH);
             terminalConfigEnv.BASH_ENV = bashRcFilePath;
-            terminalConfigEnv.AUTOMAKER_CUSTOM_PROMPT = effectiveConfig.customPrompt
+            terminalConfigEnv.ABOARDAI_CUSTOM_PROMPT = effectiveConfig.customPrompt
               ? 'true'
               : 'false';
-            terminalConfigEnv.AUTOMAKER_THEME = currentTheme;
+            terminalConfigEnv.ABOARDAI_THEME = currentTheme;
             shellArgs = applyBashRcFileArgs(shellArgs, bashRcFilePath);
           } else if (shellName.includes(SHELL_NAME_ZSH)) {
             terminalConfigEnv.ZDOTDIR = getTerminalDir(options.cwd || cwd);
-            terminalConfigEnv.AUTOMAKER_CUSTOM_PROMPT = effectiveConfig.customPrompt
+            terminalConfigEnv.ABOARDAI_CUSTOM_PROMPT = effectiveConfig.customPrompt
               ? 'true'
               : 'false';
-            terminalConfigEnv.AUTOMAKER_THEME = currentTheme;
+            terminalConfigEnv.ABOARDAI_THEME = currentTheme;
           } else if (shellName === SHELL_NAME_SH) {
             terminalConfigEnv.ENV = getRcFilePath(options.cwd || cwd, SHELL_NAME_SH);
-            terminalConfigEnv.AUTOMAKER_CUSTOM_PROMPT = effectiveConfig.customPrompt
+            terminalConfigEnv.ABOARDAI_CUSTOM_PROMPT = effectiveConfig.customPrompt
               ? 'true'
               : 'false';
-            terminalConfigEnv.AUTOMAKER_THEME = currentTheme;
+            terminalConfigEnv.ABOARDAI_THEME = currentTheme;
           }
 
           // Add custom env vars from config
@@ -548,7 +548,7 @@ export class TerminalService extends EventEmitter {
       ...cleanEnv,
       TERM: 'xterm-256color',
       COLORTERM: 'truecolor',
-      TERM_PROGRAM: 'automaker-terminal',
+      TERM_PROGRAM: 'aboardai-terminal',
       // Ensure proper locale for character handling
       LANG: process.env.LANG || 'en_US.UTF-8',
       LC_ALL: process.env.LC_ALL || process.env.LANG || 'en_US.UTF-8',
@@ -883,14 +883,14 @@ export class TerminalService extends EventEmitter {
 
       if (effectiveConfig.enabled && terminalConfig) {
         const themeColors = getTerminalThemeColors(
-          newTheme as import('@automaker/types').ThemeMode
+          newTheme as import('@aboardai/types').ThemeMode
         );
         const allThemes = getAllTerminalThemes();
 
         // Regenerate RC files with new theme
         await ensureRcFilesUpToDate(
           projectPath,
-          newTheme as import('@automaker/types').ThemeMode,
+          newTheme as import('@aboardai/types').ThemeMode,
           effectiveConfig,
           themeColors,
           allThemes

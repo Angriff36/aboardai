@@ -1,4 +1,4 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="1456" height="330" viewBox="0 0 1456 330" role="img" aria-label="Automaker Logo">
+<svg xmlns="http://www.w3.org/2000/svg" width="1456" height="330" viewBox="0 0 1456 330" role="img" aria-label="AboardAI Logo">
   <defs>
     <!-- Brand Gradient -->
     <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
@@ -33,6 +33,6 @@
 
   <!-- Text Section -->
   <text x="320" y="215" font-family="Inter, system-ui, -apple-system, sans-serif" font-size="160" font-weight="800" letter-spacing="-4" fill="#FFFFFF">
-    automaker<tspan fill="#6B5BFF">.</tspan>
+    aboardai<tspan fill="#6B5BFF">.</tspan>
   </text>
 </svg>

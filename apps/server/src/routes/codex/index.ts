@@ -1,7 +1,7 @@
 import { Router, Request, Response } from 'express';
 import { CodexUsageService } from '../../services/codex-usage-service.js';
 import { CodexModelCacheService } from '../../services/codex-model-cache-service.js';
-import { createLogger } from '@automaker/utils';
+import { createLogger } from '@aboardai/utils';
 
 const logger = createLogger('Codex');
 
@@ -17,9 +17,9 @@ export function createCodexRoutes(
       // Check if Codex CLI is available first
       const isAvailable = await usageService.isAvailable();
       if (!isAvailable) {
-        // IMPORTANT: This endpoint is behind Automaker session auth already.
+        // IMPORTANT: This endpoint is behind AboardAI session auth already.
         // Use a 200 + error payload for Codex CLI issues so the UI doesn't
-        // interpret it as an invalid Automaker session (401/403 triggers logout).
+        // interpret it as an invalid AboardAI session (401/403 triggers logout).
         res.status(200).json({
           error: 'Codex CLI not found',
           message: "Please install Codex CLI and run 'codex login' to authenticate",
@@ -33,7 +33,7 @@ export function createCodexRoutes(
       const message = error instanceof Error ? error.message : 'Unknown error';
 
       if (message.includes('not authenticated') || message.includes('login')) {
-        // Do NOT use 401/403 here: that status code is reserved for Automaker session auth.
+        // Do NOT use 401/403 here: that status code is reserved for AboardAI session auth.
         res.status(200).json({
           error: 'Authentication required',
           message: "Please run 'codex login' to authenticate",

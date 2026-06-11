@@ -10,8 +10,8 @@ import { useQueryClient, QueryClient } from '@tanstack/react-query';
 import { getElectronAPI } from '@/lib/electron';
 import { queryKeys } from '@/lib/query-keys';
 import type { AutoModeEvent, SpecRegenerationEvent, StreamEvent } from '@/types/electron';
-import type { IssueValidationEvent } from '@automaker/types';
-import { debounce, type DebouncedFunction } from '@automaker/utils/debounce';
+import type { IssueValidationEvent } from '@aboardai/types';
+import { debounce, type DebouncedFunction } from '@aboardai/utils/debounce';
 import { useEventRecencyStore } from './use-event-recency';
 import { isAnyFeatureTransitioning } from '@/lib/feature-transition-state';
 

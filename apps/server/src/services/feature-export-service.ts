@@ -8,9 +8,9 @@
  * - Validate import data for compatibility
  */
 
-import { createLogger } from '@automaker/utils';
+import { createLogger } from '@aboardai/utils';
 import { stringify as yamlStringify, parse as yamlParse } from 'yaml';
-import type { Feature, FeatureExport, FeatureImport, FeatureImportResult } from '@automaker/types';
+import type { Feature, FeatureExport, FeatureImport, FeatureImportResult } from '@aboardai/types';
 import { FeatureLoader } from './feature-loader.js';
 
 const logger = createLogger('FeatureExportService');

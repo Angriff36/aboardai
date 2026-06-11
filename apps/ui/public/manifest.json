@@ -1,6 +1,6 @@
 {
-  "name": "Automaker - Autonomous AI Development Studio",
-  "short_name": "Automaker",
+  "name": "AboardAI - Autonomous AI Development Studio",
+  "short_name": "AboardAI",
   "description": "Build software autonomously with AI agents",
   "start_url": "/",
   "display": "standalone",
@@ -23,7 +23,7 @@
       "purpose": "maskable"
     },
     {
-      "src": "/automaker.svg",
+      "src": "/aboardai.svg",
       "sizes": "any",
       "type": "image/svg+xml",
       "purpose": "any"

@@ -5,7 +5,7 @@ import {
   CURSOR_MODEL_MAP,
   DEFAULT_MODELS,
   type PhaseModelEntry,
-} from '@automaker/types';
+} from '@aboardai/types';
 
 describe('model-resolver', () => {
   let consoleLogSpy: ReturnType<typeof vi.spyOn>;

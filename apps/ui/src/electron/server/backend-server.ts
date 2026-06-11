@@ -14,8 +14,8 @@ import {
   buildEnhancedPath,
   electronAppExists,
   systemPathExists,
-} from '@automaker/platform';
-import { createLogger } from '@automaker/utils/logger';
+} from '@aboardai/platform';
+import { createLogger } from '@aboardai/utils/logger';
 import { state } from '../state';
 
 const logger = createLogger('BackendServer');
@@ -149,7 +149,7 @@ export async function startServer(): Promise<void> {
     // Run packaged backend with Electron's embedded Node runtime.
     ...(app.isPackaged && { ELECTRON_RUN_AS_NODE: '1' }),
     // Pass API key to server for CSRF protection
-    AUTOMAKER_API_KEY: state.apiKey!,
+    ABOARDAI_API_KEY: state.apiKey!,
     // Only set ALLOWED_ROOT_DIRECTORY if explicitly provided in environment
     // If not set, server will allow access to all paths
     ...(process.env.ALLOWED_ROOT_DIRECTORY && {

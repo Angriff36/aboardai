@@ -9,7 +9,7 @@ import { useNavigate } from '@tanstack/react-router';
 import { useAppStore } from '@/store/app-store';
 import { initializeProject } from '@/lib/project-init';
 import { toast } from 'sonner';
-import type { ProjectStatus } from '@automaker/types';
+import type { ProjectStatus } from '@aboardai/types';
 import { Bot, Activity, GitBranch, ArrowRight } from 'lucide-react';
 
 interface RunningAgentsPanelProps {

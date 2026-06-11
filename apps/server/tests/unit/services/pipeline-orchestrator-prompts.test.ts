@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
 import { PipelineOrchestrator } from '../../../src/services/pipeline-orchestrator.js';
-import type { Feature } from '@automaker/types';
+import type { Feature } from '@aboardai/types';
 
 describe('PipelineOrchestrator Prompts', () => {
   const mockFeature: Feature = {

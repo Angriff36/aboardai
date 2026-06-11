@@ -5,7 +5,7 @@
 import type { Request, Response } from 'express';
 import path from 'path';
 import * as secureFs from '../../../lib/secure-fs.js';
-import { PathNotAllowedError } from '@automaker/platform';
+import { PathNotAllowedError } from '@aboardai/platform';
 import { getErrorMessage, logError } from '../common.js';
 
 // Optional files that are expected to not exist in new projects
@@ -18,7 +18,7 @@ function isOptionalFile(filePath: string): boolean {
     return true;
   }
   // Context and memory files may not exist yet during create/delete or test races
-  if (filePath.includes('.automaker/context/') || filePath.includes('.automaker/memory/')) {
+  if (filePath.includes('.aboardai/context/') || filePath.includes('.aboardai/memory/')) {
     const name = path.basename(filePath);
     const lower = name.toLowerCase();
     if (lower.endsWith('.md') || lower.endsWith('.txt') || lower.endsWith('.markdown')) {

@@ -4,7 +4,7 @@
 
 import type { Request, Response } from 'express';
 import { AgentService } from '../../../services/agent-service.js';
-import { createLogger } from '@automaker/utils';
+import { createLogger } from '@aboardai/utils';
 import { getErrorMessage, logError } from '../common.js';
 const _logger = createLogger('Agent');
 

@@ -5,8 +5,8 @@
 
 import type { Request, Response } from 'express';
 import { query } from '@anthropic-ai/claude-agent-sdk';
-import { createLogger } from '@automaker/utils';
-import { getClaudeAuthIndicators } from '@automaker/platform';
+import { createLogger } from '@aboardai/utils';
+import { getClaudeAuthIndicators } from '@aboardai/platform';
 import { getApiKey } from '../common.js';
 import {
   createSecureAuthEnv,
@@ -81,7 +81,7 @@ export function createVerifyClaudeAuthHandler() {
   return async (req: Request, res: Response): Promise<void> => {
     try {
       // In E2E/CI mock mode, skip real API calls
-      if (process.env.AUTOMAKER_MOCK_AGENT === 'true') {
+      if (process.env.ABOARDAI_MOCK_AGENT === 'true') {
         res.json({ success: true, authenticated: true });
         return;
       }

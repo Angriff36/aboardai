@@ -21,7 +21,7 @@ vi.mock('@/lib/electron', () => ({
 }));
 
 // Mock the logger
-vi.mock('@automaker/utils/logger', () => ({
+vi.mock('@aboardai/utils/logger', () => ({
   createLogger: () => ({
     info: vi.fn(),
     warn: vi.fn(),

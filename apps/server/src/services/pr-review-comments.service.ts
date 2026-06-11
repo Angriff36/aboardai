@@ -8,7 +8,7 @@
 
 import { spawn, execFile } from 'child_process';
 import { promisify } from 'util';
-import { createLogger } from '@automaker/utils';
+import { createLogger } from '@aboardai/utils';
 import { execEnv, logError } from '../lib/exec-utils.js';
 
 const execFileAsync = promisify(execFile);

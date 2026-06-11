@@ -12,7 +12,7 @@
  * - electron/server/           - Backend and static server management
  * - electron/ipc/              - IPC handlers (dialog, shell, app, auth, window, server)
  *
- * SECURITY: All file system access uses centralized methods from @automaker/platform.
+ * SECURITY: All file system access uses centralized methods from @aboardai/platform.
  */
 
 import path from 'path';
@@ -21,8 +21,8 @@ import {
   setElectronUserDataPath,
   setElectronAppPaths,
   initAllowedPaths,
-} from '@automaker/platform';
-import { createLogger } from '@automaker/utils/logger';
+} from '@aboardai/platform';
+import { createLogger } from '@aboardai/utils/logger';
 import { DEFAULT_SERVER_PORT, DEFAULT_STATIC_PORT } from './electron/constants';
 import { state } from './electron/state';
 import { findAvailablePort } from './electron/utils/port-manager';
@@ -67,14 +67,14 @@ app.on('before-quit', handleBeforeQuit);
  * Handle app.whenReady()
  */
 async function handleAppReady(): Promise<void> {
-  // In production, use Automaker dir in appData for app isolation
+  // In production, use AboardAI dir in appData for app isolation
   // In development, use project root for shared data between Electron and web mode
   let userDataPathToUse: string;
 
   if (app.isPackaged) {
-    // Production: Ensure userData path is consistent so files land in Automaker dir
+    // Production: Ensure userData path is consistent so files land in AboardAI dir
     try {
-      const desiredUserDataPath = path.join(app.getPath('appData'), 'Automaker');
+      const desiredUserDataPath = path.join(app.getPath('appData'), 'AboardAI');
 
       if (app.getPath('userData') !== desiredUserDataPath) {
         app.setPath('userData', desiredUserDataPath);
@@ -88,7 +88,7 @@ async function handleAppReady(): Promise<void> {
     }
   } else {
     // Development: Explicitly set userData to project root for shared data between Electron and web
-    // This OVERRIDES Electron's default userData path (~/.config/Automaker)
+    // This OVERRIDES Electron's default userData path (~/.config/AboardAI)
     // __dirname is apps/ui/dist-electron, so go up to get project root
     const projectRoot = path.join(__dirname, '../../..');
     userDataPathToUse = path.join(projectRoot, 'data');
@@ -210,7 +210,7 @@ async function handleAppReady(): Promise<void> {
     const isNodeError = errorMessage.includes('Node.js');
 
     dialog.showErrorBox(
-      'Automaker Failed to Start',
+      'AboardAI Failed to Start',
       `The application failed to start.\n\n${errorMessage}\n\n${
         isNodeError
           ? 'Please install Node.js from https://nodejs.org or via a package manager (Homebrew, nvm, fnm).'

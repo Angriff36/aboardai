@@ -5,7 +5,7 @@
  * used in testing and development contexts.
  */
 
-import type { Feature } from '@automaker/types';
+import type { Feature } from '@aboardai/types';
 import type { ElectronAPI } from '../lib/electron';
 
 /**

@@ -22,8 +22,8 @@ export default defineConfig({
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),
-      '@automaker/ui': path.resolve(__dirname, './src'),
-      '@automaker/types': path.resolve(__dirname, '../../libs/types/src/index.ts'),
+      '@aboardai/ui': path.resolve(__dirname, './src'),
+      '@aboardai/types': path.resolve(__dirname, '../../libs/types/src/index.ts'),
     },
   },
 });

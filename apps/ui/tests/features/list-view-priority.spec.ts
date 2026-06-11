@@ -41,11 +41,11 @@ test.describe.skip('List View Priority Column', () => {
       JSON.stringify({ name: projectName, version: '1.0.0' }, null, 2)
     );
 
-    const automakerDir = path.join(projectPath, '.automaker');
-    fs.mkdirSync(automakerDir, { recursive: true });
-    const featuresDir = path.join(automakerDir, 'features');
+    const aboardaiDir = path.join(projectPath, '.aboardai');
+    fs.mkdirSync(aboardaiDir, { recursive: true });
+    const featuresDir = path.join(aboardaiDir, 'features');
     fs.mkdirSync(featuresDir, { recursive: true });
-    fs.mkdirSync(path.join(automakerDir, 'context'), { recursive: true });
+    fs.mkdirSync(path.join(aboardaiDir, 'context'), { recursive: true });
 
     // Create test features with different priorities
     const features = [
@@ -83,12 +83,12 @@ test.describe.skip('List View Priority Column', () => {
     }
 
     fs.writeFileSync(
-      path.join(automakerDir, 'categories.json'),
+      path.join(aboardaiDir, 'categories.json'),
       JSON.stringify({ categories: ['test'] }, null, 2)
     );
 
     fs.writeFileSync(
-      path.join(automakerDir, 'app_spec.txt'),
+      path.join(aboardaiDir, 'app_spec.txt'),
       `# ${projectName}\n\nA test project for e2e testing.`
     );
   });

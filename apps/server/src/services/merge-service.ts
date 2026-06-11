@@ -4,9 +4,9 @@
  * Extracted from worktree merge route to allow internal service calls.
  */
 
-import { createLogger, isValidBranchName, isValidRemoteName } from '@automaker/utils';
+import { createLogger, isValidBranchName, isValidRemoteName } from '@aboardai/utils';
 import { type EventEmitter } from '../lib/events.js';
-import { execGitCommand } from '@automaker/git-utils';
+import { execGitCommand } from '@aboardai/git-utils';
 const logger = createLogger('MergeService');
 
 export interface MergeOptions {

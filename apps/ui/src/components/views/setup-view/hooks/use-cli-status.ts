@@ -1,6 +1,6 @@
 import { useState, useCallback } from 'react';
-import { createLogger } from '@automaker/utils/logger';
-import type { ModelProvider } from '@automaker/types';
+import { createLogger } from '@aboardai/utils/logger';
+import type { ModelProvider } from '@aboardai/types';
 import type { CliStatus, ClaudeAuthStatus, CodexAuthStatus } from '@/store/setup-store';
 
 interface CliStatusApiResponse {

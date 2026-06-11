@@ -3,7 +3,7 @@ import { create } from 'zustand';
 import type { Project, TrashedProject } from '@/lib/electron';
 import { saveProjects, saveTrashedProjects } from '@/lib/electron';
 import { getHttpApiClient } from '@/lib/http-api-client';
-import { createLogger } from '@automaker/utils/logger';
+import { createLogger } from '@aboardai/utils/logger';
 // Note: setItem/getItem moved to ./utils/theme-utils.ts
 import { UI_SANS_FONT_OPTIONS, UI_MONO_FONT_OPTIONS } from '@/config/ui-font-options';
 import { loadFont } from '@/styles/font-imports';
@@ -23,7 +23,7 @@ import type {
   ParsedTask,
   PlanSpec,
   FeatureTemplate,
-} from '@automaker/types';
+} from '@aboardai/types';
 import {
   getAllCursorModelIds,
   getAllCodexModelIds,
@@ -37,7 +37,7 @@ import {
   DEFAULT_MAX_CONCURRENCY,
   DEFAULT_GLOBAL_SETTINGS,
   getThinkingLevelsForModel,
-} from '@automaker/types';
+} from '@aboardai/types';
 
 // Import types from modular type files
 import {
@@ -120,7 +120,7 @@ const logger = createLogger('AppStore');
 const OPENCODE_BEDROCK_PROVIDER_ID = 'amazon-bedrock';
 const OPENCODE_BEDROCK_MODEL_PREFIX = `${OPENCODE_BEDROCK_PROVIDER_ID}/`;
 
-// Re-export types from @automaker/types for convenience
+// Re-export types from @aboardai/types for convenience
 export type {
   ModelAlias,
   PlanningMode,
@@ -232,7 +232,7 @@ function getInitialUIState(): {
   collapsedNavSections: Record<string, boolean>;
 } {
   try {
-    const raw = localStorage.getItem('automaker-ui-cache');
+    const raw = localStorage.getItem('aboardai-ui-cache');
     if (raw) {
       const wrapper = JSON.parse(raw);
       // zustand/persist wraps state under a "state" key

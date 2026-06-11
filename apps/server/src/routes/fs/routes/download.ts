@@ -6,7 +6,7 @@
 import type { Request, Response } from 'express';
 import * as secureFs from '../../../lib/secure-fs.js';
 import path from 'path';
-import { PathNotAllowedError } from '@automaker/platform';
+import { PathNotAllowedError } from '@aboardai/platform';
 import { getErrorMessage, logError } from '../common.js';
 import { createReadStream } from 'fs';
 import { execFile } from 'child_process';
@@ -64,7 +64,7 @@ export function createDownloadHandler() {
 
         // Create a temporary zip file
         const zipFileName = `${fileName}.zip`;
-        const tmpZipPath = path.join(tmpdir(), `automaker-download-${Date.now()}-${zipFileName}`);
+        const tmpZipPath = path.join(tmpdir(), `aboardai-download-${Date.now()}-${zipFileName}`);
 
         try {
           // Use system zip command (available on macOS and Linux)

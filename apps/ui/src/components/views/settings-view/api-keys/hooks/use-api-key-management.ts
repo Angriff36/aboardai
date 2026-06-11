@@ -1,7 +1,7 @@
 // API key management state with validation and persistence
 import { useState, useEffect } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-import { createLogger } from '@automaker/utils/logger';
+import { createLogger } from '@aboardai/utils/logger';
 import { useAppStore } from '@/store/app-store';
 import { useSetupStore, type ZaiAuthMethod } from '@/store/setup-store';
 import { getHttpApiClient } from '@/lib/http-api-client';

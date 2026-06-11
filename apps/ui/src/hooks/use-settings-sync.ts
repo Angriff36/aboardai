@@ -12,7 +12,7 @@
  */
 
 import { useEffect, useRef, useCallback, useState } from 'react';
-import { createLogger } from '@automaker/utils/logger';
+import { createLogger } from '@aboardai/utils/logger';
 import { getHttpApiClient, waitForApiKeyInit } from '@/lib/http-api-client';
 import { setItem } from '@/lib/storage';
 import { useAppStore, type ThemeMode, THEME_STORAGE_KEY } from '@/store/app-store';
@@ -38,7 +38,7 @@ import {
   type GeminiModelId,
   type CopilotModelId,
   type PhaseModelEntry,
-} from '@automaker/types';
+} from '@aboardai/types';
 
 const logger = createLogger('SettingsSync');
 
@@ -355,7 +355,7 @@ export function useSettingsSync(): SettingsSyncState {
         // Update localStorage cache with synced settings to keep it fresh
         // This prevents stale data when switching between Electron and web modes
         try {
-          setItem('automaker-settings-cache', JSON.stringify(updates));
+          setItem('aboardai-settings-cache', JSON.stringify(updates));
           logger.debug('Updated localStorage cache after sync');
         } catch (storageError) {
           logger.warn('Failed to update localStorage cache after sync:', storageError);
@@ -619,7 +619,7 @@ export async function forceSyncSettingsToServer(): Promise<boolean> {
     // server response arrives still sees the latest state (e.g. after
     // deleting a worktree, the stale worktree path won't survive in cache).
     try {
-      setItem('automaker-settings-cache', JSON.stringify(updates));
+      setItem('aboardai-settings-cache', JSON.stringify(updates));
     } catch (storageError) {
       logger.warn('Failed to update localStorage cache during force sync:', storageError);
     }

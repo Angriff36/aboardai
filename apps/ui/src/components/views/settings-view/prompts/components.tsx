@@ -3,7 +3,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 import { Info, AlertTriangle } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import type { PromptCustomization, CustomPrompt } from '@automaker/types';
+import type { PromptCustomization, CustomPrompt } from '@aboardai/types';
 import type { BannerConfig, PromptFieldConfig, PromptFieldProps } from './types';
 
 /**

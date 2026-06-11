@@ -9,7 +9,7 @@ import {
   isOpencodeModel,
   PROVIDER_PREFIXES,
   type ModelProvider,
-} from '@automaker/types';
+} from '@aboardai/types';
 
 describe('provider-utils.ts', () => {
   describe('validateBareModelId', () => {

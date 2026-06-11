@@ -9,7 +9,7 @@ import { useCopilotCliStatus } from '@/hooks/queries';
 import { queryKeys } from '@/lib/query-keys';
 import type { CliStatus as SharedCliStatus } from '../shared/types';
 import type { CopilotAuthStatus } from '../cli-status/copilot-cli-status';
-import type { CopilotModelId } from '@automaker/types';
+import type { CopilotModelId } from '@aboardai/types';
 
 export function CopilotSettingsTab() {
   const queryClient = useQueryClient();

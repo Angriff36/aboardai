@@ -3,7 +3,7 @@
  * Extracts useful information from agent context files for display in kanban cards
  */
 
-import type { ClaudeCompatibleProvider } from '@automaker/types';
+import type { ClaudeCompatibleProvider } from '@aboardai/types';
 
 export interface AgentTaskInfo {
   // Task list extracted from TodoWrite tool calls

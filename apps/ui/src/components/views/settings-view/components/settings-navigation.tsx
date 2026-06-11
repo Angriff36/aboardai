@@ -7,7 +7,7 @@ import type { NavigationItem } from '../config/navigation';
 import { GLOBAL_NAV_GROUPS } from '../config/navigation';
 import type { SettingsViewId } from '../hooks/use-settings-view';
 import { useAppStore } from '@/store/app-store';
-import type { ModelProvider } from '@automaker/types';
+import type { ModelProvider } from '@aboardai/types';
 
 const PROVIDERS_DROPDOWN_KEY = 'settings-providers-dropdown-open';
 

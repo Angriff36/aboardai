@@ -6,7 +6,7 @@
  */
 
 import type { Request, Response } from 'express';
-import { createLogger } from '@automaker/utils';
+import { createLogger } from '@aboardai/utils';
 import type { AutoModeServiceCompat } from '../../../services/auto-mode/index.js';
 
 const logger = createLogger('ResumeInterrupted');

@@ -1,6 +1,6 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
-import type { SpecOutput } from '@automaker/spec-parser';
-import { specToXml } from '@automaker/spec-parser';
+import type { SpecOutput } from '@aboardai/spec-parser';
+import { specToXml } from '@aboardai/spec-parser';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import {
   ProjectInfoSection,

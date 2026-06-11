@@ -10,7 +10,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Plus, Trash2, ChevronUp, ChevronDown, Pencil } from 'lucide-react';
 import { toast } from 'sonner';
-import type { PipelineConfig, PipelineStep } from '@automaker/types';
+import type { PipelineConfig, PipelineStep } from '@aboardai/types';
 import { cn } from '@/lib/utils';
 import { AddEditPipelineStepDialog } from './add-edit-pipeline-step-dialog';
 

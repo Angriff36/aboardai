@@ -8,7 +8,7 @@
  * Follows the same pattern as pull-service.ts and push-service.ts.
  */
 
-import { createLogger, getErrorMessage } from '@automaker/utils';
+import { createLogger, getErrorMessage } from '@aboardai/utils';
 import { performPull } from './pull-service.js';
 import { performPush } from './push-service.js';
 import type { PullResult } from './pull-service.js';

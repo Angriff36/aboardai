@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, afterEach, vi, type MockInstance } fr
 import fs from 'fs/promises';
 import path from 'path';
 import os from 'os';
-import { secureFs } from '@automaker/platform';
+import { secureFs } from '@aboardai/platform';
 import {
   atomicWriteJson,
   readJsonFile,
@@ -11,7 +11,7 @@ import {
 } from '../src/atomic-writer';
 
 // Mock secureFs
-vi.mock('@automaker/platform', () => ({
+vi.mock('@aboardai/platform', () => ({
   secureFs: {
     writeFile: vi.fn(),
     readFile: vi.fn(),

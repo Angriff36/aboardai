@@ -12,7 +12,7 @@
  * - release() with force:true bypasses leaseCount check
  */
 
-import type { ModelProvider } from '@automaker/types';
+import type { ModelProvider } from '@aboardai/types';
 
 /**
  * Function type for getting the current branch of a project.

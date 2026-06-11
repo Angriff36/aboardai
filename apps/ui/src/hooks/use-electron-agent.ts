@@ -5,7 +5,7 @@ import { useMessageQueue } from './use-message-queue';
 import type { ImageAttachment, TextFileAttachment } from '@/store/app-store';
 import { getElectronAPI } from '@/lib/electron';
 import { sanitizeFilename } from '@/lib/image-utils';
-import { createLogger } from '@automaker/utils/logger';
+import { createLogger } from '@aboardai/utils/logger';
 
 const logger = createLogger('ElectronAgent');
 
@@ -117,7 +117,7 @@ export function useElectronAgent({
           messageContent = contextBlock + content;
         }
 
-        // Save images to .automaker/images and get paths
+        // Save images to .aboardai/images and get paths
         let imagePaths: string[] | undefined;
         if (images && images.length > 0 && api.saveImageToTemp) {
           imagePaths = [];
@@ -130,7 +130,7 @@ export function useElectronAgent({
             );
             if (result.success && result.path) {
               imagePaths.push(result.path);
-              logger.info('Saved image to .automaker/images:', result.path);
+              logger.info('Saved image to .aboardai/images:', result.path);
             } else {
               logger.error('Failed to save image:', result.error);
             }
@@ -411,7 +411,7 @@ export function useElectronAgent({
           messageContent = contextBlock + content;
         }
 
-        // Save images to .automaker/images and get paths
+        // Save images to .aboardai/images and get paths
         let imagePaths: string[] | undefined;
         if (images && images.length > 0 && api.saveImageToTemp) {
           imagePaths = [];
@@ -424,7 +424,7 @@ export function useElectronAgent({
             );
             if (result.success && result.path) {
               imagePaths.push(result.path);
-              logger.info('Saved image to .automaker/images:', result.path);
+              logger.info('Saved image to .aboardai/images:', result.path);
             } else {
               logger.error('Failed to save image:', result.error);
             }

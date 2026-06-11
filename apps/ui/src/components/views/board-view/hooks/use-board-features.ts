@@ -10,7 +10,7 @@ import { useQueryClient, useIsRestoring } from '@tanstack/react-query';
 import { useAppStore } from '@/store/app-store';
 import { getElectronAPI } from '@/lib/electron';
 import { toast } from 'sonner';
-import { createLogger } from '@automaker/utils/logger';
+import { createLogger } from '@aboardai/utils/logger';
 import { useFeatures } from '@/hooks/queries';
 import { queryKeys } from '@/lib/query-keys';
 
@@ -44,7 +44,7 @@ export function useBoardFeatures({ currentProject }: UseBoardFeaturesProps) {
 
     try {
       const api = getElectronAPI();
-      const result = await api.readFile(`${currentProject.path}/.automaker/categories.json`);
+      const result = await api.readFile(`${currentProject.path}/.aboardai/categories.json`);
 
       if (result.success && result.content) {
         const parsed = JSON.parse(result.content);
@@ -73,7 +73,7 @@ export function useBoardFeatures({ currentProject }: UseBoardFeaturesProps) {
           categories.sort();
 
           await api.writeFile(
-            `${currentProject.path}/.automaker/categories.json`,
+            `${currentProject.path}/.aboardai/categories.json`,
             JSON.stringify(categories, null, 2)
           );
 

@@ -2,7 +2,7 @@
 
 ## Overview
 
-The Automaker Agent Chat now supports multiple concurrent sessions, allowing you to organize different conversations by topic, feature, or task. Each session is independently managed and persisted.
+The AboardAI Agent Chat now supports multiple concurrent sessions, allowing you to organize different conversations by topic, feature, or task. Each session is independently managed and persisted.
 
 ## Features
 
@@ -125,19 +125,19 @@ Sessions are stored in your user data directory:
 **macOS:**
 
 ```
-~/Library/Application Support/automaker/agent-sessions/
+~/Library/Application Support/aboardai/agent-sessions/
 ```
 
 **Windows:**
 
 ```
-%APPDATA%/automaker/agent-sessions/
+%APPDATA%/aboardai/agent-sessions/
 ```
 
 **Linux:**
 
 ```
-~/.config/automaker/agent-sessions/
+~/.config/aboardai/agent-sessions/
 ```
 
 ### File Structure
@@ -304,10 +304,10 @@ _(Coming soon)_
 
 ```bash
 # macOS - Check permissions
-ls -la ~/Library/Application\ Support/automaker/
+ls -la ~/Library/Application\ Support/aboardai/
 
 # Fix permissions if needed
-chmod -R u+w ~/Library/Application\ Support/automaker/
+chmod -R u+w ~/Library/Application\ Support/aboardai/
 ```
 
 ### Can't Switch Sessions

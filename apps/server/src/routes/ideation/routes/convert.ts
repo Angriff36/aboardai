@@ -6,7 +6,7 @@ import type { Request, Response } from 'express';
 import type { EventEmitter } from '../../../lib/events.js';
 import type { IdeationService } from '../../../services/ideation-service.js';
 import type { FeatureLoader } from '../../../services/feature-loader.js';
-import type { ConvertToFeatureOptions } from '@automaker/types';
+import type { ConvertToFeatureOptions } from '@aboardai/types';
 import { getErrorMessage, logError } from '../common.js';
 
 export function createConvertHandler(

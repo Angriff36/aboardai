@@ -1,7 +1,7 @@
 /**
  * System Paths Configuration
  *
- * Centralized configuration for ALL system paths that automaker needs to access
+ * Centralized configuration for ALL system paths that aboardai needs to access
  * outside of the ALLOWED_ROOT_DIRECTORY. These are well-known system paths for
  * tools like GitHub CLI, Claude CLI, Node.js version managers, etc.
  *

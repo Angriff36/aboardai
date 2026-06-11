@@ -1,6 +1,6 @@
 import { useEffect, useRef, useCallback, useState, useMemo } from 'react';
 import { useNavigate } from '@tanstack/react-router';
-import { createLogger } from '@automaker/utils/logger';
+import { createLogger } from '@aboardai/utils/logger';
 import {
   X,
   SplitSquareHorizontal,
@@ -1828,7 +1828,7 @@ export function TerminalPanel({
         if (!api.saveImageToTemp) {
           // Fallback path when Electron API is not available (browser mode)
           logger.warn('saveImageToTemp not available, returning fallback path');
-          return `.automaker/images/${Date.now()}_${filename}`;
+          return `.aboardai/images/${Date.now()}_${filename}`;
         }
 
         const projectPath = currentProject?.path;

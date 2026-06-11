@@ -12,7 +12,7 @@ import { Card, CardContent, CardDescription, CardTitle } from '@/components/ui/c
 import { Bell, Check, CheckCheck, Trash2, ExternalLink, AlertCircle } from 'lucide-react';
 import { Spinner } from '@/components/ui/spinner';
 import { useNavigate } from '@tanstack/react-router';
-import type { Notification } from '@automaker/types';
+import type { Notification } from '@aboardai/types';
 import { formatRelativeTime } from '@/lib/utils';
 
 export function NotificationsView() {

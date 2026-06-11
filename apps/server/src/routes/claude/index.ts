@@ -1,6 +1,6 @@
 import { Router, Request, Response } from 'express';
 import { ClaudeUsageService } from '../../services/claude-usage-service.js';
-import { createLogger } from '@automaker/utils';
+import { createLogger } from '@aboardai/utils';
 
 const logger = createLogger('Claude');
 
@@ -13,9 +13,9 @@ export function createClaudeRoutes(service: ClaudeUsageService): Router {
       // Check if Claude CLI is available first
       const isAvailable = await service.isAvailable();
       if (!isAvailable) {
-        // IMPORTANT: This endpoint is behind Automaker session auth already.
+        // IMPORTANT: This endpoint is behind AboardAI session auth already.
         // Use a 200 + error payload for Claude CLI issues so the UI doesn't
-        // interpret it as an invalid Automaker session (401/403 triggers logout).
+        // interpret it as an invalid AboardAI session (401/403 triggers logout).
         res.status(200).json({
           error: 'Claude CLI not found',
           message: "Please install Claude Code CLI and run 'claude login' to authenticate",
@@ -29,7 +29,7 @@ export function createClaudeRoutes(service: ClaudeUsageService): Router {
       const message = error instanceof Error ? error.message : 'Unknown error';
 
       if (message.includes('Authentication required') || message.includes('token_expired')) {
-        // Do NOT use 401/403 here: that status code is reserved for Automaker session auth.
+        // Do NOT use 401/403 here: that status code is reserved for AboardAI session auth.
         res.status(200).json({
           error: 'Authentication required',
           message: "Please run 'claude login' to authenticate",

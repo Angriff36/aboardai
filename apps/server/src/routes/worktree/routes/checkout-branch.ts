@@ -22,7 +22,7 @@ import { getErrorMessage, logError, isValidBranchName } from '../common.js';
 import { execGitCommand } from '../../../lib/git.js';
 import type { EventEmitter } from '../../../lib/events.js';
 import { performCheckoutBranch } from '../../../services/checkout-branch-service.js';
-import { createLogger } from '@automaker/utils';
+import { createLogger } from '@aboardai/utils';
 
 const logger = createLogger('CheckoutBranchRoute');
 

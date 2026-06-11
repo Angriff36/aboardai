@@ -7,7 +7,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Plus, ChevronDown, Zap, FileText } from 'lucide-react';
-import type { FeatureTemplate } from '@automaker/types';
+import type { FeatureTemplate } from '@aboardai/types';
 import { cn } from '@/lib/utils';
 
 interface AddFeatureButtonProps {

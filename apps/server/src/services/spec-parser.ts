@@ -5,7 +5,7 @@
  * and extracts summary content from various formats.
  */
 
-import type { ParsedTask } from '@automaker/types';
+import type { ParsedTask } from '@aboardai/types';
 
 /**
  * Parse a single task line

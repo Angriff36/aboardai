@@ -26,7 +26,7 @@ import { useIsMobile } from '@/hooks/use-media-query';
 import { useGitHubPRs } from '@/hooks/queries';
 import { useCreateFeature } from '@/hooks/mutations/use-feature-mutations';
 import { PRCommentResolutionDialog } from '@/components/dialogs';
-import { resolveModelString } from '@automaker/model-resolver';
+import { resolveModelString } from '@aboardai/model-resolver';
 import { toast } from 'sonner';
 import {
   DropdownMenu,

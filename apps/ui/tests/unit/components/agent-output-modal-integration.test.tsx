@@ -8,19 +8,19 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
 import { AgentOutputModal } from '../../../src/components/views/board-view/dialogs/agent-output-modal';
-import { useAppStore } from '@automaker/ui/store/app-store';
+import { useAppStore } from '@aboardai/ui/store/app-store';
 import {
   useAgentOutput,
   useFeature,
   useWorktreeDiffs,
   useGitDiffs,
-} from '@automaker/ui/hooks/queries';
-import { getElectronAPI } from '@automaker/ui/lib/electron';
+} from '@aboardai/ui/hooks/queries';
+import { getElectronAPI } from '@aboardai/ui/lib/electron';
 
 // Mock dependencies
-vi.mock('@automaker/ui/hooks/queries');
-vi.mock('@automaker/ui/lib/electron');
-vi.mock('@automaker/ui/store/app-store');
+vi.mock('@aboardai/ui/hooks/queries');
+vi.mock('@aboardai/ui/lib/electron');
+vi.mock('@aboardai/ui/store/app-store');
 
 const mockUseAppStore = vi.mocked(useAppStore);
 const mockUseAgentOutput = vi.mocked(useAgentOutput);

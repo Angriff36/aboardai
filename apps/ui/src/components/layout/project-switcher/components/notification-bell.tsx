@@ -10,7 +10,7 @@ import { useLoadNotifications, useNotificationEvents } from '@/hooks/use-notific
 import { getHttpApiClient } from '@/lib/http-api-client';
 import { Button } from '@/components/ui/button';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import type { Notification } from '@automaker/types';
+import type { Notification } from '@aboardai/types';
 import { cn, formatRelativeTime } from '@/lib/utils';
 
 interface NotificationBellProps {

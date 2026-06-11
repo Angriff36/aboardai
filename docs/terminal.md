@@ -1,6 +1,6 @@
 # Terminal
 
-The integrated terminal provides a full-featured terminal emulator within Automaker, powered by xterm.js.
+The integrated terminal provides a full-featured terminal emulator within AboardAI, powered by xterm.js.
 
 ## Configuration
 

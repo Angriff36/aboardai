@@ -12,7 +12,7 @@ import type { ElectronAPI } from '@/lib/electron';
 import type { WorktreeInfo } from '../../../src/components/views/board-view/worktree-panel/types';
 
 vi.mock('@/lib/electron');
-vi.mock('@automaker/utils/logger', () => ({
+vi.mock('@aboardai/utils/logger', () => ({
   createLogger: () => ({
     info: vi.fn(),
     warn: vi.fn(),

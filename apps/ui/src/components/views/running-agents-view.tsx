@@ -6,7 +6,7 @@
  */
 
 import { useState, useCallback } from 'react';
-import { createLogger } from '@automaker/utils/logger';
+import { createLogger } from '@aboardai/utils/logger';
 import { Bot, Folder, RefreshCw, Square, Activity, FileText, Cpu } from 'lucide-react';
 import { Spinner } from '@/components/ui/spinner';
 import { getElectronAPI, type RunningAgent } from '@/lib/electron';

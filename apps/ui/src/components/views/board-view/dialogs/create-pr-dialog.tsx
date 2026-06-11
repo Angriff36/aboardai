@@ -34,7 +34,7 @@ import { getHttpApiClient } from '@/lib/http-api-client';
 import { toast } from 'sonner';
 import { useWorktreeBranches } from '@/hooks/queries';
 import { ModelOverrideTrigger, useModelOverride } from '@/components/shared';
-import { resolveModelString } from '@automaker/model-resolver';
+import { resolveModelString } from '@aboardai/model-resolver';
 
 interface RemoteInfo {
   name: string;

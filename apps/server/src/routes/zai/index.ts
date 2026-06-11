@@ -1,7 +1,7 @@
 import { Router, Request, Response } from 'express';
 import { ZaiUsageService } from '../../services/zai-usage-service.js';
 import type { SettingsService } from '../../services/settings-service.js';
-import { createLogger } from '@automaker/utils';
+import { createLogger } from '@aboardai/utils';
 
 const logger = createLogger('Zai');
 

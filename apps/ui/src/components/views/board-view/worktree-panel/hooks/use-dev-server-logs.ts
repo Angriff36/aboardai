@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { createLogger } from '@automaker/utils/logger';
+import { createLogger } from '@aboardai/utils/logger';
 import { getElectronAPI } from '@/lib/electron';
 import { pathsEqual } from '@/lib/utils';
 

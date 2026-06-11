@@ -11,11 +11,11 @@ out/
 .next/
 .turbo/
 
-# Automaker
-.automaker/images/
-.automaker/
-/.automaker/*
-/.automaker/
+# AboardAI
+.aboardai/images/
+.aboardai/
+/.aboardai/*
+/.aboardai/
 
 .worktrees/
 

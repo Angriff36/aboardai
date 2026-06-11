@@ -124,7 +124,7 @@ export function FileBrowserDialog({
       const loadInitialPath = async () => {
         try {
           // First, check for last selected directory from getDefaultWorkspaceDirectory
-          // which already implements the priority: last used > Documents/Automaker > DATA_DIR
+          // which already implements the priority: last used > Documents/AboardAI > DATA_DIR
           const defaultDir = await getDefaultWorkspaceDirectory();
 
           // If we have a default directory, use it (unless initialPath is explicitly provided and different)

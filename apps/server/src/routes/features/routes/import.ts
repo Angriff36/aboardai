@@ -4,7 +4,7 @@
 
 import type { Request, Response } from 'express';
 import type { FeatureLoader } from '../../../services/feature-loader.js';
-import type { FeatureImportResult, Feature, FeatureExport } from '@automaker/types';
+import type { FeatureImportResult, Feature, FeatureExport } from '@aboardai/types';
 import { getFeatureExportService } from '../../../services/feature-export-service.js';
 import { getErrorMessage, logError } from '../common.js';
 

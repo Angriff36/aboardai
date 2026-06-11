@@ -6,7 +6,7 @@
  * consistent behaviour across branch-related services.
  */
 
-import { createLogger, getErrorMessage } from '@automaker/utils';
+import { createLogger, getErrorMessage } from '@aboardai/utils';
 import { execGitCommand, execGitCommandWithLockRetry } from '../lib/git.js';
 
 const logger = createLogger('BranchUtils');

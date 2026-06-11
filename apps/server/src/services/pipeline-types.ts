@@ -2,7 +2,7 @@
  * Pipeline Types - Type definitions for PipelineOrchestrator
  */
 
-import type { Feature, PipelineStep, PipelineConfig } from '@automaker/types';
+import type { Feature, PipelineStep, PipelineConfig } from '@aboardai/types';
 
 export interface PipelineContext {
   projectPath: string;

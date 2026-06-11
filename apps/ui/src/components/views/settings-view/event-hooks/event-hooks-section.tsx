@@ -37,12 +37,12 @@ import type {
   EventHookTrigger,
   NtfyEndpointConfig,
   NtfyAuthenticationType,
-} from '@automaker/types';
-import { EVENT_HOOK_TRIGGER_LABELS } from '@automaker/types';
+} from '@aboardai/types';
+import { EVENT_HOOK_TRIGGER_LABELS } from '@aboardai/types';
 import { EventHookDialog } from './event-hook-dialog';
 import { EventHistoryView } from './event-history-view';
 import { toast } from 'sonner';
-import { createLogger } from '@automaker/utils/logger';
+import { createLogger } from '@aboardai/utils/logger';
 import { generateUUID } from '@/lib/utils';
 
 const logger = createLogger('EventHooks');
@@ -639,7 +639,7 @@ function NtfyEndpointDialog({
               id="endpoint-topic"
               value={topic}
               onChange={(e) => setTopic(e.target.value)}
-              placeholder="my-automaker-notifications"
+              placeholder="my-aboardai-notifications"
             />
             <p className="text-xs text-muted-foreground">
               Topic name (no spaces). This acts like a channel for your notifications.

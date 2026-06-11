@@ -1,5 +1,5 @@
 import { Component, type ReactNode, type ErrorInfo } from 'react';
-import { createLogger } from '@automaker/utils/logger';
+import { createLogger } from '@aboardai/utils/logger';
 
 const logger = createLogger('AppErrorBoundary');
 
@@ -14,7 +14,7 @@ interface State {
 }
 
 /** Key used to track recent crash timestamps for crash loop detection */
-const CRASH_TIMESTAMPS_KEY = 'automaker-crash-timestamps';
+const CRASH_TIMESTAMPS_KEY = 'aboardai-crash-timestamps';
 /** Number of crashes within the time window that constitutes a crash loop */
 const CRASH_LOOP_THRESHOLD = 3;
 /** Time window in ms for crash loop detection (30 seconds) */
@@ -68,7 +68,7 @@ export class AppErrorBoundary extends Component<Props, State> {
           `Crash loop detected (${recent.length} crashes in ${CRASH_LOOP_WINDOW_MS}ms) — clearing UI cache`
         );
         // Auto-clear the UI cache to break the loop
-        localStorage.removeItem('automaker-ui-cache');
+        localStorage.removeItem('aboardai-ui-cache');
         sessionStorage.removeItem(CRASH_TIMESTAMPS_KEY);
         this.setState({ isCrashLoop: true });
       }
@@ -85,7 +85,7 @@ export class AppErrorBoundary extends Component<Props, State> {
     // Clear the UI cache store that persists worktree selections and other UI state.
     // This breaks crash loops caused by stale worktree paths that no longer exist on disk.
     try {
-      localStorage.removeItem('automaker-ui-cache');
+      localStorage.removeItem('aboardai-ui-cache');
     } catch {
       // localStorage may be unavailable in some contexts
     }

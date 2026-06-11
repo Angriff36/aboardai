@@ -5,15 +5,15 @@
  * inline in the create-pr route handler.
  */
 
-// TODO: Move execAsync/execEnv to a shared lib (lib/exec.ts or @automaker/utils) so that
+// TODO: Move execAsync/execEnv to a shared lib (lib/exec.ts or @aboardai/utils) so that
 // services no longer depend on route internals. Tracking issue: route-to-service dependency
 // inversion. For now, a local thin wrapper is used within the service boundary.
 import { exec } from 'child_process';
 import { promisify } from 'util';
-import { createLogger, isValidRemoteName } from '@automaker/utils';
+import { createLogger, isValidRemoteName } from '@aboardai/utils';
 
 // Thin local wrapper — duplicates the route-level execAsync/execEnv until a
-// shared lib/exec.ts (or @automaker/utils export) is created.
+// shared lib/exec.ts (or @aboardai/utils export) is created.
 const execAsync = promisify(exec);
 
 const pathSeparator = process.platform === 'win32' ? ';' : ':';

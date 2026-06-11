@@ -12,7 +12,7 @@ import type { Request, Response } from 'express';
 import type { SettingsService } from '../../../services/settings-service.js';
 import { getDevServerService } from '../../../services/dev-server-service.js';
 import { getErrorMessage, logError } from '../common.js';
-import { createLogger } from '@automaker/utils';
+import { createLogger } from '@aboardai/utils';
 
 const logger = createLogger('start-dev');
 

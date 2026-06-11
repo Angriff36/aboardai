@@ -11,7 +11,7 @@ import {
   isValidBranchName,
   isGhCliAvailable,
 } from '../common.js';
-import { createLogger } from '@automaker/utils';
+import { createLogger } from '@aboardai/utils';
 
 const logger = createLogger('PRInfo');
 

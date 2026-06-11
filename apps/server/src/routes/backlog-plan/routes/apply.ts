@@ -3,8 +3,8 @@
  */
 
 import type { Request, Response } from 'express';
-import { resolvePhaseModel } from '@automaker/model-resolver';
-import type { BacklogPlanResult, PhaseModelEntry, PlanningMode } from '@automaker/types';
+import { resolvePhaseModel } from '@aboardai/model-resolver';
+import type { BacklogPlanResult, PhaseModelEntry, PlanningMode } from '@aboardai/types';
 import { FeatureLoader } from '../../../services/feature-loader.js';
 import type { SettingsService } from '../../../services/settings-service.js';
 import { clearBacklogPlan, getErrorMessage, logError, logger } from '../common.js';

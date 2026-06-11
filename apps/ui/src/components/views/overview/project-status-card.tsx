@@ -10,7 +10,7 @@ import { useAppStore } from '@/store/app-store';
 import { initializeProject } from '@/lib/project-init';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
-import type { ProjectStatus, ProjectHealthStatus } from '@automaker/types';
+import type { ProjectStatus, ProjectHealthStatus } from '@aboardai/types';
 import { Folder, Activity, CheckCircle2, XCircle, Clock, Pause, Bot, Bell } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 

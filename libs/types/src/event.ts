@@ -1,5 +1,5 @@
 /**
- * Event types for AutoMaker event system
+ * Event types for AboardAI event system
  */
 
 export type EventType =

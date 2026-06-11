@@ -26,7 +26,7 @@ function createTestFeature(
   title: string = 'Test Success Contrast',
   description: string = 'Testing success log output contrast'
 ): void {
-  const featureDir = path.join(projectPath, '.automaker', 'features', featureId);
+  const featureDir = path.join(projectPath, '.aboardai', 'features', featureId);
   fs.mkdirSync(featureDir, { recursive: true });
 
   // Write agent output
@@ -68,18 +68,18 @@ test.describe('Success log output contrast', () => {
       JSON.stringify({ name: projectName, version: '1.0.0' }, null, 2)
     );
 
-    // Create .automaker directory structure
-    const automakerDir = path.join(projectPath, '.automaker');
-    fs.mkdirSync(path.join(automakerDir, 'features'), { recursive: true });
-    fs.mkdirSync(path.join(automakerDir, 'context'), { recursive: true });
+    // Create .aboardai directory structure
+    const aboardaiDir = path.join(projectPath, '.aboardai');
+    fs.mkdirSync(path.join(aboardaiDir, 'features'), { recursive: true });
+    fs.mkdirSync(path.join(aboardaiDir, 'context'), { recursive: true });
 
     fs.writeFileSync(
-      path.join(automakerDir, 'categories.json'),
+      path.join(aboardaiDir, 'categories.json'),
       JSON.stringify({ categories: [] }, null, 2)
     );
 
     fs.writeFileSync(
-      path.join(automakerDir, 'app_spec.txt'),
+      path.join(aboardaiDir, 'app_spec.txt'),
       `# ${projectName}\n\nA test project for success log contrast verification.`
     );
   });

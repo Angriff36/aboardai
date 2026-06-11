@@ -1,7 +1,7 @@
 /**
  * Event History Service - Stores and retrieves event records for debugging and replay
  *
- * Provides persistent storage for events in {projectPath}/.automaker/events/
+ * Provides persistent storage for events in {projectPath}/.aboardai/events/
  * Each event is stored as a separate JSON file with an index for quick listing.
  *
  * Features:
@@ -11,17 +11,17 @@
  * - Delete old events to manage disk space
  */
 
-import { createLogger } from '@automaker/utils';
+import { createLogger } from '@aboardai/utils';
 import * as secureFs from '../lib/secure-fs.js';
-import { getEventHistoryIndexPath, getEventPath, ensureEventHistoryDir } from '@automaker/platform';
+import { getEventHistoryIndexPath, getEventPath, ensureEventHistoryDir } from '@aboardai/platform';
 import type {
   StoredEvent,
   StoredEventIndex,
   StoredEventSummary,
   EventHistoryFilter,
   EventHookTrigger,
-} from '@automaker/types';
-import { DEFAULT_EVENT_HISTORY_INDEX } from '@automaker/types';
+} from '@aboardai/types';
+import { DEFAULT_EVENT_HISTORY_INDEX } from '@aboardai/types';
 import { randomUUID } from 'crypto';
 
 const logger = createLogger('EventHistoryService');

@@ -1,7 +1,7 @@
 import { useState, useCallback } from 'react';
 import { toast } from 'sonner';
-import { createLogger } from '@automaker/utils/logger';
-import type { ModelProvider } from '@automaker/types';
+import { createLogger } from '@aboardai/utils/logger';
+import type { ModelProvider } from '@aboardai/types';
 import type { CliStatus } from '@/store/setup-store';
 
 const logger = createLogger('CliInstallation');

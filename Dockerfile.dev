@@ -1,4 +1,4 @@
-# Automaker Development Dockerfile
+# AboardAI Development Dockerfile
 # For development with live reload via volume mounting
 # Source code is NOT copied - it's mounted as a volume
 #
@@ -42,33 +42,33 @@ ARG GID=1001
 
 # Create non-root user with configurable UID/GID
 # Use -o flag to allow non-unique IDs (GID 1000 may already exist as 'node' group)
-RUN groupadd -o -g ${GID} automaker && \
-    useradd -o -u ${UID} -g automaker -m -d /home/automaker -s /bin/bash automaker && \
-    mkdir -p /home/automaker/.local/bin && \
-    mkdir -p /home/automaker/.cursor && \
-    chown -R automaker:automaker /home/automaker && \
-    chmod 700 /home/automaker/.cursor
+RUN groupadd -o -g ${GID} aboardai && \
+    useradd -o -u ${UID} -g aboardai -m -d /home/aboardai -s /bin/bash aboardai && \
+    mkdir -p /home/aboardai/.local/bin && \
+    mkdir -p /home/aboardai/.cursor && \
+    chown -R aboardai:aboardai /home/aboardai && \
+    chmod 700 /home/aboardai/.cursor
 
-# Install Cursor CLI as automaker user
-USER automaker
-ENV HOME=/home/automaker
+# Install Cursor CLI as aboardai user
+USER aboardai
+ENV HOME=/home/aboardai
 RUN curl https://cursor.com/install -fsS | bash || true
 USER root
 
 # Add PATH to profile for Cursor CLI
 RUN mkdir -p /etc/profile.d && \
-    echo 'export PATH="/home/automaker/.local/bin:$PATH"' > /etc/profile.d/cursor-cli.sh && \
+    echo 'export PATH="/home/aboardai/.local/bin:$PATH"' > /etc/profile.d/cursor-cli.sh && \
     chmod +x /etc/profile.d/cursor-cli.sh
 
 # Add to user bashrc files
-RUN echo 'export PATH="/home/automaker/.local/bin:$PATH"' >> /home/automaker/.bashrc && \
-    chown automaker:automaker /home/automaker/.bashrc
-RUN echo 'export PATH="/home/automaker/.local/bin:$PATH"' >> /root/.bashrc
+RUN echo 'export PATH="/home/aboardai/.local/bin:$PATH"' >> /home/aboardai/.bashrc && \
+    chown aboardai:aboardai /home/aboardai/.bashrc
+RUN echo 'export PATH="/home/aboardai/.local/bin:$PATH"' >> /root/.bashrc
 
 WORKDIR /app
 
 # Create directories with proper permissions
-RUN mkdir -p /data /projects && chown automaker:automaker /data /projects
+RUN mkdir -p /data /projects && chown aboardai:aboardai /data /projects
 
 # Configure git for mounted volumes
 RUN git config --system --add safe.directory '*' && \
@@ -81,8 +81,8 @@ RUN chmod +x /usr/local/bin/docker-entrypoint.sh
 # Environment variables
 ENV PORT=3008
 ENV DATA_DIR=/data
-ENV HOME=/home/automaker
-ENV PATH="/home/automaker/.local/bin:${PATH}"
+ENV HOME=/home/aboardai
+ENV PATH="/home/aboardai/.local/bin:${PATH}"
 
 # Expose both dev ports
 EXPOSE 3007 3008

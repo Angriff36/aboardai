@@ -70,11 +70,11 @@ function bumpVersion(packageJsonPath, packageName) {
 try {
   // Bump UI package version
   const uiOldVersion = JSON.parse(readFileSync(uiPackageJsonPath, 'utf8')).version;
-  const uiNewVersion = bumpVersion(uiPackageJsonPath, '@automaker/ui');
+  const uiNewVersion = bumpVersion(uiPackageJsonPath, '@aboardai/ui');
 
   // Bump server package version (sync with UI)
   const serverOldVersion = JSON.parse(readFileSync(serverPackageJsonPath, 'utf8')).version;
-  const serverNewVersion = bumpVersion(serverPackageJsonPath, '@automaker/server');
+  const serverNewVersion = bumpVersion(serverPackageJsonPath, '@aboardai/server');
 
   // Verify versions match
   if (uiNewVersion !== serverNewVersion) {
@@ -83,8 +83,8 @@ try {
   }
 
   console.log(`✅ Bumped version from ${uiOldVersion} to ${uiNewVersion} (${bumpType})`);
-  console.log(`📦 Updated @automaker/ui: ${uiOldVersion} -> ${uiNewVersion}`);
-  console.log(`📦 Updated @automaker/server: ${serverOldVersion} -> ${serverNewVersion}`);
+  console.log(`📦 Updated @aboardai/ui: ${uiOldVersion} -> ${uiNewVersion}`);
+  console.log(`📦 Updated @aboardai/server: ${serverOldVersion} -> ${serverNewVersion}`);
   console.log(`📦 Version is now: ${uiNewVersion}`);
 } catch (error) {
   console.error(`Error bumping version: ${error.message}`);

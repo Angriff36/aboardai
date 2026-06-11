@@ -21,7 +21,7 @@ import {
 } from '../shared';
 import type { WorkMode } from '../shared';
 import { PhaseModelSelector } from '@/components/views/settings-view/model-defaults/phase-model-selector';
-import type { PhaseModelEntry } from '@automaker/types';
+import type { PhaseModelEntry } from '@aboardai/types';
 import { cn, normalizeModelEntry } from '@/lib/utils';
 
 interface MassEditDialogProps {

@@ -15,7 +15,7 @@ import {
 import type { TypedEventBus } from '../../../src/services/typed-event-bus.js';
 import type { ConcurrencyManager } from '../../../src/services/concurrency-manager.js';
 import type { SettingsService } from '../../../src/services/settings-service.js';
-import type { Feature } from '@automaker/types';
+import type { Feature } from '@aboardai/types';
 
 describe('auto-loop-coordinator.ts', () => {
   // Mock dependencies

@@ -3,7 +3,7 @@
  * Adds testable acceptance criteria to task descriptions.
  */
 
-import type { EnhancementExample } from '@automaker/types';
+import type { EnhancementExample } from '@aboardai/types';
 
 /**
  * System prompt for the "acceptance" enhancement mode.

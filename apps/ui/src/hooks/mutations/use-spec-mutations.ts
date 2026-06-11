@@ -164,7 +164,7 @@ export function useSaveSpec(projectPath: string) {
 
       const api = getElectronAPI();
 
-      await api.writeFile(`${projectPath}/.automaker/app_spec.txt`, content);
+      await api.writeFile(`${projectPath}/.aboardai/app_spec.txt`, content);
 
       return { content };
     },

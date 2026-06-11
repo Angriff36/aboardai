@@ -1,5 +1,5 @@
-import type { EnhancementMode } from '@automaker/types';
-export type { EnhancementMode } from '@automaker/types';
+import type { EnhancementMode } from '@aboardai/types';
+export type { EnhancementMode } from '@aboardai/types';
 
 /** Labels for enhancement modes displayed in the UI */
 export const ENHANCEMENT_MODE_LABELS: Record<EnhancementMode, string> = {

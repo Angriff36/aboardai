@@ -65,7 +65,7 @@ export async function setupWelcomeView(
         },
         version: versions.APP_STORE,
       };
-      localStorage.setItem('automaker-storage', JSON.stringify(appState));
+      localStorage.setItem('aboardai-storage', JSON.stringify(appState));
 
       // Mark setup as complete to skip the setup wizard
       const setupState = {
@@ -76,7 +76,7 @@ export async function setupWelcomeView(
         },
         version: versions.SETUP_STORE,
       };
-      localStorage.setItem('automaker-setup', JSON.stringify(setupState));
+      localStorage.setItem('aboardai-setup', JSON.stringify(setupState));
 
       // Set settings cache to ensure setupComplete is recognized on cold start.
       // This prevents the server's setupComplete value (which may be false on fresh CI)
@@ -99,35 +99,35 @@ export async function setupWelcomeView(
         settingsCache.lastProjectDir = opts.workspaceDir;
       }
 
-      localStorage.setItem('automaker-settings-cache', JSON.stringify(settingsCache));
+      localStorage.setItem('aboardai-settings-cache', JSON.stringify(settingsCache));
 
       // Set workspace directory if provided (legacy fallback key)
       if (opts?.workspaceDir) {
-        localStorage.setItem('automaker:lastProjectDir', opts.workspaceDir);
+        localStorage.setItem('aboardai:lastProjectDir', opts.workspaceDir);
       }
 
       // Disable splash screen in tests
-      localStorage.setItem('automaker-disable-splash', 'true');
+      localStorage.setItem('aboardai-disable-splash', 'true');
 
       // Set up a mechanism to keep currentProject null even after settings hydration.
       // Settings API might restore a project, so we watch for changes and override.
-      sessionStorage.setItem('automaker-test-welcome-view', 'true');
+      sessionStorage.setItem('aboardai-test-welcome-view', 'true');
 
       // Use a MutationObserver + storage event to detect when hydration sets a project,
       // then immediately override it back to null. This is more reliable than a fixed timeout.
       const enforceWelcomeView = () => {
-        const storage = localStorage.getItem('automaker-storage');
+        const storage = localStorage.getItem('aboardai-storage');
         if (storage) {
           try {
             const state = JSON.parse(storage);
             if (
               state.state &&
-              sessionStorage.getItem('automaker-test-welcome-view') === 'true' &&
+              sessionStorage.getItem('aboardai-test-welcome-view') === 'true' &&
               state.state.currentProject !== null
             ) {
               state.state.currentProject = null;
               state.state.currentView = 'welcome';
-              localStorage.setItem('automaker-storage', JSON.stringify(state));
+              localStorage.setItem('aboardai-storage', JSON.stringify(state));
             }
           } catch {
             // Ignore parse errors
@@ -211,7 +211,7 @@ export async function setupRealProject(
         },
         version: versions.APP_STORE,
       };
-      localStorage.setItem('automaker-storage', JSON.stringify(appState));
+      localStorage.setItem('aboardai-storage', JSON.stringify(appState));
 
       // Mark setup as complete
       const setupState = {
@@ -222,7 +222,7 @@ export async function setupRealProject(
         },
         version: versions.SETUP_STORE,
       };
-      localStorage.setItem('automaker-setup', JSON.stringify(setupState));
+      localStorage.setItem('aboardai-setup', JSON.stringify(setupState));
 
       // Set settings cache to ensure setupComplete is recognized on cold start.
       // This prevents the server's setupComplete value (which may be false on fresh CI)
@@ -244,10 +244,10 @@ export async function setupRealProject(
         maxConcurrency: 3,
         skipSandboxWarning: true,
       };
-      localStorage.setItem('automaker-settings-cache', JSON.stringify(settingsCache));
+      localStorage.setItem('aboardai-settings-cache', JSON.stringify(settingsCache));
 
       // Disable splash screen in tests
-      localStorage.setItem('automaker-disable-splash', 'true');
+      localStorage.setItem('aboardai-disable-splash', 'true');
     },
     { path: projectPath, name: projectName, opts: options, versions: STORE_VERSIONS }
   );
@@ -280,7 +280,7 @@ export async function setupMockProject(page: Page): Promise<void> {
       version: versions.APP_STORE,
     };
 
-    localStorage.setItem('automaker-storage', JSON.stringify(mockState));
+    localStorage.setItem('aboardai-storage', JSON.stringify(mockState));
 
     // Mark setup as complete to prevent redirect to /setup
     const setupState = {
@@ -291,7 +291,7 @@ export async function setupMockProject(page: Page): Promise<void> {
       },
       version: versions.SETUP_STORE,
     };
-    localStorage.setItem('automaker-setup', JSON.stringify(setupState));
+    localStorage.setItem('aboardai-setup', JSON.stringify(setupState));
 
     // Set settings cache so the fast hydrate path is taken on page load.
     const settingsCache = {
@@ -309,10 +309,10 @@ export async function setupMockProject(page: Page): Promise<void> {
       sidebarOpen: true,
       maxConcurrency: 3,
     };
-    localStorage.setItem('automaker-settings-cache', JSON.stringify(settingsCache));
+    localStorage.setItem('aboardai-settings-cache', JSON.stringify(settingsCache));
 
     // Disable splash screen in tests
-    localStorage.setItem('automaker-disable-splash', 'true');
+    localStorage.setItem('aboardai-disable-splash', 'true');
   }, STORE_VERSIONS);
 }
 
@@ -346,14 +346,14 @@ export async function setupMockProjectWithConcurrency(
         version: versions.APP_STORE,
       };
 
-      localStorage.setItem('automaker-storage', JSON.stringify(mockState));
+      localStorage.setItem('aboardai-storage', JSON.stringify(mockState));
 
       // Mark setup as complete to prevent redirect to /setup
       const setupState = {
         state: { isFirstRun: false, setupComplete: true, skipClaudeSetup: false },
         version: versions.SETUP_STORE,
       };
-      localStorage.setItem('automaker-setup', JSON.stringify(setupState));
+      localStorage.setItem('aboardai-setup', JSON.stringify(setupState));
 
       const settingsCache = {
         setupComplete: true,
@@ -370,7 +370,7 @@ export async function setupMockProjectWithConcurrency(
         sidebarOpen: true,
         maxConcurrency: maxConcurrency,
       };
-      localStorage.setItem('automaker-settings-cache', JSON.stringify(settingsCache));
+      localStorage.setItem('aboardai-settings-cache', JSON.stringify(settingsCache));
     },
     { maxConcurrency: concurrency, versions: STORE_VERSIONS }
   );
@@ -418,13 +418,13 @@ export async function setupMockProjectAtConcurrencyLimit(
         version: versions.APP_STORE,
       };
 
-      localStorage.setItem('automaker-storage', JSON.stringify(mockState));
+      localStorage.setItem('aboardai-storage', JSON.stringify(mockState));
 
       const setupState = {
         state: { isFirstRun: false, setupComplete: true, skipClaudeSetup: false },
         version: versions.SETUP_STORE,
       };
-      localStorage.setItem('automaker-setup', JSON.stringify(setupState));
+      localStorage.setItem('aboardai-setup', JSON.stringify(setupState));
 
       const settingsCache = {
         setupComplete: true,
@@ -441,10 +441,10 @@ export async function setupMockProjectAtConcurrencyLimit(
         sidebarOpen: true,
         maxConcurrency: maxConcurrency,
       };
-      localStorage.setItem('automaker-settings-cache', JSON.stringify(settingsCache));
+      localStorage.setItem('aboardai-settings-cache', JSON.stringify(settingsCache));
 
       // Disable splash screen in tests
-      localStorage.setItem('automaker-disable-splash', 'true');
+      localStorage.setItem('aboardai-disable-splash', 'true');
     },
     { maxConcurrency, runningTasks, versions: STORE_VERSIONS }
   );
@@ -496,13 +496,13 @@ export async function setupMockProjectWithFeatures(
         version: versions.APP_STORE,
       };
 
-      localStorage.setItem('automaker-storage', JSON.stringify(mockState));
+      localStorage.setItem('aboardai-storage', JSON.stringify(mockState));
 
       const setupState = {
         state: { isFirstRun: false, setupComplete: true, skipClaudeSetup: false },
         version: versions.SETUP_STORE,
       };
-      localStorage.setItem('automaker-setup', JSON.stringify(setupState));
+      localStorage.setItem('aboardai-setup', JSON.stringify(setupState));
 
       const settingsCache = {
         setupComplete: true,
@@ -519,14 +519,14 @@ export async function setupMockProjectWithFeatures(
         sidebarOpen: true,
         maxConcurrency: opts?.maxConcurrency ?? 3,
       };
-      localStorage.setItem('automaker-settings-cache', JSON.stringify(settingsCache));
+      localStorage.setItem('aboardai-settings-cache', JSON.stringify(settingsCache));
 
       // Also store features in a global variable that the mock electron API can use
       // This is needed because the board-view loads features from the file system
       (window as { __mockFeatures?: unknown[] }).__mockFeatures = mockFeatures;
 
       // Disable splash screen in tests
-      localStorage.setItem('automaker-disable-splash', 'true');
+      localStorage.setItem('aboardai-disable-splash', 'true');
     },
     { opts: options, versions: STORE_VERSIONS }
   );
@@ -572,13 +572,13 @@ export async function setupMockProjectWithContextFile(
         version: versions.APP_STORE,
       };
 
-      localStorage.setItem('automaker-storage', JSON.stringify(mockState));
+      localStorage.setItem('aboardai-storage', JSON.stringify(mockState));
 
       const setupState = {
         state: { isFirstRun: false, setupComplete: true, skipClaudeSetup: false },
         version: versions.SETUP_STORE,
       };
-      localStorage.setItem('automaker-setup', JSON.stringify(setupState));
+      localStorage.setItem('aboardai-setup', JSON.stringify(setupState));
 
       const settingsCache = {
         setupComplete: true,
@@ -595,10 +595,10 @@ export async function setupMockProjectWithContextFile(
         sidebarOpen: true,
         maxConcurrency: 3,
       };
-      localStorage.setItem('automaker-settings-cache', JSON.stringify(settingsCache));
+      localStorage.setItem('aboardai-settings-cache', JSON.stringify(settingsCache));
 
       // Disable splash screen in tests
-      localStorage.setItem('automaker-disable-splash', 'true');
+      localStorage.setItem('aboardai-disable-splash', 'true');
 
       // Set up mock file system with a context file for the feature
       // This will be used by the mock electron API
@@ -607,7 +607,7 @@ export async function setupMockProjectWithContextFile(
         window as { __mockContextFile?: { featureId: string; path: string; content: string } }
       ).__mockContextFile = {
         featureId,
-        path: `/mock/test-project/.automaker/features/${featureId}/agent-output.md`,
+        path: `/mock/test-project/.aboardai/features/${featureId}/agent-output.md`,
         content: contextContent,
       };
     },
@@ -662,13 +662,13 @@ export async function setupMockProjectWithInProgressFeatures(
         version: versions.APP_STORE,
       };
 
-      localStorage.setItem('automaker-storage', JSON.stringify(mockState));
+      localStorage.setItem('aboardai-storage', JSON.stringify(mockState));
 
       const setupState = {
         state: { isFirstRun: false, setupComplete: true, skipClaudeSetup: false },
         version: versions.SETUP_STORE,
       };
-      localStorage.setItem('automaker-setup', JSON.stringify(setupState));
+      localStorage.setItem('aboardai-setup', JSON.stringify(setupState));
 
       const settingsCache = {
         setupComplete: true,
@@ -685,7 +685,7 @@ export async function setupMockProjectWithInProgressFeatures(
         sidebarOpen: true,
         maxConcurrency: opts?.maxConcurrency ?? 3,
       };
-      localStorage.setItem('automaker-settings-cache', JSON.stringify(settingsCache));
+      localStorage.setItem('aboardai-settings-cache', JSON.stringify(settingsCache));
 
       // Also store features in a global variable that the mock electron API can use
       // This is needed because the board-view loads features from the file system
@@ -723,13 +723,13 @@ export async function setupMockProjectWithView(page: Page, view: string): Promis
         version: versions.APP_STORE,
       };
 
-      localStorage.setItem('automaker-storage', JSON.stringify(mockState));
+      localStorage.setItem('aboardai-storage', JSON.stringify(mockState));
 
       const setupState = {
         state: { isFirstRun: false, setupComplete: true, skipClaudeSetup: false },
         version: versions.SETUP_STORE,
       };
-      localStorage.setItem('automaker-setup', JSON.stringify(setupState));
+      localStorage.setItem('aboardai-setup', JSON.stringify(setupState));
 
       const settingsCache = {
         setupComplete: true,
@@ -746,7 +746,7 @@ export async function setupMockProjectWithView(page: Page, view: string): Promis
         sidebarOpen: true,
         maxConcurrency: 3,
       };
-      localStorage.setItem('automaker-settings-cache', JSON.stringify(settingsCache));
+      localStorage.setItem('aboardai-settings-cache', JSON.stringify(settingsCache));
     },
     { currentView: view, versions: STORE_VERSIONS }
   );
@@ -771,13 +771,13 @@ export async function setupEmptyLocalStorage(page: Page): Promise<void> {
       },
       version: versions.APP_STORE,
     };
-    localStorage.setItem('automaker-storage', JSON.stringify(mockState));
+    localStorage.setItem('aboardai-storage', JSON.stringify(mockState));
 
     const setupState = {
       state: { isFirstRun: false, setupComplete: true, skipClaudeSetup: false },
       version: versions.SETUP_STORE,
     };
-    localStorage.setItem('automaker-setup', JSON.stringify(setupState));
+    localStorage.setItem('aboardai-setup', JSON.stringify(setupState));
 
     const settingsCache = {
       setupComplete: true,
@@ -787,10 +787,10 @@ export async function setupEmptyLocalStorage(page: Page): Promise<void> {
       sidebarOpen: true,
       maxConcurrency: 3,
     };
-    localStorage.setItem('automaker-settings-cache', JSON.stringify(settingsCache));
+    localStorage.setItem('aboardai-settings-cache', JSON.stringify(settingsCache));
 
     // Disable splash screen in tests
-    localStorage.setItem('automaker-disable-splash', 'true');
+    localStorage.setItem('aboardai-disable-splash', 'true');
   }, STORE_VERSIONS);
 }
 
@@ -829,13 +829,13 @@ export async function setupMockProjectsWithoutCurrent(page: Page): Promise<void>
       version: versions.APP_STORE,
     };
 
-    localStorage.setItem('automaker-storage', JSON.stringify(mockState));
+    localStorage.setItem('aboardai-storage', JSON.stringify(mockState));
 
     const setupState = {
       state: { isFirstRun: false, setupComplete: true, skipClaudeSetup: false },
       version: versions.SETUP_STORE,
     };
-    localStorage.setItem('automaker-setup', JSON.stringify(setupState));
+    localStorage.setItem('aboardai-setup', JSON.stringify(setupState));
 
     const settingsCache = {
       setupComplete: true,
@@ -850,10 +850,10 @@ export async function setupMockProjectsWithoutCurrent(page: Page): Promise<void>
       sidebarOpen: true,
       maxConcurrency: 3,
     };
-    localStorage.setItem('automaker-settings-cache', JSON.stringify(settingsCache));
+    localStorage.setItem('aboardai-settings-cache', JSON.stringify(settingsCache));
 
     // Disable splash screen in tests
-    localStorage.setItem('automaker-disable-splash', 'true');
+    localStorage.setItem('aboardai-disable-splash', 'true');
   }, STORE_VERSIONS);
 }
 
@@ -905,13 +905,13 @@ export async function setupMockProjectWithSkipTestsFeatures(
         version: versions.APP_STORE,
       };
 
-      localStorage.setItem('automaker-storage', JSON.stringify(mockState));
+      localStorage.setItem('aboardai-storage', JSON.stringify(mockState));
 
       const setupState = {
         state: { isFirstRun: false, setupComplete: true, skipClaudeSetup: false },
         version: versions.SETUP_STORE,
       };
-      localStorage.setItem('automaker-setup', JSON.stringify(setupState));
+      localStorage.setItem('aboardai-setup', JSON.stringify(setupState));
 
       const settingsCache = {
         setupComplete: true,
@@ -928,10 +928,10 @@ export async function setupMockProjectWithSkipTestsFeatures(
         sidebarOpen: true,
         maxConcurrency: opts?.maxConcurrency ?? 3,
       };
-      localStorage.setItem('automaker-settings-cache', JSON.stringify(settingsCache));
+      localStorage.setItem('aboardai-settings-cache', JSON.stringify(settingsCache));
 
       // Disable splash screen in tests
-      localStorage.setItem('automaker-disable-splash', 'true');
+      localStorage.setItem('aboardai-disable-splash', 'true');
     },
     { opts: options, versions: STORE_VERSIONS }
   );
@@ -971,7 +971,7 @@ export async function setupMockMultipleProjects(
         version: versions.APP_STORE,
       };
 
-      localStorage.setItem('automaker-storage', JSON.stringify(mockState));
+      localStorage.setItem('aboardai-storage', JSON.stringify(mockState));
 
       // Mark setup as complete to prevent redirect to /setup
       const setupState = {
@@ -982,7 +982,7 @@ export async function setupMockMultipleProjects(
         },
         version: versions.SETUP_STORE,
       };
-      localStorage.setItem('automaker-setup', JSON.stringify(setupState));
+      localStorage.setItem('aboardai-setup', JSON.stringify(setupState));
 
       // Set settings cache so the fast hydrate path is taken on page load.
       // This prevents the server's setupComplete value (which may be false on fresh CI)
@@ -1003,10 +1003,10 @@ export async function setupMockMultipleProjects(
         sidebarOpen: true,
         maxConcurrency: 3,
       };
-      localStorage.setItem('automaker-settings-cache', JSON.stringify(settingsCache));
+      localStorage.setItem('aboardai-settings-cache', JSON.stringify(settingsCache));
 
       // Disable splash screen in tests
-      localStorage.setItem('automaker-disable-splash', 'true');
+      localStorage.setItem('aboardai-disable-splash', 'true');
     },
     { count: projectCount, versions: STORE_VERSIONS }
   );
@@ -1051,13 +1051,13 @@ export async function setupMockProjectWithAgentOutput(
         version: versions.APP_STORE,
       };
 
-      localStorage.setItem('automaker-storage', JSON.stringify(mockState));
+      localStorage.setItem('aboardai-storage', JSON.stringify(mockState));
 
       const setupState = {
         state: { isFirstRun: false, setupComplete: true, skipClaudeSetup: false },
         version: versions.SETUP_STORE,
       };
-      localStorage.setItem('automaker-setup', JSON.stringify(setupState));
+      localStorage.setItem('aboardai-setup', JSON.stringify(setupState));
 
       const settingsCache = {
         setupComplete: true,
@@ -1074,10 +1074,10 @@ export async function setupMockProjectWithAgentOutput(
         sidebarOpen: true,
         maxConcurrency: 3,
       };
-      localStorage.setItem('automaker-settings-cache', JSON.stringify(settingsCache));
+      localStorage.setItem('aboardai-settings-cache', JSON.stringify(settingsCache));
 
       // Disable splash screen in tests
-      localStorage.setItem('automaker-disable-splash', 'true');
+      localStorage.setItem('aboardai-disable-splash', 'true');
 
       // Set up mock file system with output content for the feature
       // Now uses features/{id}/agent-output.md path
@@ -1085,7 +1085,7 @@ export async function setupMockProjectWithAgentOutput(
         window as { __mockContextFile?: { featureId: string; path: string; content: string } }
       ).__mockContextFile = {
         featureId,
-        path: `/mock/test-project/.automaker/features/${featureId}/agent-output.md`,
+        path: `/mock/test-project/.aboardai/features/${featureId}/agent-output.md`,
         content: outputContent,
       };
     },
@@ -1141,13 +1141,13 @@ export async function setupMockProjectWithWaitingApprovalFeatures(
         version: versions.APP_STORE,
       };
 
-      localStorage.setItem('automaker-storage', JSON.stringify(mockState));
+      localStorage.setItem('aboardai-storage', JSON.stringify(mockState));
 
       const setupState = {
         state: { isFirstRun: false, setupComplete: true, skipClaudeSetup: false },
         version: versions.SETUP_STORE,
       };
-      localStorage.setItem('automaker-setup', JSON.stringify(setupState));
+      localStorage.setItem('aboardai-setup', JSON.stringify(setupState));
 
       const settingsCache = {
         setupComplete: true,
@@ -1164,7 +1164,7 @@ export async function setupMockProjectWithWaitingApprovalFeatures(
         sidebarOpen: true,
         maxConcurrency: opts?.maxConcurrency ?? 3,
       };
-      localStorage.setItem('automaker-settings-cache', JSON.stringify(settingsCache));
+      localStorage.setItem('aboardai-settings-cache', JSON.stringify(settingsCache));
 
       // Also store features in a global variable that the mock electron API can use
       (window as { __mockFeatures?: unknown[] }).__mockFeatures = mockFeatures;
@@ -1179,8 +1179,8 @@ export async function setupMockProjectWithWaitingApprovalFeatures(
 export async function setupFirstRun(page: Page): Promise<void> {
   await page.addInitScript((versions: typeof STORE_VERSIONS) => {
     // Clear any existing setup state to simulate first run
-    localStorage.removeItem('automaker-setup');
-    localStorage.removeItem('automaker-storage');
+    localStorage.removeItem('aboardai-setup');
+    localStorage.removeItem('aboardai-storage');
 
     // Set up the setup store state for first run
     const setupState = {
@@ -1201,7 +1201,7 @@ export async function setupFirstRun(page: Page): Promise<void> {
       version: versions.SETUP_STORE, // Must match setup-store.ts persist version
     };
 
-    localStorage.setItem('automaker-setup', JSON.stringify(setupState));
+    localStorage.setItem('aboardai-setup', JSON.stringify(setupState));
 
     // Also set up app store to show setup view
     const appState = {
@@ -1222,7 +1222,7 @@ export async function setupFirstRun(page: Page): Promise<void> {
       version: versions.APP_STORE, // Must match app-store.ts persist version
     };
 
-    localStorage.setItem('automaker-storage', JSON.stringify(appState));
+    localStorage.setItem('aboardai-storage', JSON.stringify(appState));
 
     // Anchor the settings cache so CI cannot hydrate a conflicting setupComplete value.
     const settingsCache = {
@@ -1233,10 +1233,10 @@ export async function setupFirstRun(page: Page): Promise<void> {
       sidebarOpen: true,
       maxConcurrency: 3,
     };
-    localStorage.setItem('automaker-settings-cache', JSON.stringify(settingsCache));
+    localStorage.setItem('aboardai-settings-cache', JSON.stringify(settingsCache));
 
     // Disable splash screen in tests
-    localStorage.setItem('automaker-disable-splash', 'true');
+    localStorage.setItem('aboardai-disable-splash', 'true');
   }, STORE_VERSIONS);
 }
 
@@ -1256,9 +1256,9 @@ export async function setupComplete(page: Page): Promise<void> {
       version: versions.SETUP_STORE,
     };
 
-    localStorage.setItem('automaker-setup', JSON.stringify(setupState));
+    localStorage.setItem('aboardai-setup', JSON.stringify(setupState));
 
     // Disable splash screen in tests
-    localStorage.setItem('automaker-disable-splash', 'true');
+    localStorage.setItem('aboardai-disable-splash', 'true');
   }, STORE_VERSIONS);
 }

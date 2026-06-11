@@ -1,7 +1,7 @@
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { CardActions } from '../../../src/components/views/board-view/components/kanban-card/card-actions';
-import type { Feature } from '@automaker/types';
+import type { Feature } from '@aboardai/types';
 
 describe('CardActions', () => {
   it('renders backlog logs button when context exists', () => {

@@ -9,8 +9,8 @@
 import type { Request, Response } from 'express';
 import { getErrorMessage, logError, execAsync, execEnv, isGhCliAvailable } from '../common.js';
 import { updateWorktreePRInfo } from '../../../lib/worktree-metadata.js';
-import { createLogger } from '@automaker/utils';
-import { validatePRState } from '@automaker/types';
+import { createLogger } from '@aboardai/utils';
+import { validatePRState } from '@aboardai/types';
 
 const logger = createLogger('UpdatePRNumber');
 

@@ -11,13 +11,13 @@ export function createAuthCodexHandler() {
   return async (_req: Request, res: Response): Promise<void> => {
     try {
       // Remove the disconnected marker file to reconnect the app to the CLI
-      const markerPath = path.join(process.cwd(), '.automaker', '.codex-disconnected');
+      const markerPath = path.join(process.cwd(), '.aboardai', '.codex-disconnected');
       if (fs.existsSync(markerPath)) {
         fs.unlinkSync(markerPath);
       }
 
       // Use the same detection logic as the Codex provider
-      const { getCodexAuthIndicators } = await import('@automaker/platform');
+      const { getCodexAuthIndicators } = await import('@aboardai/platform');
       const indicators = await getCodexAuthIndicators();
 
       const isAlreadyAuthenticated =

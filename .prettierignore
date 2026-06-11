@@ -9,8 +9,8 @@ out/
 .turbo/
 release/
 
-# Automaker
-.automaker/
+# AboardAI
+.aboardai/
 
 # Logs
 logs/
