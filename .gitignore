@@ -1,0 +1,116 @@
+#added by trueheads > will remove once supercombo adds multi-os support
+launch.sh
+
+# Dependencies
+node_modules/
+
+# Build outputs
+dist/
+build/
+out/
+.next/
+.turbo/
+
+# Automaker
+.automaker/images/
+.automaker/
+/.automaker/*
+/.automaker/
+
+.worktrees/
+
+/logs
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# OS-specific files
+.DS_Store
+.DS_Store?
+._*
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# IDE/Editor configs
+.vscode/
+.idea/
+*.sublime-workspace
+*.sublime-project
+
+# Editor backup/temp files
+*~
+*.bak
+*.backup
+*.orig
+*.swp
+*.swo
+*.tmp
+*.temp
+
+# Local settings (user-specific)
+*.local.json
+
+# Application state/backup
+backup.json
+
+# Test artifacts
+test-results/
+coverage/
+.nyc_output/
+*.lcov
+playwright-report/
+blob-report/
+test/**/test-project-[0-9]*/
+test/opus-thinking-*/
+test/agent-session-test-*/
+test/feature-backlog-test-*/
+test/running-task-display-test-*/
+test/agent-output-modal-responsive-*/
+test/fixtures/
+test/board-bg-test-*/
+test/edit-feature-test-*/
+test/open-project-test-*/
+
+
+# Environment files (keep .example)
+.env
+.env.local
+.env.*.local
+!.env.example
+!.env.local.example
+
+# Codex config (contains API keys)
+.codex/config.toml
+
+# TypeScript
+*.tsbuildinfo
+
+# Misc
+*.pem
+
+docker-compose.override.yml
+.claude/docker-compose.override.yml
+.claude/hans/
+
+pnpm-lock.yaml
+yarn.lock
+
+# Fork-specific workflow files (should never be committed)
+DEVELOPMENT_WORKFLOW.md
+check-sync.sh
+# API key files
+data/.api-key
+data/credentials.json
+data/
+.codex/
+
+# GSD planning docs (local-only)
+.planning/
+.mcp.json
+.planning
+.bg-shell/

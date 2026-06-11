@@ -1,0 +1,80 @@
+name: 'Setup Project'
+description: 'Common setup steps for CI workflows - checkout, Node.js, dependencies, and native modules'
+
+inputs:
+  node-version:
+    description: 'Node.js version to use'
+    required: false
+    default: '22'
+  check-lockfile:
+    description: 'Run lockfile lint check for SSH URLs'
+    required: false
+    default: 'false'
+  rebuild-node-pty-path:
+    description: 'Working directory for node-pty rebuild (empty = root)'
+    required: false
+    default: ''
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ inputs.node-version }}
+        cache: 'npm'
+        cache-dependency-path: package-lock.json
+
+    - name: Configure Git for HTTPS
+      shell: bash
+      # Convert SSH URLs to HTTPS for git dependencies (e.g., @electron/node-gyp)
+      # This is needed because SSH authentication isn't available in CI
+      run: git config --global url."https://github.com/".insteadOf "git@github.com:"
+
+    - name: Auto-fix SSH URLs in lockfile
+      if: inputs.check-lockfile == 'true'
+      shell: bash
+      # Auto-fix any git+ssh:// URLs in package-lock.json before linting
+      # This handles cases where npm reintroduces SSH URLs for git dependencies
+      run: node scripts/fix-lockfile-urls.mjs
+
+    - name: Check for SSH URLs in lockfile
+      if: inputs.check-lockfile == 'true'
+      shell: bash
+      run: npm run lint:lockfile
+
+    - name: Install dependencies
+      shell: bash
+      # Use npm install instead of npm ci to correctly resolve platform-specific
+      # optional dependencies (e.g., @tailwindcss/oxide, lightningcss binaries)
+      # Skip scripts to avoid electron-builder install-app-deps which uses too much memory
+      # Use --force to allow platform-specific dev dependencies like dmg-license on non-darwin platforms
+      run: npm install --ignore-scripts --force
+
+    - name: Install Linux native bindings
+      if: runner.os == 'Linux'
+      shell: bash
+      # Workaround for npm optional dependencies bug (npm/cli#4828)
+      # Explicitly install Linux bindings needed for build tools
+      run: |
+        npm install --no-save --force --ignore-scripts \
+          @rollup/rollup-linux-x64-gnu@4.53.3 \
+          @tailwindcss/oxide-linux-x64-gnu@4.1.17
+
+    - name: Build shared packages
+      shell: bash
+      # Build shared packages (types, utils, platform, etc.) before apps can use them
+      run: npm run build:packages
+
+    - name: Rebuild native modules (root)
+      if: inputs.rebuild-node-pty-path == ''
+      shell: bash
+      # Rebuild node-pty and other native modules for Electron
+      run: npm rebuild node-pty
+
+    - name: Rebuild native modules (workspace)
+      if: inputs.rebuild-node-pty-path != ''
+      shell: bash
+      # Rebuild node-pty and other native modules needed for server
+      run: npm rebuild node-pty
+      working-directory: ${{ inputs.rebuild-node-pty-path }}

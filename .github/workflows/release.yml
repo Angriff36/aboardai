@@ -1,0 +1,133 @@
+name: Release Build
+
+on:
+  release:
+    types: [published]
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Extract version from tag
+        id: version
+        shell: bash
+        run: |
+          # Remove 'v' prefix if present (e.g., "v1.2.3" -> "1.2.3")
+          VERSION="${{ github.event.release.tag_name }}"
+          VERSION="${VERSION#v}"
+          echo "version=${VERSION}" >> $GITHUB_OUTPUT
+          echo "Extracted version: ${VERSION}"
+
+      - name: Update package.json version
+        shell: bash
+        run: |
+          node apps/ui/scripts/update-version.mjs "${{ steps.version.outputs.version }}"
+
+      - name: Setup project
+        uses: ./.github/actions/setup-project
+        with:
+          check-lockfile: 'true'
+
+      - name: Install RPM build tools (Linux)
+        if: matrix.os == 'ubuntu-latest'
+        shell: bash
+        run: sudo apt-get update && sudo apt-get install -y rpm
+
+      - name: Build Electron app (macOS)
+        if: matrix.os == 'macos-latest'
+        shell: bash
+        run: npm run build:electron:mac --workspace=apps/ui
+        env:
+          CSC_IDENTITY_AUTO_DISCOVERY: false
+
+      - name: Build Electron app (Windows)
+        if: matrix.os == 'windows-latest'
+        shell: bash
+        run: npm run build:electron:win --workspace=apps/ui
+
+      - name: Build Electron app (Linux)
+        if: matrix.os == 'ubuntu-latest'
+        shell: bash
+        run: npm run build:electron:linux --workspace=apps/ui
+
+      - name: Upload macOS artifacts
+        if: matrix.os == 'macos-latest'
+        uses: actions/upload-artifact@v4
+        with:
+          name: macos-builds
+          path: |
+            apps/ui/release/*.dmg
+            apps/ui/release/*.zip
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Upload Windows artifacts
+        if: matrix.os == 'windows-latest'
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-builds
+          path: apps/ui/release/*.exe
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Upload Linux artifacts
+        if: matrix.os == 'ubuntu-latest'
+        uses: actions/upload-artifact@v4
+        with:
+          name: linux-builds
+          path: |
+            apps/ui/release/*.AppImage
+            apps/ui/release/*.deb
+            apps/ui/release/*.rpm
+          if-no-files-found: error
+          retention-days: 30
+
+  upload:
+    needs: build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download macOS artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: macos-builds
+          path: artifacts/macos-builds
+
+      - name: Download Windows artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: windows-builds
+          path: artifacts/windows-builds
+
+      - name: Download Linux artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: linux-builds
+          path: artifacts/linux-builds
+
+      - name: Upload to GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          fail_on_unmatched_files: true
+          files: |
+            artifacts/macos-builds/*.dmg
+            artifacts/macos-builds/*.zip
+            artifacts/windows-builds/*.exe
+            artifacts/linux-builds/*.AppImage
+            artifacts/linux-builds/*.deb
+            artifacts/linux-builds/*.rpm
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

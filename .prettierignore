@@ -1,0 +1,41 @@
+# Dependencies
+node_modules/
+
+# Build outputs
+dist/
+build/
+out/
+.next/
+.turbo/
+release/
+
+# Automaker
+.automaker/
+
+# Logs
+logs/
+*.log
+
+# Lock files
+package-lock.json
+pnpm-lock.yaml
+
+# Generated files
+*.min.js
+*.min.css
+routeTree.gen.ts
+apps/ui/src/routeTree.gen.ts
+
+# Test artifacts
+test-results/
+coverage/
+playwright-report/
+blob-report/
+
+# IDE/Editor
+.vscode/
+.idea/
+
+# Electron
+dist-electron/
+server-bundle/

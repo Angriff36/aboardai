@@ -1,0 +1,202 @@
+name: E2E Tests
+
+on:
+  pull_request:
+    branches:
+      - '*'
+  push:
+    branches:
+      - main
+      - master
+
+jobs:
+  e2e:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        # shardIndex: [1, 2, 3]
+        # shardTotal: [3]
+        shardIndex: [1]
+        shardTotal: [1]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup project
+        uses: ./.github/actions/setup-project
+        with:
+          check-lockfile: 'true'
+          rebuild-node-pty-path: 'apps/server'
+
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps chromium
+        working-directory: apps/ui
+
+      - name: Build server
+        run: npm run build --workspace=apps/server
+
+      - name: Set up Git user
+        run: |
+          git config --global user.name "GitHub CI"
+          git config --global user.email "ci@example.com"
+
+      - name: Start backend server
+        run: |
+          echo "Starting backend server..."
+          # Start server in background and save PID
+          npm run start --workspace=apps/server > backend.log 2>&1 &
+          SERVER_PID=$!
+          echo "Server started with PID: $SERVER_PID"
+          echo "SERVER_PID=$SERVER_PID" >> $GITHUB_ENV
+
+        env:
+          PORT: 3108
+          TEST_SERVER_PORT: 3108
+          NODE_ENV: test
+          # Use a deterministic API key so Playwright can log in reliably
+          AUTOMAKER_API_KEY: test-api-key-for-e2e-tests
+          # Reduce log noise in CI
+          AUTOMAKER_HIDE_API_KEY: 'true'
+          # Avoid real API calls during CI
+          AUTOMAKER_MOCK_AGENT: 'true'
+          # Simulate containerized environment to skip sandbox confirmation dialogs
+          IS_CONTAINERIZED: 'true'
+
+      - name: Wait for backend server
+        run: |
+          echo "Waiting for backend server to be ready..."
+
+          # Check if server process is running
+          if [ -z "$SERVER_PID" ]; then
+            echo "ERROR: Server PID not found in environment"
+            cat backend.log 2>/dev/null || echo "No backend log found"
+            exit 1
+          fi
+
+          # Check if process is actually running
+          if ! kill -0 $SERVER_PID 2>/dev/null; then
+            echo "ERROR: Server process $SERVER_PID is not running!"
+            echo "=== Backend logs ==="
+            cat backend.log
+            echo ""
+            echo "=== Recent system logs ==="
+            dmesg 2>/dev/null | tail -20 || echo "No dmesg available"
+            exit 1
+          fi
+
+          # Wait for health endpoint
+          for i in {1..60}; do
+            if curl -s -f http://localhost:3108/api/health > /dev/null 2>&1; then
+              echo "Backend server is ready!"
+              echo "=== Backend logs ==="
+              cat backend.log
+              echo ""
+              echo "Health check response:"
+              curl -s http://localhost:3108/api/health | jq . 2>/dev/null || echo "Health check: $(curl -s http://localhost:3108/api/health 2>/dev/null || echo 'No response')"
+              exit 0
+            fi
+
+            # Check if server process is still running
+            if ! kill -0 $SERVER_PID 2>/dev/null; then
+              echo "ERROR: Server process died during wait!"
+              echo "=== Backend logs ==="
+              cat backend.log
+              exit 1
+            fi
+
+            echo "Waiting... ($i/60)"
+            sleep 1
+          done
+
+          echo "ERROR: Backend server failed to start within 60 seconds!"
+          echo "=== Backend logs ==="
+          cat backend.log
+          echo ""
+          echo "=== Process status ==="
+          ps aux | grep -E "(node|tsx)" | grep -v grep || echo "No node processes found"
+          echo ""
+          echo "=== Port status ==="
+          netstat -tlnp 2>/dev/null | grep :3108 || echo "Port 3108 not listening"
+          lsof -i :3108 2>/dev/null || echo "lsof not available or port not in use"
+          echo ""
+          echo "=== Health endpoint test ==="
+          curl -v http://localhost:3108/api/health 2>&1 || echo "Health endpoint failed"
+
+          # Kill the server process if it's still hanging
+          if kill -0 $SERVER_PID 2>/dev/null; then
+            echo ""
+            echo "Killing stuck server process..."
+            kill -9 $SERVER_PID 2>/dev/null || true
+          fi
+
+          exit 1
+
+      - name: Run E2E tests (shard ${{ matrix.shardIndex }}/${{ matrix.shardTotal }})
+        # Playwright automatically starts the Vite frontend via webServer config
+        # (see apps/ui/playwright.config.ts) - no need to start it manually
+        run: npx playwright test --shard=${{ matrix.shardIndex }}/${{ matrix.shardTotal }}
+        working-directory: apps/ui
+        env:
+          CI: true
+          VITE_SKIP_SETUP: 'true'
+          # Keep UI-side login/defaults consistent
+          AUTOMAKER_API_KEY: test-api-key-for-e2e-tests
+          # Backend is already started above - Playwright config sets
+          # AUTOMAKER_SERVER_PORT so the Vite proxy forwards /api/* to the backend.
+          # Do NOT set VITE_SERVER_URL here: it bypasses the Vite proxy and causes
+          # a cookie domain mismatch (cookies are bound to 127.0.0.1, but
+          # VITE_SERVER_URL=http://localhost:3108 makes the frontend call localhost).
+          TEST_USE_EXTERNAL_BACKEND: 'true'
+          TEST_SERVER_PORT: 3108
+
+      - name: Print backend logs on failure
+        if: failure()
+        run: |
+          echo "=== E2E Tests Failed - Backend Logs ==="
+          cat backend.log 2>/dev/null || echo "No backend log found"
+          echo ""
+          echo "=== Process status at failure ==="
+          ps aux | grep -E "(node|tsx)" | grep -v grep || echo "No node processes found"
+          echo ""
+          echo "=== Port status ==="
+          netstat -tlnp 2>/dev/null | grep :3108 || echo "Port 3108 not listening"
+
+      - name: Upload Playwright report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: playwright-report-shard-${{ matrix.shardIndex }}-of-${{ matrix.shardTotal }}
+          path: apps/ui/playwright-report/
+          retention-days: 7
+
+      - name: Upload test results (screenshots, traces, videos)
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: test-results-shard-${{ matrix.shardIndex }}-of-${{ matrix.shardTotal }}
+          path: |
+            apps/ui/test-results/
+          retention-days: 7
+          if-no-files-found: ignore
+
+      - name: Upload blob report for merging
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: blob-report-shard-${{ matrix.shardIndex }}-of-${{ matrix.shardTotal }}
+          path: apps/ui/blob-report/
+          retention-days: 1
+          if-no-files-found: ignore
+
+      - name: Cleanup - Kill backend server
+        if: always()
+        run: |
+          if [ -n "$SERVER_PID" ]; then
+            echo "Cleaning up backend server (PID: $SERVER_PID)..."
+            kill $SERVER_PID 2>/dev/null || true
+            kill -9 $SERVER_PID 2>/dev/null || true
+            echo "Backend server cleanup complete"
+          fi
