@@ -1,0 +1,176 @@
+// TaskGroup domain model — Manifest 2.4.1
+//
+// DESIGN: DSL-vs-wrapper split
+//
+// What lives HERE in Manifest (DSL):
+//   - All group-level status transition guards (pending→running, running→settled/cancelled)
+//   - Slot-count guard: runningCount < maxConcurrency (claimSlot)
+//   - Settle quiescence guard: allChildrenTerminal boolean (computed by wrapper)
+//   - Cancel guard: status ∈ {pending, running}
+//   - requeueStaleChildren guard: status == running
+//   - createGroup numeric-range guards: 2 ≤ childCount ≤ 20, 1 ≤ maxConcurrency ≤ 10, 0 ≤ retryLimit ≤ 5
+//   - Duplicate-child-id guard via wrapper-supplied boolean (childIdsUnique)
+//   - Child eligibility guard (childEligible: boolean supplied by wrapper)
+//   - Running-count accounting via increments/decrements
+//
+// What lives in the WRAPPER (group-engine.ts) — inexpressible in DSL:
+//   - Children array management (per-element mutation of a JSON array is not a DSL primitive)
+//   - requeueStaleChildren loop: find all children with status 'running', set → 'retrying'
+//     WITHOUT incrementing attempts (conditional bulk collection mutation is not expressible)
+//   - cancelGroup child-status update: pending/retrying → skipped, running left as-is
+//   - reportChildFailure branching: attempts+1 ≤ retryLimit → retrying ELSE failed+lastError
+//   - settleGroup outcome: all-completed → review ELSE failed (outcome derived from children array)
+//   - duplicate child-id uniqueness check (supplies childIdsUnique to DSL guard)
+//   - child status checks that supply childEligible/childIsRunning booleans to DSL guards
+//
+// Guard authority: the DSL guards everything expressible at group level.
+// The wrapper is honest about what it manages and why.
+
+entity TaskGroup {
+  property required id: string
+  property required name: string
+  property baseBranch: string = ""
+  property maxConcurrency: number = 2
+  property retryLimit: number = 1
+  property status: string = "pending"
+
+  // Slot and quiescence accounting — maintained by wrapper after each child state change
+  property runningCount: number = 0
+
+  // createGroup: validate group-level numeric invariants
+  // childCount and childIdsUnique supplied by wrapper (counts + dedup check)
+  command createGroup(childCount: number, maxConcurrency: number, retryLimit: number, childIdsUnique: boolean) {
+    guard childCount >= 2
+    guard childCount <= 20
+    guard maxConcurrency >= 1
+    guard maxConcurrency <= 10
+    guard retryLimit >= 0
+    guard retryLimit <= 5
+    guard childIdsUnique
+    mutate status = "pending"
+    mutate runningCount = 0
+    emit GroupCreated
+  }
+
+  command startGroup() {
+    guard self.status == "pending"
+    mutate status = "running"
+    emit GroupStarted
+  }
+
+  // claimSlot: wrapper computes childEligible = child.status ∈ {pending, retrying}
+  command claimSlot(childEligible: boolean) {
+    guard self.status == "running"
+    guard childEligible
+    guard self.runningCount < self.maxConcurrency
+    mutate runningCount = self.runningCount + 1
+    emit ChildClaimed
+  }
+
+  // reportChildSuccess: wrapper validates child.status == running before calling
+  // runningCount decremented via separate accounting command after this
+  command reportChildSuccess() {
+    emit ChildCompleted
+  }
+
+  // reportChildFailure branching is in wrapper; wrapper calls appropriate emit command
+  command reportChildFailure_retrying() {
+    emit ChildRetrying
+  }
+
+  command reportChildFailure_failed() {
+    emit ChildFailed
+  }
+
+  // settleGroup: allChildrenTerminal = no child in {pending, retrying, running} (wrapper computes)
+  command settleGroup(allChildrenTerminal: boolean) {
+    guard self.status == "running"
+    guard allChildrenTerminal
+    emit GroupSettled
+  }
+
+  command setGroupReview() {
+    mutate status = "review"
+    emit GroupFinalisedReview
+  }
+
+  command setGroupFailed() {
+    mutate status = "failed"
+    emit GroupFinalisedFailed
+  }
+
+  command cancelGroup() {
+    guard self.status == "pending" or self.status == "running"
+    mutate status = "cancelled"
+    emit GroupCancelled
+  }
+
+  // requeueStaleChildren: guard only — child loop is in wrapper (inexpressible in DSL)
+  command requeueStaleChildren() {
+    guard self.status == "running"
+    emit StaleChildrenRequeued
+  }
+
+  // Accounting commands called by wrapper after child-state mutations
+  command decrementRunningCount() {
+    guard self.runningCount > 0
+    mutate runningCount = self.runningCount - 1
+  }
+}
+
+store TaskGroup in memory
+
+event GroupCreated: "group.created" {
+  groupId: string
+  name: string
+  childCount: number
+}
+
+event GroupStarted: "group.started" {
+  groupId: string
+}
+
+event ChildClaimed: "group.child.claimed" {
+  groupId: string
+  featureId: string
+}
+
+event ChildCompleted: "group.child.completed" {
+  groupId: string
+  featureId: string
+}
+
+event ChildRetrying: "group.child.retrying" {
+  groupId: string
+  featureId: string
+  attempts: number
+}
+
+event ChildFailed: "group.child.failed" {
+  groupId: string
+  featureId: string
+  attempts: number
+  lastError: string
+}
+
+event GroupSettled: "group.settled" {
+  groupId: string
+  outcome: string
+}
+
+event GroupFinalisedReview: "group.finalised.review" {
+  groupId: string
+}
+
+event GroupFinalisedFailed: "group.finalised.failed" {
+  groupId: string
+}
+
+event GroupCancelled: "group.cancelled" {
+  groupId: string
+}
+
+event StaleChildrenRequeued: "group.stale.requeued" {
+  groupId: string
+  requeuedCount: number
+}
