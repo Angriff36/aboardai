@@ -159,32 +159,58 @@ export async function* superviseQuery(
 
     const iterator = provider.executeQuery(attemptOptions);
 
-    /** Indicates why this attempt ended without completing cleanly */
-    type AttemptOutcome = 'stalled' | 'thrown' | 'error_result' | 'completed';
+    /** Indicates how this attempt ended */
+    type AttemptOutcome =
+      | 'stalled'
+      | 'thrown'
+      | 'error_result'
+      | 'fatal_result'
+      | 'aborted'
+      | 'completed';
     let outcome: AttemptOutcome = 'completed';
     let attemptError: unknown;
+
+    // Cleanup state shared with the attempt-level finally. The finally is the
+    // single owner of inner-iterator closure — it runs on EVERY exit from the
+    // attempt, including a consumer-initiated early return (for-await break),
+    // which surfaces as a return completion at `yield msg` and is invisible to
+    // the catch block.
+    let stallTimerId: ReturnType<typeof setTimeout> | null = null;
+    let abortCleanup: () => void = () => {};
+    let iteratorClosed = false;
+
+    /**
+     * Close the inner iterator exactly once, fire-and-forget. Never awaited:
+     * a generator suspended in an internal `await` (e.g. a stalled stream)
+     * would block the return() promise indefinitely. Rejections are swallowed.
+     */
+    const closeIterator = (): void => {
+      if (iteratorClosed) return;
+      iteratorClosed = true;
+      try {
+        Promise.resolve(iterator.return?.(undefined)).catch(() => {});
+      } catch {
+        /* ignore synchronous failures from return() */
+      }
+    };
 
     try {
       // Drain the generator message by message, racing against stall timer
       messageLoop: while (true) {
         // Check abort before waiting
         if (signal?.aborted) {
-          iterator.return?.(undefined);
-          return;
+          outcome = 'aborted';
+          break messageLoop;
         }
 
         // Set up stall timer
-        let stallTimerId: ReturnType<typeof setTimeout> | null = null;
-        let stallRejectFn: ((e: Error) => void) | null = null;
         const stallPromise = new Promise<never>((_resolve, reject) => {
-          stallRejectFn = reject;
           stallTimerId = setTimeout(() => {
             reject(new Error(STALL_ERR));
           }, policy.stallTimeoutMs);
         });
 
         // Set up abort promise
-        let abortCleanup: () => void = () => {};
         let abortPromise: Promise<never> = new Promise<never>(() => {}); // never resolves
         if (signal) {
           const [ap, cleanup] = createAbortPromise(signal);
@@ -198,32 +224,28 @@ export async function* superviseQuery(
         } catch (raceErr: unknown) {
           const msg = raceErr instanceof Error ? raceErr.message : String(raceErr);
           if (msg === ABORT_ERR) {
-            // Abort fired — clean up and stop immediately (don't await return)
-            if (stallTimerId !== null) clearTimeout(stallTimerId);
-            abortCleanup();
-            // Fire-and-forget: don't await, since the iterator may be stuck awaiting a sleep
-            iterator.return?.(undefined);
-            return;
+            outcome = 'aborted';
+            break messageLoop;
           }
           if (msg === STALL_ERR) {
-            // Stall detected — fire-and-forget cleanup (stuck in sleep)
-            abortCleanup();
-            iterator.return?.(undefined);
             outcome = 'stalled';
             break messageLoop;
           }
-          // Real iterator error
-          if (stallTimerId !== null) clearTimeout(stallTimerId);
-          abortCleanup();
+          // Real iterator error → attempt-level catch
           throw raceErr;
+        } finally {
+          // Per-race cleanup: timer + abort listener (idempotent)
+          if (stallTimerId !== null) {
+            clearTimeout(stallTimerId);
+            stallTimerId = null;
+          }
+          abortCleanup();
+          abortCleanup = () => {};
         }
 
-        // Message or done — clear stall timer
-        if (stallTimerId !== null) clearTimeout(stallTimerId);
-        abortCleanup();
-
         if (iterResult.done) {
-          // Generator completed normally
+          // Generator completed normally — already closed by definition
+          iteratorClosed = true;
           outcome = 'completed';
           break messageLoop;
         }
@@ -242,34 +264,22 @@ export async function* superviseQuery(
           attemptError = new Error(
             `result error: api_error_status=${(msg as any).api_error_status ?? 'unknown'}`
           );
-
-          if (FATAL_TYPES.has(resultClassification.type)) {
-            await iterator.return?.(undefined);
-            yield* emitStatus({ type: 'supervisor_status', status: 'fatal', attempt });
-            throw attemptError;
-          }
-
-          // Retryable error result
-          await iterator.return?.(undefined);
-          outcome = 'error_result';
           lastError = attemptError;
+          outcome = FATAL_TYPES.has(resultClassification.type) ? 'fatal_result' : 'error_result';
           break messageLoop;
         }
 
-        // Normal message — forward to consumer
+        // Normal message — forward to consumer.
+        // NOTE: if the consumer breaks its for-await here, a return completion
+        // unwinds through the attempt-level finally below.
         yield msg;
       }
     } catch (err: unknown) {
-      // Iterator threw an error
+      // Iterator threw an error — the generator has already finished
+      iteratorClosed = true;
       outcome = 'thrown';
       attemptError = err;
       lastError = err;
-
-      try {
-        await iterator.return?.(undefined);
-      } catch {
-        /* ignore */
-      }
 
       const errMsg = err instanceof Error ? err.message : String(err);
 
@@ -288,13 +298,29 @@ export async function* superviseQuery(
       if (capturedSessionId && isStaleSessionError(errMsg)) {
         capturedSessionId = undefined;
       }
+    } finally {
+      // Runs on EVERY attempt exit: normal break, thrown error, abort/stall,
+      // and consumer-initiated early return. Must not await (stalled inner
+      // generators block) and must not double-close.
+      if (stallTimerId !== null) {
+        clearTimeout(stallTimerId);
+        stallTimerId = null;
+      }
+      abortCleanup();
+      closeIterator();
     }
 
     // --- Handle attempt outcome ---
 
-    if (outcome === 'completed') {
-      // Happy path or final successful retry — done
+    if (outcome === 'completed' || outcome === 'aborted') {
+      // Happy path / final successful retry / consumer abort — done
       return;
+    }
+
+    if (outcome === 'fatal_result') {
+      // Non-retryable error result (e.g. 401/403) — fail fast
+      yield* emitStatus({ type: 'supervisor_status', status: 'fatal', attempt });
+      throw attemptError;
     }
 
     // Determine retry eligibility

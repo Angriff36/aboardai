@@ -52,6 +52,7 @@ export class FakeProvider extends BaseProvider {
   private readonly runs: FakeRun[];
   private runIndex = 0;
   private readonly recordedOptions: ExecuteOptions[] = [];
+  private closedEarlyCount = 0;
 
   constructor(runs: FakeRun[]) {
     super({});
@@ -93,6 +94,14 @@ export class FakeProvider extends BaseProvider {
     return this.recordedOptions.length;
   }
 
+  /**
+   * How many runs were closed EARLY via .return()/.throw() from the consumer
+   * (i.e., neither completed their script nor threw a scripted error).
+   */
+  getClosedEarlyCount(): number {
+    return this.closedEarlyCount;
+  }
+
   async *executeQuery(options: ExecuteOptions): AsyncGenerator<ProviderMessage> {
     // Record the options this call received
     this.recordedOptions.push({ ...options });
@@ -102,30 +111,43 @@ export class FakeProvider extends BaseProvider {
     this.runIndex++;
     const run = this.runs[runIdx];
 
-    for (const directive of run.directives) {
-      switch (directive.kind) {
-        case 'message': {
-          if (directive.delayMs && directive.delayMs > 0) {
-            await sleep(directive.delayMs);
+    // Track whether the run finished on its own terms (script end or scripted
+    // throw). If the finally runs without `finished`, the consumer closed the
+    // generator early via .return() — record it.
+    let finished = false;
+    try {
+      for (const directive of run.directives) {
+        switch (directive.kind) {
+          case 'message': {
+            if (directive.delayMs && directive.delayMs > 0) {
+              await sleep(directive.delayMs);
+            }
+            yield directive.message;
+            break;
           }
-          yield directive.message;
-          break;
-        }
 
-        case 'stall': {
-          // Sleep for the full stall duration without yielding anything
-          await sleep(directive.ms);
-          break;
-        }
+          case 'stall': {
+            // Sleep for the full stall duration without yielding anything
+            await sleep(directive.ms);
+            break;
+          }
 
-        case 'throw': {
-          throw directive.error;
-        }
+          case 'throw': {
+            finished = true;
+            throw directive.error;
+          }
 
-        case 'end': {
-          // Explicit clean end — just return
-          return;
+          case 'end': {
+            // Explicit clean end — just return
+            finished = true;
+            return;
+          }
         }
+      }
+      finished = true;
+    } finally {
+      if (!finished) {
+        this.closedEarlyCount++;
       }
     }
   }

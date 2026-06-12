@@ -651,4 +651,51 @@ describe('ProviderSupervisor scenarios (S1–S10) [RED — not implemented]', ()
     expect(finalResult).toBeDefined();
     expect(finalResult?.subtype).toBe('success');
   });
+
+  // -------------------------------------------------------------------------
+  // S11 — Early consumer return (for-await break) → full cleanup
+  // -------------------------------------------------------------------------
+  it('S11: consumer breaks out of for-await → inner iterator closed, stall timer cleared, no further calls', async () => {
+    const run0: FakeRun = {
+      directives: [
+        { kind: 'message', message: textMsg('m1') },
+        { kind: 'message', message: textMsg('m2') },
+        { kind: 'stall', ms: 600_000 }, // long stall — must never matter after break
+        { kind: 'end' },
+      ],
+    };
+
+    const provider = new FakeProvider([run0]);
+    const gen = superviseQuery(provider, defaultOptions(), TEST_POLICY, onStatus);
+
+    // Consume exactly 2 data messages then break (consumer-initiated early return)
+    const received: ProviderMessage[] = [];
+    for await (const msg of gen) {
+      if (msg.type === 'supervisor_status') continue;
+      received.push(msg);
+      if (received.length === 2) break;
+    }
+
+    expect(received.map((m) => m.message?.content?.[0]?.text)).toEqual(['m1', 'm2']);
+
+    // Let the fire-and-forget cleanup microtasks settle
+    await vi.advanceTimersByTimeAsync(0);
+    await Promise.resolve();
+
+    // (a) The inner provider generator was closed via .return()
+    expect(provider.getClosedEarlyCount()).toBe(1);
+
+    // (b) No further executeQuery calls after the break
+    expect(provider.getCallCount()).toBe(1);
+
+    const statusCountBefore = statusCallbackEvents.length;
+
+    // (c) Advance fake timers past stallTimeoutMs — the stall timer must have
+    // been cleared, so no status events fire and nothing throws
+    await vi.advanceTimersByTimeAsync(TEST_POLICY.stallTimeoutMs + 5_000);
+    await Promise.resolve();
+
+    expect(provider.getCallCount()).toBe(1);
+    expect(statusCallbackEvents.length).toBe(statusCountBefore);
+  });
 });
