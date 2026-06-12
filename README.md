@@ -433,6 +433,8 @@ Once authenticated, AboardAI will automatically detect and use your CLI credenti
 - 📝 **Planning Modes** - Four planning levels: skip (direct implementation), lite (quick plan), spec (task breakdown), full (phased execution)
 - ✅ **Plan Approval** - Review and approve AI-generated plans before implementation begins
 - 📊 **Multi-Agent Task Execution** - Spec mode spawns dedicated agents per task for focused implementation
+- 👥 **Task Groups** - Group features for concurrent execution with configurable concurrency limits, per-child retry, and auto-advance to review
+- 🛠️ **Agent Board Tool** - Agents can update feature status through a validated tool, enabling autonomous board state mutations
 
 ### Project Management
 
