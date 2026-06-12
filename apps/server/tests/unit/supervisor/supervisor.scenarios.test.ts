@@ -185,7 +185,7 @@ function defaultOptions(
 // Scenario tests — all expected to be RED until superviseQuery is implemented
 // ---------------------------------------------------------------------------
 
-describe('ProviderSupervisor scenarios (S1–S10) [RED — not implemented]', () => {
+describe('ProviderSupervisor scenarios (S1–S12)', () => {
   let statusCallbackEvents: SupervisorStatusMessage[];
 
   beforeEach(() => {
@@ -650,6 +650,78 @@ describe('ProviderSupervisor scenarios (S1–S10) [RED — not implemented]', ()
     const finalResult = data.findLast((m) => m.type === 'result');
     expect(finalResult).toBeDefined();
     expect(finalResult?.subtype).toBe('success');
+  });
+
+  // -------------------------------------------------------------------------
+  // S12 — Structured retryAfter property honored even when error text has no parseable delay
+  // -------------------------------------------------------------------------
+  it('S12: rate-limit error with retryAfter=10 but no parseable text → waits ~10s before retry', async () => {
+    const RETRY_AFTER_S = 10;
+
+    // Error has a structured retryAfter (seconds) but no parseable text pattern
+    const rateLimitError = Object.assign(new Error('rate limit exceeded, please wait'), {
+      retryAfter: RETRY_AFTER_S,
+    });
+
+    const run0: FakeRun = {
+      directives: [
+        { kind: 'message', message: textMsg('s12-msg-1') },
+        { kind: 'throw', error: rateLimitError },
+      ],
+    };
+
+    const run1: FakeRun = {
+      directives: [
+        { kind: 'message', message: textMsg('s12-after-rate-limit') },
+        { kind: 'message', message: resultMsg() },
+        { kind: 'end' },
+      ],
+    };
+
+    const provider = new FakeProvider([run0, run1]);
+    const gen = superviseQuery(provider, defaultOptions(), TEST_POLICY, onStatus);
+
+    // Kick off iteration
+    const iteratePromise = (async () => {
+      const msgs: ProviderMessage[] = [];
+      let error: unknown;
+      try {
+        for await (const msg of gen) {
+          msgs.push(msg);
+        }
+      } catch (e) {
+        error = e;
+      }
+      return { msgs, error };
+    })();
+
+    // Advance just under 10s — supervisor must NOT have retried yet
+    await vi.advanceTimersByTimeAsync(RETRY_AFTER_S * 1000 - 500);
+    await Promise.resolve();
+    const callCountBefore = provider.getCallCount();
+
+    // Advance past 10s
+    await vi.advanceTimersByTimeAsync(1_000);
+    await Promise.resolve();
+
+    const { msgs, error } = await iteratePromise;
+
+    expect(error).toBeUndefined();
+
+    // Retry should NOT have happened before 10s elapsed
+    expect(callCountBefore).toBe(1);
+
+    // Eventually retried
+    expect(provider.getCallCount()).toBeGreaterThanOrEqual(2);
+
+    // rate_limited status emitted with retryAfterMs ≈ 10000 (from structured property)
+    const allStatus = [...statusMessages(msgs), ...statusCallbackEvents];
+    const rateLimitedEvent = allStatus.find((s) => (s as any).status === 'rate_limited');
+    expect(rateLimitedEvent).toBeDefined();
+    expect((rateLimitedEvent as any)?.retryAfterMs).toBeGreaterThanOrEqual(
+      RETRY_AFTER_S * 1000 - 500
+    );
+    expect((rateLimitedEvent as any)?.retryAfterMs).toBeLessThanOrEqual(RETRY_AFTER_S * 1000 + 500);
   });
 
   // -------------------------------------------------------------------------

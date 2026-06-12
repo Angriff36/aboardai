@@ -67,6 +67,25 @@ function parseRetryAfterMs(errorMessage: string): number | null {
   return null;
 }
 
+/**
+ * Extract the rate-limit wait time in milliseconds from a thrown error.
+ * Prefers the structured `retryAfter` property (in seconds, as set by enhanced
+ * provider errors) before falling back to text parsing of the error message.
+ */
+function extractRateLimitDelayMs(err: unknown, policy: SupervisorPolicy, attempt: number): number {
+  // Prefer structured retryAfter (seconds) if present on the error object
+  if (err !== null && typeof err === 'object') {
+    const maybeRetryAfter = (err as Record<string, unknown>).retryAfter;
+    if (typeof maybeRetryAfter === 'number' && maybeRetryAfter > 0) {
+      // retryAfter is in seconds — convert to milliseconds
+      return maybeRetryAfter * 1000;
+    }
+  }
+  // Fall back to text parsing
+  const errMsg = err instanceof Error ? err.message : String(err ?? '');
+  return parseRetryAfterMs(errMsg) ?? calcBackoffMs(attempt, policy);
+}
+
 /** Calculate exponential backoff delay for an attempt (1-indexed). */
 function calcBackoffMs(attempt: number, policy: SupervisorPolicy): number {
   return Math.min(policy.maxDelayMs, policy.baseDelayMs * Math.pow(2, attempt - 1));
@@ -157,7 +176,15 @@ export async function* superviseQuery(
       sdkSessionId: capturedSessionId,
     };
 
-    const iterator = provider.executeQuery(attemptOptions);
+    // executeQuery must return AsyncGenerator (BaseProvider contract), but defensively
+    // normalize to an async iterator in case a mock/test returns an AsyncIterable.
+    const rawResult = provider.executeQuery(attemptOptions);
+    const iterator: AsyncGenerator<ProviderMessage> =
+      typeof (rawResult as unknown as { next?: unknown }).next === 'function'
+        ? rawResult
+        : ((rawResult as unknown as AsyncIterable<ProviderMessage>)[
+            Symbol.asyncIterator
+          ]() as AsyncGenerator<ProviderMessage>);
 
     /** Indicates how this attempt ended */
     type AttemptOutcome =
@@ -348,10 +375,8 @@ export async function* superviseQuery(
       }
 
       if (classification.type === ErrorType.RATE_LIMIT) {
-        // Rate limit: parse retry-after or use backoff
-        const errMsg =
-          errForClassify instanceof Error ? errForClassify.message : String(errForClassify ?? '');
-        const retryAfterMs = parseRetryAfterMs(errMsg) ?? calcBackoffMs(attempt, policy);
+        // Rate limit: prefer structured retryAfter, then parse text, then fall back to backoff
+        const retryAfterMs = extractRateLimitDelayMs(errForClassify, policy, attempt);
 
         yield* emitStatus({
           type: 'supervisor_status',

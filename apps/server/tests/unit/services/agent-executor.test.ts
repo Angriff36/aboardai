@@ -13,6 +13,9 @@ import type { FeatureStateManager } from '../../../src/services/feature-state-ma
 import type { PlanApprovalService } from '../../../src/services/plan-approval-service.js';
 import type { SettingsService } from '../../../src/services/settings-service.js';
 import type { BaseProvider } from '../../../src/providers/base-provider.js';
+import { SupervisorExhaustedError } from '@aboardai/types';
+import { FakeProvider } from '../supervisor/fake-provider.js';
+import type { FakeRun } from '../supervisor/fake-provider.js';
 
 /**
  * Unit tests for AgentExecutor
@@ -44,6 +47,7 @@ describe('AgentExecutor', () => {
       updateTaskStatus: vi.fn().mockResolvedValue(undefined),
       updateFeaturePlanSpec: vi.fn().mockResolvedValue(undefined),
       saveFeatureSummary: vi.fn().mockResolvedValue(undefined),
+      markFeatureInterrupted: vi.fn().mockResolvedValue(undefined),
     } as unknown as FeatureStateManager;
 
     mockPlanApprovalService = {
@@ -1744,6 +1748,190 @@ describe('AgentExecutor', () => {
       const savedSummary = saveFeatureSummary.mock.calls[0][2];
       // Scaffold should be stripped, only actual content remains
       expect(savedSummary).toBe('Content after scaffold marker');
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // Supervisor integration tests (7.4b & 7.4c)
+  // ---------------------------------------------------------------------------
+
+  describe('supervisor integration', () => {
+    /**
+     * 7.4b: supervised resume path end-to-end
+     * FakeProvider: run0 yields one message then throws NETWORK error,
+     * run1 succeeds with text + result.
+     * Asserts: execution completes, reconnecting/resumed progress events emitted.
+     */
+    it('7.4b: network error on run0 → supervisor retries → run1 succeeds; reconnecting progress event emitted', async () => {
+      vi.useFakeTimers();
+      try {
+        const executor = new AgentExecutor(
+          mockEventBus,
+          mockFeatureStateManager,
+          mockPlanApprovalService,
+          mockSettingsService
+        );
+
+        const run0: FakeRun = {
+          directives: [
+            {
+              kind: 'message',
+              message: {
+                type: 'assistant',
+                message: { role: 'assistant', content: [{ type: 'text', text: 'Starting...' }] },
+              } as import('@aboardai/types').ProviderMessage,
+            },
+            { kind: 'throw', error: new Error('ECONNRESET: connection reset') },
+          ],
+        };
+
+        const run1: FakeRun = {
+          directives: [
+            {
+              kind: 'message',
+              message: {
+                type: 'assistant',
+                message: { role: 'assistant', content: [{ type: 'text', text: 'Resumed text' }] },
+              } as import('@aboardai/types').ProviderMessage,
+            },
+            {
+              kind: 'message',
+              message: {
+                type: 'result',
+                subtype: 'success',
+                result: 'done',
+              } as import('@aboardai/types').ProviderMessage,
+            },
+            { kind: 'end' },
+          ],
+        };
+
+        const fakeProvider = new FakeProvider([run0, run1]);
+
+        const options: AgentExecutionOptions = {
+          workDir: '/test',
+          featureId: 'feat-supervisor-test',
+          prompt: 'Test prompt',
+          projectPath: '/project',
+          abortController: new AbortController(),
+          provider: fakeProvider as unknown as BaseProvider,
+          effectiveBareModel: 'claude-sonnet-4-6',
+          planningMode: 'skip',
+        };
+
+        const callbacks = {
+          waitForApproval: vi.fn().mockResolvedValue({ approved: true }),
+          saveFeatureSummary: vi.fn(),
+          updateFeatureSummary: vi.fn(),
+          buildTaskPrompt: vi.fn().mockReturnValue('task prompt'),
+        };
+
+        // Run execute with fake timer advancement to bypass backoff delays
+        let result: AgentExecutionResult | undefined;
+        let execError: unknown;
+        const execPromise = executor.execute(options, callbacks).then(
+          (r) => {
+            result = r;
+          },
+          (e) => {
+            execError = e;
+          }
+        );
+
+        // Advance timers to bypass supervisor's backoff delay (baseDelayMs=2000ms default)
+        await vi.advanceTimersByTimeAsync(5_000);
+        await execPromise;
+
+        expect(execError).toBeUndefined();
+        expect(result).toBeDefined();
+        expect(result!.responseText).toContain('Resumed text');
+
+        // Verify supervisor emitted reconnecting + resumed progress events
+        const progressCalls = vi
+          .mocked(mockEventBus.emitAutoModeEvent)
+          .mock.calls.filter(
+            ([event, payload]) =>
+              event === 'auto_mode_progress' &&
+              ((payload as { content?: string }).content?.includes('reconnect') ||
+                (payload as { content?: string }).content?.includes('Resumed'))
+          );
+        expect(progressCalls.length).toBeGreaterThanOrEqual(1);
+      } finally {
+        vi.useRealTimers();
+      }
+    });
+
+    /**
+     * 7.4c: SupervisorExhaustedError → feature marked 'interrupted'
+     * FakeProvider: all attempts throw NETWORK errors.
+     * Asserts: execute() throws SupervisorExhaustedError,
+     *          markFeatureInterrupted was called.
+     */
+    it('7.4c: all supervisor retries exhausted → SupervisorExhaustedError thrown; feature marked interrupted', async () => {
+      vi.useFakeTimers();
+      try {
+        const executor = new AgentExecutor(
+          mockEventBus,
+          mockFeatureStateManager,
+          mockPlanApprovalService,
+          mockSettingsService
+        );
+
+        // Use a small policy via FakeProvider — 2 attempts, fast backoff
+        // We pass a custom policy via the executor's superviseQuery call.
+        // Since DEFAULT_SUPERVISOR_POLICY has 4 attempts and 2s base delay,
+        // we need to advance timers far enough for all retries.
+        const makeFailRun = (): FakeRun => ({
+          directives: [{ kind: 'throw', error: new Error('ECONNRESET: connection reset') }],
+        });
+
+        // Provide maxAttempts (4) runs, all failing
+        const fakeProvider = new FakeProvider([
+          makeFailRun(),
+          makeFailRun(),
+          makeFailRun(),
+          makeFailRun(),
+        ]);
+
+        const options: AgentExecutionOptions = {
+          workDir: '/test',
+          featureId: 'feat-exhausted-test',
+          prompt: 'Test prompt',
+          projectPath: '/project',
+          abortController: new AbortController(),
+          provider: fakeProvider as unknown as BaseProvider,
+          effectiveBareModel: 'claude-sonnet-4-6',
+          planningMode: 'skip',
+        };
+
+        const callbacks = {
+          waitForApproval: vi.fn().mockResolvedValue({ approved: true }),
+          saveFeatureSummary: vi.fn(),
+          updateFeatureSummary: vi.fn(),
+          buildTaskPrompt: vi.fn().mockReturnValue('task prompt'),
+        };
+
+        let execError: unknown;
+        const execPromise = executor.execute(options, callbacks).catch((e) => {
+          execError = e;
+        });
+
+        // Advance timers past all backoff delays (2s + 4s + 8s + ... for 4 attempts)
+        await vi.advanceTimersByTimeAsync(120_000);
+        await execPromise;
+
+        // SupervisorExhaustedError should have been thrown
+        expect(execError).toBeInstanceOf(SupervisorExhaustedError);
+
+        // Feature should have been marked as interrupted
+        expect(mockFeatureStateManager.markFeatureInterrupted).toHaveBeenCalledWith(
+          '/project',
+          'feat-exhausted-test',
+          expect.stringContaining('exhausted')
+        );
+      } finally {
+        vi.useRealTimers();
+      }
     });
   });
 });

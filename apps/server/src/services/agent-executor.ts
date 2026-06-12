@@ -4,9 +4,14 @@
 
 import path from 'path';
 import type { ExecuteOptions, ParsedTask } from '@aboardai/types';
-import { isPipelineStatus } from '@aboardai/types';
+import {
+  isPipelineStatus,
+  DEFAULT_SUPERVISOR_POLICY,
+  SupervisorExhaustedError,
+} from '@aboardai/types';
 import { buildPromptWithImages, createLogger, isAuthenticationError } from '@aboardai/utils';
 import { getFeatureDir } from '@aboardai/platform';
+import { superviseQuery } from '../providers/provider-supervisor.js';
 import * as secureFs from '../lib/secure-fs.js';
 import { TypedEventBus } from './typed-event-bus.js';
 import { FeatureStateManager } from './feature-state-manager.js';
@@ -231,106 +236,158 @@ export class AgentExecutor {
     logger.info(`Starting stream for feature ${featureId}...`);
 
     try {
-      const stream = provider.executeQuery(executeOptions);
-      streamLoop: for await (const msg of stream) {
-        if (msg.session_id && msg.session_id !== options.sdkSessionId) {
-          options.sdkSessionId = msg.session_id;
-        }
-        receivedAnyStreamMessage = true;
-        appendRawEvent(msg);
-        if (abortController.signal.aborted) {
-          aborted = true;
-          throw new Error('Feature execution aborted');
-        }
-        if (msg.type === 'assistant' && msg.message?.content) {
-          for (const block of msg.message.content) {
-            if (block.type === 'text') {
-              const newText = block.text || '';
-              if (!newText) continue;
-              if (responseText.length > 0 && newText.length > 0) {
-                const endsWithSentence = /[.!?:]\s*$/.test(responseText),
-                  endsWithNewline = /\n\s*$/.test(responseText);
-                if (
-                  !endsWithNewline &&
-                  (endsWithSentence || /^[\n#\-*>]/.test(newText)) &&
-                  !/[a-zA-Z0-9]/.test(responseText.slice(-1))
-                )
-                  responseText += '\n\n';
-              }
-              responseText += newText;
-              // Check for authentication errors using provider-agnostic utility
-              if (block.text && isAuthenticationError(block.text))
-                throw new Error(
-                  'Authentication failed: Invalid or expired API key. Please check your API key configuration or re-authenticate with your provider.'
-                );
-              scheduleWrite();
-              const hasExplicitMarker = responseText.includes('[SPEC_GENERATED]'),
-                hasFallbackSpec = !hasExplicitMarker && detectSpecFallback(responseText);
-              if (
-                planningModeRequiresApproval &&
-                !specDetected &&
-                (hasExplicitMarker || hasFallbackSpec)
-              ) {
-                specDetected = true;
-                const planContent = hasExplicitMarker
-                  ? responseText.substring(0, responseText.indexOf('[SPEC_GENERATED]')).trim()
-                  : responseText.trim();
-                if (!hasExplicitMarker)
-                  logger.info(`Using fallback spec detection for feature ${featureId}`);
-                const result = await this.handleSpecGenerated(
-                  options,
-                  planContent,
-                  responseText,
-                  requiresApproval,
-                  scheduleWrite,
-                  callbacks
-                );
-                responseText = result.responseText;
-                tasksCompleted = result.tasksCompleted;
-                break streamLoop;
-              }
-              if (!specDetected)
-                this.eventBus.emitAutoModeEvent('auto_mode_progress', {
-                  featureId,
-                  branchName,
-                  content: block.text,
-                });
-            } else if (block.type === 'tool_use') {
-              this.eventBus.emitAutoModeEvent('auto_mode_tool', {
+      const stream = superviseQuery(provider, executeOptions, DEFAULT_SUPERVISOR_POLICY);
+      try {
+        streamLoop: for await (const msg of stream) {
+          if (msg.session_id && msg.session_id !== options.sdkSessionId) {
+            options.sdkSessionId = msg.session_id;
+          }
+          receivedAnyStreamMessage = true;
+          appendRawEvent(msg);
+          // supervisor_status messages have no content — skip sentinel parsing and emit progress
+          // NOTE: abort check is below so supervisor_status is skipped without triggering it
+          if (msg.type === 'supervisor_status') {
+            const sv = msg as unknown as import('@aboardai/types').SupervisorStatusMessage;
+            if (sv.status === 'rate_limited') {
+              const waitSec = sv.retryAfterMs != null ? Math.round(sv.retryAfterMs / 1000) : '?';
+              this.eventBus.emitAutoModeEvent('auto_mode_progress', {
                 featureId,
                 branchName,
-                tool: block.name,
-                input: block.input,
+                content: `Rate limited — waiting ${waitSec}s before resuming (attempt ${sv.attempt ?? '?'})`,
               });
-              if (responseText.length > 0 && !responseText.endsWith('\n')) responseText += '\n';
-              responseText += `\n🔧 Tool: ${block.name}\n`;
-              if (block.input) responseText += `Input: ${JSON.stringify(block.input, null, 2)}\n`;
+            } else if (sv.status === 'stalled') {
+              this.eventBus.emitAutoModeEvent('auto_mode_progress', {
+                featureId,
+                branchName,
+                content: `Stream stalled — resuming with session ID (attempt ${sv.attempt ?? '?'})`,
+              });
+            } else if (sv.status === 'reconnecting') {
+              this.eventBus.emitAutoModeEvent('auto_mode_progress', {
+                featureId,
+                branchName,
+                content: `Connection lost — reconnecting (attempt ${sv.attempt ?? '?'})`,
+              });
+            } else if (sv.status === 'resumed') {
+              this.eventBus.emitAutoModeEvent('auto_mode_progress', {
+                featureId,
+                branchName,
+                content: `Resumed stream successfully`,
+              });
+            }
+            continue;
+          }
+          if (abortController.signal.aborted) {
+            aborted = true;
+            throw new Error('Feature execution aborted');
+          }
+          if (msg.type === 'assistant' && msg.message?.content) {
+            for (const block of msg.message.content) {
+              if (block.type === 'text') {
+                const newText = block.text || '';
+                if (!newText) continue;
+                if (responseText.length > 0 && newText.length > 0) {
+                  const endsWithSentence = /[.!?:]\s*$/.test(responseText),
+                    endsWithNewline = /\n\s*$/.test(responseText);
+                  if (
+                    !endsWithNewline &&
+                    (endsWithSentence || /^[\n#\-*>]/.test(newText)) &&
+                    !/[a-zA-Z0-9]/.test(responseText.slice(-1))
+                  )
+                    responseText += '\n\n';
+                }
+                responseText += newText;
+                // Check for authentication errors using provider-agnostic utility
+                if (block.text && isAuthenticationError(block.text))
+                  throw new Error(
+                    'Authentication failed: Invalid or expired API key. Please check your API key configuration or re-authenticate with your provider.'
+                  );
+                scheduleWrite();
+                const hasExplicitMarker = responseText.includes('[SPEC_GENERATED]'),
+                  hasFallbackSpec = !hasExplicitMarker && detectSpecFallback(responseText);
+                if (
+                  planningModeRequiresApproval &&
+                  !specDetected &&
+                  (hasExplicitMarker || hasFallbackSpec)
+                ) {
+                  specDetected = true;
+                  const planContent = hasExplicitMarker
+                    ? responseText.substring(0, responseText.indexOf('[SPEC_GENERATED]')).trim()
+                    : responseText.trim();
+                  if (!hasExplicitMarker)
+                    logger.info(`Using fallback spec detection for feature ${featureId}`);
+                  const result = await this.handleSpecGenerated(
+                    options,
+                    planContent,
+                    responseText,
+                    requiresApproval,
+                    scheduleWrite,
+                    callbacks
+                  );
+                  responseText = result.responseText;
+                  tasksCompleted = result.tasksCompleted;
+                  break streamLoop;
+                }
+                if (!specDetected)
+                  this.eventBus.emitAutoModeEvent('auto_mode_progress', {
+                    featureId,
+                    branchName,
+                    content: block.text,
+                  });
+              } else if (block.type === 'tool_use') {
+                this.eventBus.emitAutoModeEvent('auto_mode_tool', {
+                  featureId,
+                  branchName,
+                  tool: block.name,
+                  input: block.input,
+                });
+                if (responseText.length > 0 && !responseText.endsWith('\n')) responseText += '\n';
+                responseText += `\n🔧 Tool: ${block.name}\n`;
+                if (block.input) responseText += `Input: ${JSON.stringify(block.input, null, 2)}\n`;
+                scheduleWrite();
+              }
+            }
+          } else if (msg.type === 'error') {
+            const sanitized = AgentExecutor.sanitizeProviderError(msg.error);
+            logger.error(
+              `[execute] Feature ${featureId} received error from provider. ` +
+                `raw="${msg.error}", sanitized="${sanitized}", session_id=${msg.session_id ?? 'none'}`
+            );
+            throw new Error(sanitized);
+          } else if (msg.type === 'result') {
+            if (msg.subtype === 'success') {
               scheduleWrite();
+            } else if (msg.subtype?.startsWith('error')) {
+              // Non-success result subtypes from the SDK (error_max_turns, error_during_execution, etc.)
+              logger.error(
+                `[execute] Feature ${featureId} ended with error subtype: ${msg.subtype}. ` +
+                  `session_id=${msg.session_id ?? 'none'}`
+              );
+              throw new Error(`Agent execution ended with: ${msg.subtype}`);
+            } else {
+              logger.warn(
+                `[execute] Feature ${featureId} received unhandled result subtype: ${msg.subtype}`
+              );
             }
           }
-        } else if (msg.type === 'error') {
-          const sanitized = AgentExecutor.sanitizeProviderError(msg.error);
+        }
+      } catch (streamErr) {
+        if (streamErr instanceof SupervisorExhaustedError) {
           logger.error(
-            `[execute] Feature ${featureId} received error from provider. ` +
-              `raw="${msg.error}", sanitized="${sanitized}", session_id=${msg.session_id ?? 'none'}`
+            `[execute] Supervisor exhausted for feature ${featureId}: ` +
+              `attempts=${streamErr.attempts}, classification=${streamErr.classification}`
           );
-          throw new Error(sanitized);
-        } else if (msg.type === 'result') {
-          if (msg.subtype === 'success') {
-            scheduleWrite();
-          } else if (msg.subtype?.startsWith('error')) {
-            // Non-success result subtypes from the SDK (error_max_turns, error_during_execution, etc.)
-            logger.error(
-              `[execute] Feature ${featureId} ended with error subtype: ${msg.subtype}. ` +
-                `session_id=${msg.session_id ?? 'none'}`
+          // Mark the feature as 'interrupted' so it can be resumed later
+          try {
+            await this.featureStateManager.markFeatureInterrupted(
+              projectPath,
+              featureId,
+              `Supervisor exhausted after ${streamErr.attempts} attempts`
             );
-            throw new Error(`Agent execution ended with: ${msg.subtype}`);
-          } else {
-            logger.warn(
-              `[execute] Feature ${featureId} received unhandled result subtype: ${msg.subtype}`
-            );
+          } catch (markErr) {
+            logger.error(`[execute] Failed to mark feature ${featureId} as interrupted:`, markErr);
           }
         }
+        throw streamErr;
       }
     } finally {
       clearInterval(streamHeartbeat);
@@ -485,8 +542,10 @@ export class AgentExecutor {
         `[executeTasksLoop] Feature ${featureId}, task ${task.id} (${taskIndex + 1}/${tasks.length}): ` +
           `maxTurns=${taskMaxTurns} (sdkOptions.maxTurns=${sdkOptions?.maxTurns ?? 'undefined'})`
       );
-      const taskStream = provider.executeQuery(
-        this.buildExecOpts(options, taskPrompt, taskMaxTurns)
+      const taskStream = superviseQuery(
+        provider,
+        this.buildExecOpts(options, taskPrompt, taskMaxTurns),
+        DEFAULT_SUPERVISOR_POLICY
       );
       let taskOutput = '',
         taskStartDetected = false,
@@ -495,6 +554,37 @@ export class AgentExecutor {
       for await (const msg of taskStream) {
         if (msg.session_id && msg.session_id !== options.sdkSessionId) {
           options.sdkSessionId = msg.session_id;
+        }
+        // supervisor_status messages have no content — emit progress and skip sentinel detection
+        if (msg.type === 'supervisor_status') {
+          const sv = msg as unknown as import('@aboardai/types').SupervisorStatusMessage;
+          if (sv.status === 'rate_limited') {
+            const waitSec = sv.retryAfterMs != null ? Math.round(sv.retryAfterMs / 1000) : '?';
+            this.eventBus.emitAutoModeEvent('auto_mode_progress', {
+              featureId,
+              branchName,
+              content: `Rate limited — waiting ${waitSec}s before resuming (attempt ${sv.attempt ?? '?'})`,
+            });
+          } else if (sv.status === 'stalled') {
+            this.eventBus.emitAutoModeEvent('auto_mode_progress', {
+              featureId,
+              branchName,
+              content: `Stream stalled — resuming with session ID (attempt ${sv.attempt ?? '?'})`,
+            });
+          } else if (sv.status === 'reconnecting') {
+            this.eventBus.emitAutoModeEvent('auto_mode_progress', {
+              featureId,
+              branchName,
+              content: `Connection lost — reconnecting (attempt ${sv.attempt ?? '?'})`,
+            });
+          } else if (sv.status === 'resumed') {
+            this.eventBus.emitAutoModeEvent('auto_mode_progress', {
+              featureId,
+              branchName,
+              content: `Resumed stream successfully`,
+            });
+          }
+          continue;
         }
         if (msg.type === 'assistant' && msg.message?.content) {
           for (const b of msg.message.content) {
@@ -718,12 +808,15 @@ export class AgentExecutor {
             version: planVersion,
           });
           let revText = '';
-          for await (const msg of provider.executeQuery(
-            this.buildExecOpts(options, revPrompt, sdkOptions?.maxTurns ?? DEFAULT_MAX_TURNS)
+          for await (const msg of superviseQuery(
+            provider,
+            this.buildExecOpts(options, revPrompt, sdkOptions?.maxTurns ?? DEFAULT_MAX_TURNS),
+            DEFAULT_SUPERVISOR_POLICY
           )) {
             if (msg.session_id && msg.session_id !== options.sdkSessionId) {
               options.sdkSessionId = msg.session_id;
             }
+            if (msg.type === 'supervisor_status') continue; // no content, skip
             if (msg.type === 'assistant' && msg.message?.content)
               for (const b of msg.message.content)
                 if (b.type === 'text') {
@@ -839,12 +932,15 @@ export class AgentExecutor {
       .replace(/\{\{userFeedback\}\}/g, userFeedback || '')
       .replace(/\{\{approvedPlan\}\}/g, planContent);
     let responseText = initialResponseText;
-    for await (const msg of provider.executeQuery(
-      this.buildExecOpts(options, contPrompt, options.sdkOptions?.maxTurns ?? DEFAULT_MAX_TURNS)
+    for await (const msg of superviseQuery(
+      provider,
+      this.buildExecOpts(options, contPrompt, options.sdkOptions?.maxTurns ?? DEFAULT_MAX_TURNS),
+      DEFAULT_SUPERVISOR_POLICY
     )) {
       if (msg.session_id && msg.session_id !== options.sdkSessionId) {
         options.sdkSessionId = msg.session_id;
       }
+      if (msg.type === 'supervisor_status') continue; // no content, skip
       if (msg.type === 'assistant' && msg.message?.content)
         for (const b of msg.message.content) {
           if (b.type === 'text') {
