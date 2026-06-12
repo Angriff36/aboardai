@@ -88,6 +88,8 @@ import { createEventHistoryRoutes } from './routes/event-history/index.js';
 import { getEventHistoryService } from './services/event-history-service.js';
 import { getTestRunnerService } from './services/test-runner-service.js';
 import { createProjectsRoutes } from './routes/projects/index.js';
+import { GroupService } from './services/group-service.js';
+import { createGroupRoutes } from './routes/groups/index.js';
 
 // Load environment variables
 dotenv.config();
@@ -341,6 +343,16 @@ const featureLoader = new FeatureLoader();
 
 // Auto-mode services: compatibility layer provides old interface while using new architecture
 const autoModeService = new AutoModeServiceCompat(events, settingsService, featureLoader);
+
+// Task group service: per-project registry of {engine, store, queue} instances
+const groupService = new GroupService(
+  (projectPath, featureId, useWorktrees, isAutoMode) =>
+    autoModeService.executeFeature(projectPath, featureId, useWorktrees, isAutoMode),
+  (projectPath, featureId) => featureLoader.get(projectPath, featureId),
+  (projectPath) => featureLoader.getAll(projectPath),
+  events
+);
+
 const claudeUsageService = new ClaudeUsageService();
 const codexAppServerService = new CodexAppServerService();
 const codexModelCacheService = new CodexModelCacheService(DATA_DIR, codexAppServerService);
@@ -451,6 +463,15 @@ eventHookService.initialize(events, settingsService, eventHistoryService, featur
           });
         }
         logger.info('[STARTUP] Initiated background resume of interrupted features');
+
+        // Resume running task groups (boot recovery: requeueStaleChildren + restart drive loops).
+        // Co-located with resumeInterruptedFeatures as both are crash-recovery boot hooks.
+        for (const project of globalSettings.projects) {
+          groupService.resumeProject(project.path).catch((err) => {
+            logger.warn(`[STARTUP] Failed to resume groups for ${project.path}:`, err);
+          });
+        }
+        logger.info('[STARTUP] Initiated background resume of task groups');
       }
     } catch (err) {
       logger.warn('[STARTUP] Failed to reconcile feature states:', err);
@@ -495,6 +516,7 @@ app.use(
   createFeaturesRoutes(featureLoader, settingsService, events, autoModeService)
 );
 app.use('/api/auto-mode', createAutoModeRoutes(autoModeService));
+app.use('/api/groups', createGroupRoutes(groupService, featureLoader));
 app.use('/api/enhance-prompt', createEnhancePromptRoutes(settingsService));
 app.use('/api/worktree', createWorktreeRoutes(events, settingsService, featureLoader));
 app.use('/api/git', createGitRoutes());

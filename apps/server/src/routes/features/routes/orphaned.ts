@@ -5,7 +5,6 @@
  */
 
 import crypto from 'crypto';
-import path from 'path';
 import type { Request, Response } from 'express';
 import { FeatureLoader } from '../../../services/feature-loader.js';
 import type { AutoModeServiceCompat } from '../../../services/auto-mode/index.js';
@@ -13,6 +12,7 @@ import { getErrorMessage, logError } from '../common.js';
 import { execGitCommand } from '../../../lib/git.js';
 import { deleteWorktreeMetadata } from '../../../lib/worktree-metadata.js';
 import { createLogger } from '@aboardai/utils';
+import { ensureWorktree } from '../../../services/worktree-creation.js';
 
 const logger = createLogger('OrphanedFeatures');
 
@@ -141,34 +141,24 @@ async function resolveOrphanedFeature(
           return { featureId, success: false, error: 'Feature has no branch name to recreate' };
         }
 
-        const sanitizedName = missingBranch.replace(/[^a-zA-Z0-9_-]/g, '-');
+        // Compute a stable suffix (same as the old logic) so the dir name is
+        // predictable for orphaned recovery, while routing through the guarded
+        // ensureWorktree (mutex + EEXIST fallback).
         const hash = crypto.createHash('sha1').update(missingBranch).digest('hex').slice(0, 8);
-        const worktreesDir = path.join(projectPath, '.worktrees');
-        const worktreePath = path.join(worktreesDir, `${sanitizedName}-${hash}`);
 
         try {
-          await execGitCommand(['worktree', 'add', '-b', missingBranch, worktreePath], projectPath);
+          const result = await ensureWorktree(projectPath, missingBranch, { dirSuffix: hash });
+          logger.info(
+            `Worktree for orphaned feature ${featureId} at ${result.path} (branch: ${missingBranch}, isNew: ${result.isNew})`
+          );
+          return { featureId, success: true, action: 'worktree-created' };
         } catch (error) {
-          const msg = getErrorMessage(error);
-          if (msg.includes('already exists')) {
-            try {
-              await execGitCommand(['worktree', 'add', worktreePath, missingBranch], projectPath);
-            } catch (innerError) {
-              return {
-                featureId,
-                success: false,
-                error: `Failed to create worktree: ${getErrorMessage(innerError)}`,
-              };
-            }
-          } else {
-            return { featureId, success: false, error: `Failed to create worktree: ${msg}` };
-          }
+          return {
+            featureId,
+            success: false,
+            error: `Failed to create worktree: ${getErrorMessage(error)}`,
+          };
         }
-
-        logger.info(
-          `Created worktree for orphaned feature ${featureId} at ${worktreePath} (branch: ${missingBranch})`
-        );
-        return { featureId, success: true, action: 'worktree-created' };
       }
 
       case 'move-to-branch': {
