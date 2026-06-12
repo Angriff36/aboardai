@@ -17,6 +17,7 @@ export type {
   McpStdioServerConfig,
   McpSSEServerConfig,
   McpHttpServerConfig,
+  McpSdkServerConfig,
   AgentDefinition,
   ReasoningEffort,
   // System prompt configuration for CLAUDE.md auto-loading

@@ -26,6 +26,7 @@ import { createLogger, loadContextFiles, classifyError } from '@aboardai/utils';
 import { getFeatureDir } from '@aboardai/platform';
 import * as secureFs from '../../lib/secure-fs.js';
 import { validateWorkingDirectory, createAutoModeOptions } from '../../lib/sdk-options.js';
+import { createAboardaiToolsServer } from '../../lib/agent-tools.js';
 import {
   getPromptCustomization,
   resolveProviderContext,
@@ -297,6 +298,17 @@ export class AutoModeServiceFacade {
         } catch {
           // MCP servers are optional - continue without them
         }
+
+        // Inject the AboardAI in-process tool server so the agent can call
+        // mcp__aboardai__update_feature_status / mcp__aboardai__get_feature.
+        // bypassPermissions mode auto-permits these — no allowedTools entry needed.
+        const aboardaiServer = createAboardaiToolsServer({
+          updateFeatureStatus: (projPath, featureId, status) =>
+            featureStateManager.updateFeatureStatus(projPath, featureId, status),
+          getFeature: (projPath, featureId) => featureLoader.get(projPath, featureId),
+          projectPath: pPath,
+        });
+        mcpServers = { ...mcpServers, aboardai: aboardaiServer };
 
         // Read user-configured max turns from settings
         const userMaxTurns = await getDefaultMaxTurnsSetting(settingsService, '[AutoModeFacade]');
