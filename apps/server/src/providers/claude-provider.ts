@@ -6,6 +6,7 @@
  */
 
 import { query, type Options, type SDKUserMessage } from '@anthropic-ai/claude-agent-sdk';
+import type { ContentBlockParam } from '@anthropic-ai/sdk/resources';
 import { BaseProvider } from './base-provider.js';
 import { classifyError, getUserFriendlyErrorMessage, createLogger } from '@aboardai/utils';
 import { getClaudeAuthIndicators } from '@aboardai/platform';
@@ -49,6 +50,12 @@ const SYSTEM_ENV_VARS = [
   'XDG_DATA_HOME',
   'XDG_CACHE_HOME',
   'XDG_STATE_HOME',
+  // Windows-specific vars required by Claude CLI for config/temp resolution
+  'APPDATA',
+  'LOCALAPPDATA',
+  'USERPROFILE',
+  'TEMP',
+  'SystemRoot',
 ];
 
 /**
@@ -262,7 +269,7 @@ export class ClaudeProvider extends BaseProvider {
           session_id: sdkSessionId || '',
           message: {
             role: 'user' as const,
-            content: prompt,
+            content: prompt as ContentBlockParam[],
           },
           parent_tool_use_id: null,
         };

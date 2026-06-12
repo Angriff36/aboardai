@@ -134,7 +134,10 @@ const DEFAULT_ALLOWED_TOOLS = [
   'Bash',
   'WebSearch',
   'WebFetch',
-  'TodoWrite',
+  'TaskCreate',
+  'TaskUpdate',
+  'TaskGet',
+  'TaskList',
   'Task',
   'Skill',
 ] as const;

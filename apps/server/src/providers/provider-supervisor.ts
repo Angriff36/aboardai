@@ -169,7 +169,7 @@ export async function* superviseQuery(
       messageLoop: while (true) {
         // Check abort before waiting
         if (signal?.aborted) {
-          iterator.return?.();
+          iterator.return?.(undefined);
           return;
         }
 
@@ -202,13 +202,13 @@ export async function* superviseQuery(
             if (stallTimerId !== null) clearTimeout(stallTimerId);
             abortCleanup();
             // Fire-and-forget: don't await, since the iterator may be stuck awaiting a sleep
-            iterator.return?.();
+            iterator.return?.(undefined);
             return;
           }
           if (msg === STALL_ERR) {
             // Stall detected — fire-and-forget cleanup (stuck in sleep)
             abortCleanup();
-            iterator.return?.();
+            iterator.return?.(undefined);
             outcome = 'stalled';
             break messageLoop;
           }
@@ -244,13 +244,13 @@ export async function* superviseQuery(
           );
 
           if (FATAL_TYPES.has(resultClassification.type)) {
-            await iterator.return?.();
+            await iterator.return?.(undefined);
             yield* emitStatus({ type: 'supervisor_status', status: 'fatal', attempt });
             throw attemptError;
           }
 
           // Retryable error result
-          await iterator.return?.();
+          await iterator.return?.(undefined);
           outcome = 'error_result';
           lastError = attemptError;
           break messageLoop;
@@ -266,7 +266,7 @@ export async function* superviseQuery(
       lastError = err;
 
       try {
-        await iterator.return?.();
+        await iterator.return?.(undefined);
       } catch {
         /* ignore */
       }

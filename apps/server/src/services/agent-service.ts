@@ -498,7 +498,10 @@ export class AgentService {
         'Bash',
         'WebSearch',
         'WebFetch',
-        'TodoWrite',
+        'TaskCreate',
+        'TaskUpdate',
+        'TaskGet',
+        'TaskList',
       ];
 
       if (allowedTools) {
