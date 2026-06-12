@@ -1,0 +1,95 @@
+{
+  "description": "phase-marker + summary-extraction: PHASE_COMPLETE mid-stream; summary tag emitted at finalize()",
+  "input": [
+    {
+      "type": "assistant",
+      "session_id": "session-phase-001",
+      "message": {
+        "role": "assistant",
+        "content": [
+          { "type": "text", "text": "Phase 2 is now complete. [PHASE_COMPLETE] Phase 2\n" }
+        ]
+      }
+    },
+    {
+      "type": "assistant",
+      "session_id": "session-phase-001",
+      "message": {
+        "role": "assistant",
+        "content": [
+          {
+            "type": "text",
+            "text": "<summary>Successfully completed phase 2 implementation.</summary>"
+          }
+        ]
+      }
+    },
+    {
+      "type": "result",
+      "subtype": "success",
+      "session_id": "session-phase-001",
+      "result": "Phase complete"
+    }
+  ],
+  "expected": [
+    {
+      "v": 1,
+      "id": "__monotonic__",
+      "ts": "__any__",
+      "kind": "session",
+      "provider": "claude",
+      "featureId": "feat-005",
+      "sessionId": "session-phase-001"
+    },
+    {
+      "v": 1,
+      "id": "__monotonic__",
+      "ts": "__any__",
+      "kind": "agent_message",
+      "provider": "claude",
+      "featureId": "feat-005",
+      "text": "Phase 2 is now complete. [PHASE_COMPLETE] Phase 2\n"
+    },
+    {
+      "v": 1,
+      "id": "__monotonic__",
+      "ts": "__any__",
+      "kind": "task_marker",
+      "provider": "claude",
+      "featureId": "feat-005",
+      "marker": {
+        "type": "phase_complete",
+        "phase": 2
+      }
+    },
+    {
+      "v": 1,
+      "id": "__monotonic__",
+      "ts": "__any__",
+      "kind": "agent_message",
+      "provider": "claude",
+      "featureId": "feat-005",
+      "text": "<summary>Successfully completed phase 2 implementation.</summary>"
+    },
+    {
+      "v": 1,
+      "id": "__monotonic__",
+      "ts": "__any__",
+      "kind": "result",
+      "provider": "claude",
+      "featureId": "feat-005",
+      "result": { "subtype": "success", "isError": false }
+    }
+  ],
+  "expectedFromFinalize": [
+    {
+      "v": 1,
+      "id": "__monotonic__",
+      "ts": "__any__",
+      "kind": "summary",
+      "provider": "claude",
+      "featureId": "feat-005",
+      "text": "Successfully completed phase 2 implementation."
+    }
+  ]
+}

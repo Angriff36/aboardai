@@ -1,0 +1,94 @@
+{
+  "description": "claude-basic: system init (session) → assistant text → tool_use(Read) → tool_result → result(success)",
+  "input": [
+    {
+      "type": "assistant",
+      "session_id": "session-abc-123",
+      "message": {
+        "role": "assistant",
+        "content": [{ "type": "text", "text": "I'll help you with that." }]
+      }
+    },
+    {
+      "type": "assistant",
+      "session_id": "session-abc-123",
+      "message": {
+        "role": "assistant",
+        "content": [
+          {
+            "type": "tool_use",
+            "name": "Read",
+            "tool_use_id": "tu-001",
+            "input": { "file_path": "/src/index.ts" }
+          }
+        ]
+      }
+    },
+    {
+      "type": "user",
+      "message": {
+        "role": "user",
+        "content": [
+          {
+            "type": "tool_result",
+            "tool_use_id": "tu-001",
+            "content": "export const main = () => {};"
+          }
+        ]
+      }
+    },
+    {
+      "type": "result",
+      "subtype": "success",
+      "session_id": "session-abc-123",
+      "result": "Done"
+    }
+  ],
+  "expected": [
+    {
+      "v": 1,
+      "id": "__monotonic__",
+      "ts": "__any__",
+      "kind": "session",
+      "provider": "claude",
+      "featureId": "feat-001",
+      "sessionId": "session-abc-123"
+    },
+    {
+      "v": 1,
+      "id": "__monotonic__",
+      "ts": "__any__",
+      "kind": "agent_message",
+      "provider": "claude",
+      "featureId": "feat-001",
+      "text": "I'll help you with that."
+    },
+    {
+      "v": 1,
+      "id": "__monotonic__",
+      "ts": "__any__",
+      "kind": "tool_use",
+      "provider": "claude",
+      "featureId": "feat-001",
+      "tool": { "name": "Read", "toolUseId": "tu-001" }
+    },
+    {
+      "v": 1,
+      "id": "__monotonic__",
+      "ts": "__any__",
+      "kind": "tool_result",
+      "provider": "claude",
+      "featureId": "feat-001",
+      "text": "export const main = () => {};"
+    },
+    {
+      "v": 1,
+      "id": "__monotonic__",
+      "ts": "__any__",
+      "kind": "result",
+      "provider": "claude",
+      "featureId": "feat-001",
+      "result": { "subtype": "success", "isError": false }
+    }
+  ]
+}

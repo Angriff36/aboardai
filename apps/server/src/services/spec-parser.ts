@@ -249,3 +249,55 @@ export function extractSummary(text: string): string | null {
 
   return null;
 }
+
+// ---------------------------------------------------------------------------
+// Incremental / streaming helpers (additive — do NOT modify the detect* fns above)
+// ---------------------------------------------------------------------------
+
+/**
+ * Find ALL [TASK_START] occurrences in `text` (for incremental buffer scanning).
+ * Reuses the same regex source as detectTaskStartMarker.
+ */
+export function detectAllTaskStartMarkers(text: string): Array<{ taskId: string }> {
+  const re = /\[TASK_START\]\s*(T\d{3})/g;
+  const results: Array<{ taskId: string }> = [];
+  let m: RegExpExecArray | null;
+  while ((m = re.exec(text)) !== null) {
+    results.push({ taskId: m[1] });
+  }
+  return results;
+}
+
+/**
+ * Find ALL [TASK_COMPLETE] occurrences in `text` (for incremental buffer scanning).
+ * Reuses the same regex source as detectTaskCompleteMarker.
+ */
+export function detectAllTaskCompleteMarkers(
+  text: string
+): Array<{ taskId: string; summary?: string }> {
+  const re = /\[TASK_COMPLETE\]\s*(T\d{3})(?::\s*(.+?))?(?=\n|$)/gi;
+  const results: Array<{ taskId: string; summary?: string }> = [];
+  let m: RegExpExecArray | null;
+  while ((m = re.exec(text)) !== null) {
+    let summary = m[2]?.trim();
+    if (summary) {
+      summary = summary.replace(/\s*\[TASK_[A-Z_]+\].*$/i, '').trim();
+    }
+    results.push({ taskId: m[1], summary: summary || undefined });
+  }
+  return results;
+}
+
+/**
+ * Find ALL [PHASE_COMPLETE] occurrences in `text` (for incremental buffer scanning).
+ * Reuses the same regex source as detectPhaseCompleteMarker.
+ */
+export function detectAllPhaseCompleteMarkers(text: string): Array<{ phase: number }> {
+  const re = /\[PHASE_COMPLETE\]\s*Phase\s*(\d+)/gi;
+  const results: Array<{ phase: number }> = [];
+  let m: RegExpExecArray | null;
+  while ((m = re.exec(text)) !== null) {
+    results.push({ phase: parseInt(m[1], 10) });
+  }
+  return results;
+}

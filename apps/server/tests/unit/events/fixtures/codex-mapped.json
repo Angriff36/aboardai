@@ -1,0 +1,112 @@
+{
+  "description": "codex-mapped: ProviderMessages as Codex provider actually yields them — tool_use(Bash from command_execution) + tool_result + thinking + result",
+  "input": [
+    {
+      "type": "assistant",
+      "message": {
+        "role": "assistant",
+        "content": [
+          {
+            "type": "thinking",
+            "thinking": "I should run ls to see the files."
+          }
+        ]
+      }
+    },
+    {
+      "type": "assistant",
+      "message": {
+        "role": "assistant",
+        "content": [
+          {
+            "type": "tool_use",
+            "name": "Bash",
+            "tool_use_id": "cmd-1",
+            "input": { "command": "ls -la" }
+          }
+        ]
+      }
+    },
+    {
+      "type": "assistant",
+      "message": {
+        "role": "assistant",
+        "content": [
+          {
+            "type": "tool_result",
+            "tool_use_id": "cmd-1",
+            "content": "total 24\ndrwxr-xr-x  3 user group 96 Jan 1 00:00 ."
+          }
+        ]
+      }
+    },
+    {
+      "type": "assistant",
+      "message": {
+        "role": "assistant",
+        "content": [{ "type": "text", "text": "The directory has 3 items." }]
+      }
+    },
+    {
+      "type": "result",
+      "subtype": "success",
+      "result": "Listed directory successfully"
+    }
+  ],
+  "expected": [
+    {
+      "v": 1,
+      "id": "__monotonic__",
+      "ts": "__any__",
+      "kind": "thinking",
+      "provider": "codex",
+      "featureId": "feat-008",
+      "thinkingChars": 33
+    },
+    {
+      "v": 1,
+      "id": "__monotonic__",
+      "ts": "__any__",
+      "kind": "tool_use",
+      "provider": "codex",
+      "featureId": "feat-008",
+      "tool": { "name": "Bash", "toolUseId": "cmd-1" }
+    },
+    {
+      "v": 1,
+      "id": "__monotonic__",
+      "ts": "__any__",
+      "kind": "command_run",
+      "provider": "codex",
+      "featureId": "feat-008",
+      "command": { "command": "ls -la" }
+    },
+    {
+      "v": 1,
+      "id": "__monotonic__",
+      "ts": "__any__",
+      "kind": "tool_result",
+      "provider": "codex",
+      "featureId": "feat-008",
+      "text": "total 24\ndrwxr-xr-x  3 user group 96 Jan 1 00:00 ."
+    },
+    {
+      "v": 1,
+      "id": "__monotonic__",
+      "ts": "__any__",
+      "kind": "agent_message",
+      "provider": "codex",
+      "featureId": "feat-008",
+      "text": "The directory has 3 items."
+    },
+    {
+      "v": 1,
+      "id": "__monotonic__",
+      "ts": "__any__",
+      "kind": "result",
+      "provider": "codex",
+      "featureId": "feat-008",
+      "result": { "subtype": "success", "isError": false }
+    }
+  ]
+}

@@ -1,0 +1,95 @@
+{
+  "description": "cursor-mapped: ProviderMessages as Cursor provider yields — tool_use+tool_result in same message (completed subtype), result",
+  "input": [
+    {
+      "type": "assistant",
+      "session_id": "cursor-session-001",
+      "message": {
+        "role": "assistant",
+        "content": [{ "type": "text", "text": "I'll edit the file for you." }]
+      }
+    },
+    {
+      "type": "assistant",
+      "session_id": "cursor-session-001",
+      "message": {
+        "role": "assistant",
+        "content": [
+          {
+            "type": "tool_use",
+            "name": "Write",
+            "tool_use_id": "cursor-call-001",
+            "input": { "file_path": "/src/app.ts", "content": "export const app = {};" }
+          },
+          {
+            "type": "tool_result",
+            "tool_use_id": "cursor-call-001",
+            "content": "File written successfully"
+          }
+        ]
+      }
+    },
+    {
+      "type": "result",
+      "subtype": "success",
+      "session_id": "cursor-session-001",
+      "result": "Task completed"
+    }
+  ],
+  "expected": [
+    {
+      "v": 1,
+      "id": "__monotonic__",
+      "ts": "__any__",
+      "kind": "session",
+      "provider": "cursor",
+      "featureId": "feat-009",
+      "sessionId": "cursor-session-001"
+    },
+    {
+      "v": 1,
+      "id": "__monotonic__",
+      "ts": "__any__",
+      "kind": "agent_message",
+      "provider": "cursor",
+      "featureId": "feat-009",
+      "text": "I'll edit the file for you."
+    },
+    {
+      "v": 1,
+      "id": "__monotonic__",
+      "ts": "__any__",
+      "kind": "tool_use",
+      "provider": "cursor",
+      "featureId": "feat-009",
+      "tool": { "name": "Write", "toolUseId": "cursor-call-001" }
+    },
+    {
+      "v": 1,
+      "id": "__monotonic__",
+      "ts": "__any__",
+      "kind": "file_edit",
+      "provider": "cursor",
+      "featureId": "feat-009",
+      "file": { "path": "/src/app.ts", "tool": "Write" }
+    },
+    {
+      "v": 1,
+      "id": "__monotonic__",
+      "ts": "__any__",
+      "kind": "tool_result",
+      "provider": "cursor",
+      "featureId": "feat-009",
+      "text": "File written successfully"
+    },
+    {
+      "v": 1,
+      "id": "__monotonic__",
+      "ts": "__any__",
+      "kind": "result",
+      "provider": "cursor",
+      "featureId": "feat-009",
+      "result": { "subtype": "success", "isError": false }
+    }
+  ]
+}
