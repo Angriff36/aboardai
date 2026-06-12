@@ -206,14 +206,16 @@ export function GroupsPanel({ projectPath, features, branchSuggestions }: Groups
         </div>
       )}
 
-      <CreateGroupDialog
-        open={showCreateDialog}
-        onOpenChange={setShowCreateDialog}
-        onCreated={handleCreated}
-        projectPath={projectPath}
-        features={dialogFeatures}
-        branchSuggestions={branchSuggestions}
-      />
+      {showCreateDialog && (
+        <CreateGroupDialog
+          open={showCreateDialog}
+          onOpenChange={setShowCreateDialog}
+          onCreated={handleCreated}
+          projectPath={projectPath}
+          features={dialogFeatures}
+          branchSuggestions={branchSuggestions}
+        />
+      )}
     </div>
   );
 }

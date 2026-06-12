@@ -267,7 +267,7 @@ export default defineConfig(({ command }) => {
           replacement: path.resolve(__dirname, '../../node_modules/react') + '/',
         },
       ],
-      dedupe: ['react', 'react-dom', 'zustand', 'use-sync-external-store', '@xyflow/react'],
+      dedupe: ['react', 'react-dom', 'zustand', 'use-sync-external-store', '@xyflow/react', '@radix-ui/react-slider'],
     },
     server: {
       host: process.env.HOST || '0.0.0.0',
@@ -364,6 +364,14 @@ export default defineConfig(({ command }) => {
       // the same React instance as the rest of the app. The nested zustand@4 inside
       // @xyflow/react uses use-sync-external-store/shim/with-selector which does
       // require('react') — both the base and subpath must be included here.
+      //
+      // @radix-ui/react-slider MUST be listed here: it imports @radix-ui/react-context,
+      // which captures `React = __toESM(require_react())` at module scope. If Vite
+      // discovers this package on-demand mid-render (because it wasn't pre-bundled at
+      // dev-server startup), React's CJS module can be mid-swap during HMR and the
+      // captured reference is null — causing "Cannot read properties of null (reading
+      // 'useContext')" from Radix's createContextScope. Pre-bundling here forces Vite to
+      // resolve it at startup before any render occurs.
       include: [
         'react',
         'react-dom',
@@ -374,6 +382,7 @@ export default defineConfig(({ command }) => {
         'use-sync-external-store/shim/with-selector',
         'zustand',
         '@xyflow/react',
+        '@radix-ui/react-slider',
       ],
     },
     define: {
