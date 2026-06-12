@@ -267,7 +267,40 @@ export default defineConfig(({ command }) => {
           replacement: path.resolve(__dirname, '../../node_modules/react') + '/',
         },
       ],
-      dedupe: ['react', 'react-dom', 'zustand', 'use-sync-external-store', '@xyflow/react', '@radix-ui/react-slider'],
+      // Every entry here prevents a duplicate-React-copy race on cold dep-cache start.
+      // Pattern: if a package captures React via CJS require() at module scope and
+      // Vite discovers it mid-render (not pre-bundled at startup), the captured
+      // reference can be null → "Cannot read properties of null (reading 'useContext')".
+      //
+      // @tanstack/react-router: confirmed null-dispatcher on /dashboard (useRouter →
+      // useContext on cold start) — dashboard-view.tsx:69.
+      // @tanstack/react-query: same CJS capture pattern, same family.
+      // @radix-ui/*: all use @radix-ui/react-context which does the same capture;
+      // @radix-ui/react-slider was already fixed; the remaining 13 primitives imported
+      // in src/ are added here to prevent the same crash on other routes.
+      dedupe: [
+        'react',
+        'react-dom',
+        'zustand',
+        'use-sync-external-store',
+        '@xyflow/react',
+        '@tanstack/react-router',
+        '@tanstack/react-query',
+        '@radix-ui/react-checkbox',
+        '@radix-ui/react-collapsible',
+        '@radix-ui/react-dialog',
+        '@radix-ui/react-dropdown-menu',
+        '@radix-ui/react-label',
+        '@radix-ui/react-popover',
+        '@radix-ui/react-radio-group',
+        '@radix-ui/react-scroll-area',
+        '@radix-ui/react-select',
+        '@radix-ui/react-slider',
+        '@radix-ui/react-slot',
+        '@radix-ui/react-switch',
+        '@radix-ui/react-tabs',
+        '@radix-ui/react-tooltip',
+      ],
     },
     server: {
       host: process.env.HOST || '0.0.0.0',
@@ -360,6 +393,21 @@ export default defineConfig(({ command }) => {
     },
     optimizeDeps: {
       exclude: ['@aboardai/platform'],
+      // noDiscovery: true — the key fix for null-dispatcher crashes on lazy route loads.
+      //
+      // Root cause: when a lazy route is dynamically imported (e.g. terminal.lazy.tsx,
+      // board.lazy.tsx), Vite scans it for new deps and triggers a mid-render
+      // re-optimization run. Each re-run issues a new browserHash for the entire dep set.
+      // Packages pre-bundled at startup (like @tanstack/react-router) get a new
+      // ?v=<hash> URL, but the React CJS shared chunk they reference retains the OLD hash
+      // — or vice versa — producing a version mismatch. When the mismatched React CJS
+      // chunk is evaluated in a different module scope, useContext returns null and any
+      // hook call crashes: "Cannot read properties of null (reading 'useContext')".
+      //
+      // noDiscovery: true tells Vite to ONLY optimize the packages in `include` and
+      // never add new packages at runtime. No runtime re-optimization = no hash mismatch.
+      // All packages that need pre-bundling must be explicitly listed in `include` below.
+      //
       // Pre-bundle CJS packages that use require('react') so the CJS interop resolves to
       // the same React instance as the rest of the app. The nested zustand@4 inside
       // @xyflow/react uses use-sync-external-store/shim/with-selector which does
@@ -372,17 +420,67 @@ export default defineConfig(({ command }) => {
       // captured reference is null — causing "Cannot read properties of null (reading
       // 'useContext')" from Radix's createContextScope. Pre-bundling here forces Vite to
       // resolve it at startup before any render occurs.
+      noDiscovery: true,
       include: [
         'react',
         'react-dom',
+        'react-dom/client',
         'react/jsx-runtime',
         'react/jsx-dev-runtime',
         'use-sync-external-store',
         'use-sync-external-store/shim',
         'use-sync-external-store/shim/with-selector',
         'zustand',
+        'zustand/middleware',
+        'zustand/react/shallow',
         '@xyflow/react',
+        // @tanstack/react-router + sub-deps: null-dispatcher on /dashboard and /terminal
+        // cold-start (useRouter/useSearch → useContext). noDiscovery prevents lazy route
+        // loads from triggering re-optimization and invalidating these pre-bundled chunks.
+        '@tanstack/react-router',
+        '@tanstack/react-query',
+        '@tanstack/react-query-devtools',
+        '@tanstack/react-query-persist-client',
+        // All @radix-ui/* primitives imported in src/ — each uses @radix-ui/react-context
+        // which captures React at module scope; same null-dispatcher failure mode as
+        // @radix-ui/react-slider (already fixed). Listed exhaustively to kill the
+        // whole class, not just today's instance.
+        '@radix-ui/react-checkbox',
+        '@radix-ui/react-collapsible',
+        '@radix-ui/react-dialog',
+        '@radix-ui/react-dropdown-menu',
+        '@radix-ui/react-label',
+        '@radix-ui/react-popover',
+        '@radix-ui/react-radio-group',
+        '@radix-ui/react-scroll-area',
+        '@radix-ui/react-select',
         '@radix-ui/react-slider',
+        '@radix-ui/react-slot',
+        '@radix-ui/react-switch',
+        '@radix-ui/react-tabs',
+        '@radix-ui/react-tooltip',
+        // Other deps used across routes — include so noDiscovery doesn't leave them
+        // un-optimized (Vite would serve them as raw node_modules files otherwise,
+        // which still works but bypasses the single-copy guarantee).
+        'sonner',
+        'react-resizable-panels',
+        'lucide-react',
+        'cmdk',
+        'idb-keyval',
+        'usehooks-ts',
+        'dagre',
+        'class-variance-authority',
+        'clsx',
+        'tailwind-merge',
+        'react-markdown',
+        'remark-gfm',
+        'rehype-raw',
+        'rehype-sanitize',
+        '@dnd-kit/core',
+        '@dnd-kit/sortable',
+        '@dnd-kit/utilities',
+        '@uiw/react-codemirror',
+        'zod',
       ],
     },
     define: {

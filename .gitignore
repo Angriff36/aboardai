@@ -114,3 +114,6 @@ data/
 .mcp.json
 .planning
 .bg-shell/
+
+# Playwright MCP session artifacts (screenshots, console logs, page snapshots)
+.playwright-mcp/
