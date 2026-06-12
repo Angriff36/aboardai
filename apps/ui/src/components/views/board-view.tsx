@@ -75,6 +75,7 @@ import { CommitWorktreeDialog } from './board-view/dialogs/commit-worktree-dialo
 import { CreatePRDialog } from './board-view/dialogs/create-pr-dialog';
 import { CreateBranchDialog } from './board-view/dialogs/create-branch-dialog';
 import { WorktreePanel } from './board-view/worktree-panel';
+import { GroupsPanel } from './board-view/groups-panel';
 import type {
   PRInfo,
   WorktreeInfo,
@@ -1965,6 +1966,17 @@ export function BoardView({ initialFeatureId, initialProjectPath }: BoardViewPro
               }))}
             />
           )}
+
+          <GroupsPanel
+            projectPath={currentProject.path}
+            features={hookFeatures.map((f) => ({
+              id: f.id,
+              title: f.title || '',
+              description: f.description,
+              status: f.status || '',
+            }))}
+            branchSuggestions={branchSuggestions}
+          />
 
           {/* Main Content Area */}
           <div className="flex-1 flex flex-col overflow-hidden">

@@ -48,7 +48,13 @@ import type {
   ZaiUsageResponse,
 } from '@/store/app-store';
 import type { WorktreeAPI, GitAPI, ModelDefinition, ProviderStatus } from '@/types/electron';
-import type { ModelId, ThinkingLevel, ReasoningEffort, Feature } from '@aboardai/types';
+import type {
+  ModelId,
+  ThinkingLevel,
+  ReasoningEffort,
+  Feature,
+  TaskGroupSnapshot,
+} from '@aboardai/types';
 import { getGlobalFileBrowser } from '@/contexts/file-browser-context';
 
 const logger = createLogger('HttpClient');
@@ -602,7 +608,8 @@ type EventType =
   | 'test-runner:started'
   | 'test-runner:output'
   | 'test-runner:completed'
-  | 'notification:created';
+  | 'notification:created'
+  | 'group:event';
 
 /**
  * Dev server log event payloads for WebSocket streaming
@@ -2223,6 +2230,52 @@ export class HttpApiClient implements ElectronAPI {
       this.post('/api/auto-mode/resume-interrupted', { projectPath }),
     onEvent: (callback: (event: AutoModeEvent) => void) => {
       return this.subscribeToEvent('auto-mode:event', callback as EventCallback);
+    },
+  };
+
+  // Groups API
+  groups = {
+    create: (
+      projectPath: string,
+      name: string,
+      baseBranch: string | null,
+      maxConcurrency: number,
+      retryLimit: number,
+      featureIds: string[]
+    ): Promise<{ success: boolean; group?: TaskGroupSnapshot; error?: string; guard?: string }> =>
+      this.post('/api/groups/create', {
+        projectPath,
+        name,
+        baseBranch,
+        maxConcurrency,
+        retryLimit,
+        featureIds,
+      }),
+    list: (
+      projectPath: string
+    ): Promise<{ success: boolean; groups?: TaskGroupSnapshot[]; error?: string }> =>
+      this.get(`/api/groups/list?projectPath=${encodeURIComponent(projectPath)}`),
+    get: (
+      projectPath: string,
+      groupId: string
+    ): Promise<{ success: boolean; group?: TaskGroupSnapshot; error?: string }> =>
+      this.get(
+        `/api/groups/get?projectPath=${encodeURIComponent(projectPath)}&groupId=${encodeURIComponent(groupId)}`
+      ),
+    start: (
+      projectPath: string,
+      groupId: string
+    ): Promise<{ success: boolean; error?: string; guard?: string }> =>
+      this.post('/api/groups/start', { projectPath, groupId }),
+    cancel: (
+      projectPath: string,
+      groupId: string
+    ): Promise<{ success: boolean; error?: string; guard?: string }> =>
+      this.post('/api/groups/cancel', { projectPath, groupId }),
+    onGroupEvent: (
+      callback: (event: { projectPath: string; groupId: string; event: string }) => void
+    ): (() => void) => {
+      return this.subscribeToEvent('group:event', callback as EventCallback);
     },
   };
 
