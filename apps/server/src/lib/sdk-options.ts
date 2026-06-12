@@ -410,6 +410,7 @@ export type {
   McpStdioServerConfig,
   McpSSEServerConfig,
   McpHttpServerConfig,
+  McpSdkServerConfig,
 } from '@aboardai/types';
 
 /**

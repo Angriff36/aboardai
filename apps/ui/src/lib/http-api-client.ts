@@ -46,7 +46,7 @@ import type {
   CodexUsageResponse,
   GeminiUsage,
   ZaiUsageResponse,
-} from '@/store/app-store';
+} from '@/store/types';
 import type { WorktreeAPI, GitAPI, ModelDefinition, ProviderStatus } from '@/types/electron';
 import type {
   ModelId,

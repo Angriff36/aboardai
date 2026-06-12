@@ -13,7 +13,7 @@
   "scripts": {
     "dev": "tsx watch src/index.ts",
     "dev:test": "tsx src/index.ts",
-    "build": "tsc",
+    "build": "tsc && node -e \"const{cpSync}=require('fs');const{join}=require('path');const src=join('src','groups','taskgroup.manifest');const dst=join('dist','groups','taskgroup.manifest');try{cpSync(src,dst);console.log('[build] copied taskgroup.manifest')}catch(e){console.warn('[build] manifest copy:',e.message)}\"",
     "start": "node dist/index.js",
     "lint": "eslint src/",
     "test": "vitest",

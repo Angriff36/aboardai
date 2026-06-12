@@ -1,4 +1,4 @@
-import type { Project, TrashedProject } from '@/lib/electron';
+import type { Project, TrashedProject } from '@/lib/project-types';
 import type {
   ModelAlias,
   PlanningMode,

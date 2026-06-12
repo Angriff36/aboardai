@@ -106,10 +106,28 @@ export interface SystemPromptPreset {
 }
 
 /**
- * MCP server configuration types for SDK options
- * Matches the Claude Agent SDK's McpServerConfig types
+ * In-process SDK MCP server configuration.
+ * Returned by `createSdkMcpServer()` from `@anthropic-ai/claude-agent-sdk`.
+ * The `instance` field holds the live McpServer object and is accepted by the SDK's
+ * `Options.mcpServers` map. This is additive — serializable variants are unchanged.
  */
-export type McpServerConfig = McpStdioServerConfig | McpSSEServerConfig | McpHttpServerConfig;
+export interface McpSdkServerConfig {
+  type: 'sdk';
+  name: string;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  instance: any;
+}
+
+/**
+ * MCP server configuration types for SDK options
+ * Matches the Claude Agent SDK's McpServerConfig types.
+ * Includes McpSdkServerConfig for in-process servers created via `createSdkMcpServer()`.
+ */
+export type McpServerConfig =
+  | McpStdioServerConfig
+  | McpSSEServerConfig
+  | McpHttpServerConfig
+  | McpSdkServerConfig;
 
 /**
  * Stdio-based MCP server (subprocess)

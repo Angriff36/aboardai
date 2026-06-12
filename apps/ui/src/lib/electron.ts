@@ -5,7 +5,7 @@ import type {
   CodexUsageResponse,
   ZaiUsageResponse,
   GeminiUsageResponse,
-} from '@/store/app-store';
+} from '@/store/types';
 import type {
   IssueValidationVerdict,
   IssueValidationConfidence,
@@ -38,7 +38,19 @@ import type {
   IdeationAnalysisEvent,
 } from '@aboardai/types';
 import { DEFAULT_MAX_CONCURRENCY } from '@aboardai/types';
-import { getJSON, setJSON, removeItem } from './storage';
+// Project types re-exported for backward compat (types live in ./project-types)
+export type { Project, TrashedProject } from './project-types';
+// Project persistence fns re-exported for backward compat (live in ./project-persistence)
+export {
+  getStoredProjects,
+  saveProjects,
+  getCurrentProject,
+  setCurrentProject,
+  addProject,
+  removeProject,
+  getStoredTrashedProjects,
+  saveTrashedProjects,
+} from './project-persistence';
 
 // Re-export issue validation types for use in components
 export type {
@@ -1074,13 +1086,6 @@ const mockFeatures: Feature[] = [
     createdAt: new Date().toISOString(),
   },
 ];
-
-// Local storage keys
-const STORAGE_KEYS = {
-  PROJECTS: 'aboardai_projects',
-  CURRENT_PROJECT: 'aboardai_current_project',
-  TRASHED_PROJECTS: 'aboardai_trashed_projects',
-} as const;
 
 // Mock file system using localStorage
 const mockFileSystem: Record<string, string> = {};
@@ -4162,85 +4167,5 @@ function createMockGitHubAPI(): GitHubAPI {
   };
 }
 
-// Utility functions for project management
-
-export interface Project {
-  id: string;
-  name: string;
-  path: string;
-  lastOpened?: string;
-  theme?: string; // Per-project theme override (uses ThemeMode from app-store)
-  fontFamilySans?: string; // Per-project UI/sans font override
-  fontFamilyMono?: string; // Per-project code/mono font override
-  isFavorite?: boolean; // Pin project to top of dashboard
-  icon?: string; // Lucide icon name for project identification
-  customIconPath?: string; // Path to custom uploaded icon image in .aboardai/images/
-  /**
-   * Override the active Claude API profile for this project.
-   * - undefined: Use global setting (activeClaudeApiProfileId)
-   * - null: Explicitly use Direct Anthropic API (no profile)
-   * - string: Use specific profile by ID
-   * @deprecated Use phaseModelOverrides instead for per-phase model selection
-   */
-  activeClaudeApiProfileId?: string | null;
-  /**
-   * Per-phase model overrides for this project.
-   * Keys are phase names (e.g., 'enhancementModel'), values are PhaseModelEntry.
-   * If a phase is not present, the global setting is used.
-   */
-  phaseModelOverrides?: Partial<import('@aboardai/types').PhaseModelConfig>;
-  /**
-   * Override the default model for new feature cards in this project.
-   * If not specified, falls back to the global defaultFeatureModel setting.
-   */
-  defaultFeatureModel?: import('@aboardai/types').PhaseModelEntry;
-}
-
-export interface TrashedProject extends Project {
-  trashedAt: string;
-  deletedFromDisk?: boolean;
-}
-
-export const getStoredProjects = (): Project[] => {
-  return getJSON<Project[]>(STORAGE_KEYS.PROJECTS) ?? [];
-};
-
-export const saveProjects = (projects: Project[]): void => {
-  setJSON(STORAGE_KEYS.PROJECTS, projects);
-};
-
-export const getCurrentProject = (): Project | null => {
-  return getJSON<Project>(STORAGE_KEYS.CURRENT_PROJECT);
-};
-
-export const setCurrentProject = (project: Project | null): void => {
-  if (project) {
-    setJSON(STORAGE_KEYS.CURRENT_PROJECT, project);
-  } else {
-    removeItem(STORAGE_KEYS.CURRENT_PROJECT);
-  }
-};
-
-export const addProject = (project: Project): void => {
-  const projects = getStoredProjects();
-  const existing = projects.findIndex((p) => p.path === project.path);
-  if (existing >= 0) {
-    projects[existing] = { ...project, lastOpened: new Date().toISOString() };
-  } else {
-    projects.push({ ...project, lastOpened: new Date().toISOString() });
-  }
-  saveProjects(projects);
-};
-
-export const removeProject = (projectId: string): void => {
-  const projects = getStoredProjects().filter((p) => p.id !== projectId);
-  saveProjects(projects);
-};
-
-export const getStoredTrashedProjects = (): TrashedProject[] => {
-  return getJSON<TrashedProject[]>(STORAGE_KEYS.TRASHED_PROJECTS) ?? [];
-};
-
-export const saveTrashedProjects = (projects: TrashedProject[]): void => {
-  setJSON(STORAGE_KEYS.TRASHED_PROJECTS, projects);
-};
+// Project management utilities and types are re-exported at the top of this file
+// (from ./project-types and ./project-persistence) for backward compatibility.

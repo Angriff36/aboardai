@@ -1,7 +1,7 @@
 # AboardAI v1 — Design
 
 **Date:** 2026-06-11
-**Status:** Approved by user (pending spec review)
+**Status:** v1 delivered 2026-06-12 (Phases 1-5 complete; see docs/superpowers/plans/phase5-results.md)
 **Author:** Claude (orchestrator) with Ryan
 
 ## Summary

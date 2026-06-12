@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 // Note: persist middleware removed - settings now sync via API (use-settings-sync.ts)
-import type { Project, TrashedProject } from '@/lib/electron';
-import { saveProjects, saveTrashedProjects } from '@/lib/electron';
+import type { Project, TrashedProject } from '@/lib/project-types';
+import { saveProjects, saveTrashedProjects } from '@/lib/project-persistence';
 import { getHttpApiClient } from '@/lib/http-api-client';
 import { createLogger } from '@aboardai/utils/logger';
 // Note: setItem/getItem moved to ./utils/theme-utils.ts
