@@ -1,8 +1,15 @@
 /**
- * Claude Provider - Executes queries using Claude Agent SDK
+ * Claude Provider - Executes queries using Claude Agent SDK (0.3.x)
  *
  * Wraps the @anthropic-ai/claude-agent-sdk for seamless integration
  * with the provider architecture.
+ *
+ * Design bias: reliability-first. Stream/session/env handling is defensive
+ * and the SDK contract is treated as untrusted at the boundary:
+ * - session_id is forwarded faithfully from the earliest init system message
+ * - the stream is drained to completion (SDK 0.3 can emit messages AFTER result)
+ * - result messages (including errors) are forwarded as-is for the supervisor
+ * - per-model thinking/effort rules live in ONE capability table
  */
 
 import { query, type Options, type SDKUserMessage } from '@anthropic-ai/claude-agent-sdk';
@@ -16,6 +23,7 @@ import {
   type ClaudeApiProfile,
   type ClaudeCompatibleProvider,
   type Credentials,
+  type ReasoningEffort,
 } from '@aboardai/types';
 import type {
   ExecuteOptions,
@@ -33,6 +41,168 @@ const logger = createLogger('ClaudeProvider');
  * Both share the same connection settings structure.
  */
 type ProviderConfig = ClaudeApiProfile | ClaudeCompatibleProvider;
+
+/** SDK 0.3 effort levels accepted by Options.effort. */
+type SdkEffortLevel = 'low' | 'medium' | 'high' | 'xhigh' | 'max';
+
+// ---------------------------------------------------------------------------
+// Model capability table — the single source of truth for per-model behavior.
+//
+// All thinking/effort decisions and the public model catalog are derived from
+// this table. Adding or changing a model is a one-line edit here, never a
+// scattered set of `if (model.includes(...))` checks.
+// ---------------------------------------------------------------------------
+
+interface ModelCapability {
+  /** Public id / SDK model string (same value — Claude needs no alias mapping). */
+  id: string;
+  /** Display name. */
+  name: string;
+  /** Context window in tokens. */
+  contextWindow: number;
+  /** Max output tokens (best-effort metadata for the catalog). */
+  maxOutputTokens: number;
+  /** Catalog tier. */
+  tier: 'basic' | 'standard' | 'premium';
+  /** Catalog description. */
+  description: string;
+  /**
+   * Adaptive thinking: the model manages its own thinking budget. For these
+   * models we NEVER set maxThinkingTokens (any thinkingLevel maps to omit).
+   * Budget-based (Haiku) models map thinkingLevel -> maxThinkingTokens instead.
+   */
+  adaptiveThinking: boolean;
+  /** Whether Options.effort is meaningful for this model. */
+  supportsEffort: boolean;
+  /** Marks default catalog model (exactly one). */
+  default?: boolean;
+  /** Marks model as deprecated (kept for back-compat; surfaced in description). */
+  deprecated?: boolean;
+}
+
+/**
+ * Capability table. Order here is the order surfaced by getAvailableModels().
+ *
+ * Per requirements:
+ * - opus-4-8: default, 1M context, adaptive thinking, supports effort
+ * - sonnet-4-6: 1M context, adaptive + extended thinking
+ * - haiku-4-5-20251001: 200k context, extended thinking via budget only
+ * - opus-4-6, sonnet-4-20250514: deprecated (noted in description)
+ */
+const MODEL_CAPABILITIES: readonly ModelCapability[] = [
+  {
+    id: 'claude-opus-4-8',
+    name: 'Claude Opus 4.8',
+    contextWindow: 1_000_000,
+    maxOutputTokens: 128_000,
+    tier: 'premium',
+    description: 'Most capable Claude model. Adaptive thinking with effort control.',
+    adaptiveThinking: true,
+    supportsEffort: true,
+    default: true,
+  },
+  {
+    id: 'claude-sonnet-4-6',
+    name: 'Claude Sonnet 4.6',
+    contextWindow: 1_000_000,
+    maxOutputTokens: 64_000,
+    tier: 'standard',
+    description: 'Balanced performance and cost. Adaptive and extended thinking.',
+    adaptiveThinking: true,
+    supportsEffort: false,
+  },
+  {
+    id: 'claude-haiku-4-5-20251001',
+    name: 'Claude Haiku 4.5',
+    contextWindow: 200_000,
+    maxOutputTokens: 8_000,
+    tier: 'basic',
+    description: 'Fastest Claude model. Extended thinking via token budget only.',
+    adaptiveThinking: false,
+    supportsEffort: false,
+  },
+  {
+    id: 'claude-opus-4-6',
+    name: 'Claude Opus 4.6',
+    contextWindow: 1_000_000,
+    maxOutputTokens: 128_000,
+    tier: 'premium',
+    description: 'Deprecated. Previous-generation Opus with adaptive thinking.',
+    adaptiveThinking: true,
+    supportsEffort: false,
+    deprecated: true,
+  },
+  {
+    id: 'claude-sonnet-4-20250514',
+    name: 'Claude Sonnet 4',
+    contextWindow: 200_000,
+    maxOutputTokens: 16_000,
+    tier: 'standard',
+    description: 'Deprecated. Previous-generation Sonnet, balanced performance and cost.',
+    adaptiveThinking: false,
+    supportsEffort: false,
+    deprecated: true,
+  },
+] as const;
+
+/** Index for O(1) capability lookup by model id. */
+const MODEL_CAPABILITY_BY_ID: ReadonlyMap<string, ModelCapability> = new Map(
+  MODEL_CAPABILITIES.map((m) => [m.id, m])
+);
+
+/**
+ * Resolve the capability descriptor for a model id.
+ *
+ * Defensive default for unknown/aliased models: treat as adaptive-thinking and
+ * effort-incapable. This is the safest fallback — it avoids sending a thinking
+ * budget the model may reject and avoids an effort value the model may not
+ * support, while still letting the query run.
+ */
+function getModelCapability(model: string): ModelCapability {
+  const exact = MODEL_CAPABILITY_BY_ID.get(model);
+  if (exact) return exact;
+
+  // Prefix match for date-pinned / aliased ids (e.g. an evolved opus-4-8 snapshot).
+  for (const cap of MODEL_CAPABILITIES) {
+    if (model.startsWith(cap.id)) return cap;
+  }
+
+  return {
+    id: model,
+    name: model,
+    contextWindow: 200_000,
+    maxOutputTokens: 8_000,
+    tier: 'standard',
+    description: 'Unknown Claude model (treated with conservative defaults).',
+    adaptiveThinking: true, // omit maxThinkingTokens by default — safest
+    supportsEffort: false,
+  };
+}
+
+/**
+ * Map AboardAI's ReasoningEffort onto the SDK's EffortLevel.
+ *
+ * The SDK accepts only 'low' | 'medium' | 'high' | 'xhigh' | 'max'. AboardAI's
+ * ReasoningEffort additionally has 'none' and 'minimal' (and lacks 'max').
+ * Defensive mapping:
+ * - 'none'/'minimal' -> 'low' (lowest level the SDK accepts)
+ * - 'low'/'medium'/'high'/'xhigh' -> identity
+ * Returns undefined for genuinely unrecognized values.
+ */
+function mapEffortToSdk(effort: ReasoningEffort | undefined): SdkEffortLevel | undefined {
+  switch (effort) {
+    case 'none':
+    case 'minimal':
+      return 'low';
+    case 'low':
+    case 'medium':
+    case 'high':
+    case 'xhigh':
+      return effort;
+    default:
+      return undefined;
+  }
+}
 
 // System vars are always passed from process.env regardless of profile.
 // Includes filesystem, locale, and temp directory vars that the Claude CLI
@@ -59,6 +229,19 @@ const SYSTEM_ENV_VARS = [
 ];
 
 /**
+ * Stream watchdog defaults (SDK 0.3 stream idle detection).
+ *
+ * These are written into the SDK subprocess env so the SDK aborts a silently
+ * stalled stream, which the supervisor then resumes. They are DEFAULTS only —
+ * if the caller's environment already sets either var, that value wins (the
+ * caller's intent is preserved).
+ */
+const WATCHDOG_ENV_DEFAULTS: Record<string, string> = {
+  CLAUDE_ENABLE_STREAM_WATCHDOG: '1',
+  CLAUDE_STREAM_IDLE_TIMEOUT_MS: '90000',
+};
+
+/**
  * Check if the config is a ClaudeCompatibleProvider (new system)
  * by checking for the 'models' array property
  */
@@ -75,6 +258,9 @@ function isClaudeCompatibleProvider(config: ProviderConfig): config is ClaudeCom
  * - ClaudeCompatibleProvider (new system with models[] array)
  * - ClaudeApiProfile (legacy system with modelMappings)
  *
+ * Stream watchdog vars are always seeded with defaults, then overridden by any
+ * value the caller already has in process.env (caller intent wins).
+ *
  * @param providerConfig - Optional provider configuration for alternative endpoint
  * @param credentials - Optional credentials object for resolving 'credentials' apiKeySource
  */
@@ -83,6 +269,12 @@ function buildEnv(
   credentials?: Credentials
 ): Record<string, string | undefined> {
   const env: Record<string, string | undefined> = {};
+
+  // Seed watchdog defaults FIRST so caller-provided process.env values (applied
+  // below via the SYSTEM/explicit passthrough) can override them.
+  for (const [key, value] of Object.entries(WATCHDOG_ENV_DEFAULTS)) {
+    env[key] = value;
+  }
 
   if (providerConfig) {
     // Use provider configuration (clean switch - don't inherit non-system vars from process.env)
@@ -174,8 +366,10 @@ function buildEnv(
     }
   }
 
-  // Always add system vars from process.env
-  for (const key of SYSTEM_ENV_VARS) {
+  // Always add system vars from process.env. These are added LAST so that an
+  // explicit process.env watchdog override (CLAUDE_ENABLE_STREAM_WATCHDOG /
+  // CLAUDE_STREAM_IDLE_TIMEOUT_MS) takes precedence over the seeded defaults.
+  for (const key of [...SYSTEM_ENV_VARS, ...Object.keys(WATCHDOG_ENV_DEFAULTS)]) {
     if (process.env[key]) {
       env[key] = process.env[key];
     }
@@ -190,7 +384,15 @@ export class ClaudeProvider extends BaseProvider {
   }
 
   /**
-   * Execute a query using Claude Agent SDK
+   * Execute a query using Claude Agent SDK.
+   *
+   * Reliability contract:
+   * - Forwards every SDK message verbatim, including the earliest init system
+   *   message (which carries session_id top-level) and result messages
+   *   (including error results) — the supervisor reads these.
+   * - Drains the stream to completion; never breaks on the result message,
+   *   because SDK 0.3 may emit trailing messages after it.
+   * - Resumes whenever sdkSessionId is provided (no conversationHistory gate).
    */
   async *executeQuery(options: ExecuteOptions): AsyncGenerator<ProviderMessage> {
     // Validate that model doesn't have a provider prefix
@@ -206,9 +408,9 @@ export class ClaudeProvider extends BaseProvider {
       maxTurns = 1000,
       allowedTools,
       abortController,
-      conversationHistory,
       sdkSessionId,
       thinkingLevel,
+      reasoningEffort,
       claudeApiProfile,
       claudeCompatibleProvider,
       credentials,
@@ -218,11 +420,20 @@ export class ClaudeProvider extends BaseProvider {
     // claudeCompatibleProvider takes precedence over claudeApiProfile
     const providerConfig = claudeCompatibleProvider || claudeApiProfile;
 
-    // Build thinking configuration
-    // Adaptive thinking (Opus 4.6): don't set maxThinkingTokens, model uses adaptive by default
-    // Manual thinking (Haiku/Sonnet): use budget_tokens
-    const maxThinkingTokens =
-      thinkingLevel === 'adaptive' ? undefined : getThinkingTokenBudget(thinkingLevel);
+    // Resolve per-model capabilities from the single capability table.
+    const capability = getModelCapability(model);
+
+    // Build thinking configuration from the capability flag (centralized rule):
+    // - Adaptive-thinking models (opus-4-8, sonnet-4-6, opus-4-6): NEVER set
+    //   maxThinkingTokens — the model manages its own budget.
+    // - Budget models (haiku-4-5): derive maxThinkingTokens from thinkingLevel.
+    const maxThinkingTokens = capability.adaptiveThinking
+      ? undefined
+      : getThinkingTokenBudget(thinkingLevel);
+
+    // Build effort configuration (centralized rule): only for effort-capable
+    // models, and only when the caller supplied a reasoningEffort.
+    const sdkEffort = capability.supportsEffort ? mapEffortToSdk(reasoningEffort) : undefined;
 
     // Build Claude SDK options
     const sdkOptions: Options = {
@@ -233,6 +444,7 @@ export class ClaudeProvider extends BaseProvider {
       // Pass only explicitly allowed environment variables to SDK
       // When a provider is active, uses provider settings (clean switch)
       // When no provider, uses direct Anthropic API (from process.env or CLI OAuth)
+      // Watchdog defaults are seeded here (overridable via process.env).
       env: buildEnv(providerConfig, credentials),
       // Pass through allowedTools if provided by caller (decided by sdk-options.ts)
       ...(allowedTools && { allowedTools }),
@@ -242,16 +454,19 @@ export class ClaudeProvider extends BaseProvider {
       permissionMode: 'bypassPermissions',
       allowDangerouslySkipPermissions: true,
       abortController,
-      // Resume existing SDK session if we have a session ID
-      ...(sdkSessionId && conversationHistory && conversationHistory.length > 0
-        ? { resume: sdkSessionId }
-        : {}),
+      // Resume existing SDK session whenever a session id is present.
+      // The supervisor resumes WITHOUT replaying conversationHistory, so the
+      // old `&& conversationHistory.length > 0` gate is removed — resume must
+      // trigger on sdkSessionId alone.
+      ...(sdkSessionId ? { resume: sdkSessionId } : {}),
       // Forward settingSources for CLAUDE.md file loading
       ...(options.settingSources && { settingSources: options.settingSources }),
       // Forward MCP servers configuration
       ...(options.mcpServers && { mcpServers: options.mcpServers }),
-      // Extended thinking configuration
+      // Extended thinking configuration (budget models only — see capability table)
       ...(maxThinkingTokens && { maxThinkingTokens }),
+      // Reasoning effort (effort-capable models only — opus-4-8)
+      ...(sdkEffort && { effort: sdkEffort }),
       // Subagents configuration for specialized task delegation
       ...(options.agents && { agents: options.agents }),
       // Pass through outputFormat for structured JSON outputs
@@ -290,18 +505,33 @@ export class ClaudeProvider extends BaseProvider {
       providerName: providerConfig?.name || '(direct Anthropic)',
       maxTurns: sdkOptions.maxTurns,
       maxThinkingTokens: sdkOptions.maxThinkingTokens,
+      effort: sdkOptions.effort,
+      resume: !!sdkOptions.resume,
+      watchdog: envForSdk?.['CLAUDE_ENABLE_STREAM_WATCHDOG'],
     });
 
     // Execute via Claude Agent SDK
     try {
       const stream = query({ prompt: promptPayload, options: sdkOptions });
 
-      // Stream messages directly - they're already in the correct format
+      // Drain the stream to completion. SDK 0.3 can emit trailing messages
+      // (e.g. prompt suggestions, API retry notices) AFTER the result message,
+      // so we never break on a result — we forward everything and let the
+      // for-await loop end naturally when the generator is exhausted.
+      //
+      // Messages are forwarded verbatim: session_id (from the init system
+      // message and result messages) and result error fields (is_error,
+      // api_error_status, errors) reach the supervisor unchanged.
       for await (const msg of stream) {
         yield msg as ProviderMessage;
       }
     } catch (error) {
-      // Enhance error with user-friendly message and classification
+      // Thrown errors are fatal-stream / startup failures (subprocess spawn,
+      // network reset before any message, etc). Operational errors arrive as
+      // result messages and are NOT thrown — those flow through the loop above.
+      //
+      // Enhance error with user-friendly message and classification, preserving
+      // originalError / type / retryAfter for the supervisor and consumers.
       const errorInfo = classifyError(error);
       const userMessage = getUserFriendlyErrorMessage(error);
 
@@ -313,10 +543,23 @@ export class ClaudeProvider extends BaseProvider {
         stack: (error as Error).stack,
       });
 
-      // Build enhanced error message with additional guidance for rate limits
-      const message = errorInfo.isRateLimit
-        ? `${userMessage}\n\nTip: If you're running multiple features in auto-mode, consider reducing concurrency (maxConcurrency setting) to avoid hitting rate limits.`
-        : userMessage;
+      // Build enhanced error message with additional guidance for rate limits.
+      //
+      // Reliability detail: the supervisor parses a precise retry-after delay
+      // from the error MESSAGE text via a `retry after Ns` / `reset ... Ns`
+      // regex. getUserFriendlyErrorMessage() phrases the delay as
+      // "Please wait N seconds", which that regex does NOT match — so without
+      // help the supervisor would fall back to generic exponential backoff and
+      // ignore the server's retry-after hint. We append a parser-friendly
+      // `(retry after Ns)` suffix so the supervisor honors the exact delay.
+      let message: string;
+      if (errorInfo.isRateLimit) {
+        const retryHint =
+          typeof errorInfo.retryAfter === 'number' ? ` (retry after ${errorInfo.retryAfter}s)` : '';
+        message = `${userMessage}${retryHint}\n\nTip: If you're running multiple features in auto-mode, consider reducing concurrency (maxConcurrency setting) to avoid hitting rate limits.`;
+      } else {
+        message = userMessage;
+      }
 
       const enhancedError = new Error(message) as Error & {
         originalError: unknown;
@@ -376,73 +619,27 @@ export class ClaudeProvider extends BaseProvider {
   }
 
   /**
-   * Get available Claude models
+   * Get available Claude models.
+   *
+   * Derived from MODEL_CAPABILITIES — the same table that drives thinking/effort
+   * behavior — so the catalog and runtime behavior can never drift apart.
    */
   getAvailableModels(): ModelDefinition[] {
-    const models = [
-      {
-        id: 'claude-opus-4-6',
-        name: 'Claude Opus 4.6',
-        modelString: 'claude-opus-4-6',
-        provider: 'anthropic',
-        description: 'Most capable Claude model with adaptive thinking',
-        contextWindow: 200000,
-        maxOutputTokens: 128000,
-        supportsVision: true,
-        supportsTools: true,
-        tier: 'premium' as const,
-        default: true,
-      },
-      {
-        id: 'claude-sonnet-4-6',
-        name: 'Claude Sonnet 4.6',
-        modelString: 'claude-sonnet-4-6',
-        provider: 'anthropic',
-        description: 'Balanced performance and cost with enhanced reasoning',
-        contextWindow: 200000,
-        maxOutputTokens: 64000,
-        supportsVision: true,
-        supportsTools: true,
-        tier: 'standard' as const,
-      },
-      {
-        id: 'claude-sonnet-4-20250514',
-        name: 'Claude Sonnet 4',
-        modelString: 'claude-sonnet-4-20250514',
-        provider: 'anthropic',
-        description: 'Balanced performance and cost',
-        contextWindow: 200000,
-        maxOutputTokens: 16000,
-        supportsVision: true,
-        supportsTools: true,
-        tier: 'standard' as const,
-      },
-      {
-        id: 'claude-3-5-sonnet-20241022',
-        name: 'Claude 3.5 Sonnet',
-        modelString: 'claude-3-5-sonnet-20241022',
-        provider: 'anthropic',
-        description: 'Fast and capable',
-        contextWindow: 200000,
-        maxOutputTokens: 8000,
-        supportsVision: true,
-        supportsTools: true,
-        tier: 'standard' as const,
-      },
-      {
-        id: 'claude-haiku-4-5-20251001',
-        name: 'Claude Haiku 4.5',
-        modelString: 'claude-haiku-4-5-20251001',
-        provider: 'anthropic',
-        description: 'Fastest Claude model',
-        contextWindow: 200000,
-        maxOutputTokens: 8000,
-        supportsVision: true,
-        supportsTools: true,
-        tier: 'basic' as const,
-      },
-    ] satisfies ModelDefinition[];
-    return models;
+    return MODEL_CAPABILITIES.map((cap) => ({
+      id: cap.id,
+      name: cap.name,
+      modelString: cap.id,
+      provider: 'anthropic',
+      description: cap.description,
+      contextWindow: cap.contextWindow,
+      maxOutputTokens: cap.maxOutputTokens,
+      supportsVision: true,
+      supportsTools: true,
+      tier: cap.tier,
+      ...(cap.default ? { default: true } : {}),
+      // hasReasoning surfaces effort/adaptive-thinking capability to consumers.
+      hasReasoning: cap.supportsEffort || cap.adaptiveThinking,
+    })) satisfies ModelDefinition[];
   }
 
   /**
