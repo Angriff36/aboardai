@@ -16,7 +16,9 @@
  * - Parses line-by-line; skips (with logger.warn) torn/unparseable lines and
  *   events whose v !== 1. Never throws on malformed content.
  *
- * File path: {projectPath}/.aboardai/features/{featureId}/events.jsonl
+ * File path options (additive generalization — feature path behavior unchanged):
+ *   {projectPath, featureId} → {projectPath}/.aboardai/features/{featureId}/events.jsonl
+ *   {dir}                    → {dir}/events.jsonl   (used by groups: .aboardai/groups/{id}/)
  */
 
 import path from 'path';
@@ -56,10 +58,17 @@ function isForceFlush(event: NormalizedEvent): boolean {
 // EventLogWriter
 // ---------------------------------------------------------------------------
 
-export interface EventLogWriterOptions {
-  projectPath: string;
-  featureId: string;
-}
+/**
+ * Options for EventLogWriter.
+ *
+ * Feature path (original):   { projectPath, featureId }
+ * Explicit directory (new):  { dir }   — file will be {dir}/events.jsonl
+ *
+ * Existing code passing { projectPath, featureId } continues to work unchanged.
+ */
+export type EventLogWriterOptions =
+  | { projectPath: string; featureId: string; dir?: never }
+  | { dir: string; projectPath?: never; featureId?: never };
 
 export class EventLogWriter {
   private readonly filePath: string;
@@ -69,8 +78,14 @@ export class EventLogWriter {
   /** Promise tracking an in-flight flush, prevents concurrent writes */
   private flushInFlight: Promise<void> | null = null;
 
-  constructor({ projectPath, featureId }: EventLogWriterOptions) {
-    this.filePath = getEventsJsonlPath(projectPath, featureId);
+  constructor(opts: EventLogWriterOptions) {
+    if ('dir' in opts && opts.dir !== undefined) {
+      this.filePath = path.join(opts.dir, 'events.jsonl');
+    } else {
+      // Original { projectPath, featureId } variant — behaviour unchanged
+      const { projectPath, featureId } = opts as { projectPath: string; featureId: string };
+      this.filePath = getEventsJsonlPath(projectPath, featureId);
+    }
   }
 
   /**
@@ -99,6 +114,29 @@ export class EventLogWriter {
       this.flush();
     } else if (this.debounceTimer === null) {
       // Start the debounce timer for the first enqueued line
+      this.debounceTimer = setTimeout(() => {
+        this.debounceTimer = null;
+        this.flush();
+      }, DEBOUNCE_MS);
+    }
+  }
+
+  /**
+   * Enqueue an arbitrary JSON-serialisable object for writing.
+   * Used by GroupQueue to write Manifest events (not NormalizedEvent shaped).
+   * Uses the same debounce path as append(); no force-flush logic applied.
+   *
+   * After close(): silently dropped with a warn.
+   */
+  appendRaw(obj: Record<string, unknown>): void {
+    if (this.closed) {
+      logger.warn(`[EventLog] appendRaw() called after close() — dropping object`);
+      return;
+    }
+
+    this.buffer.push(JSON.stringify(obj));
+
+    if (this.debounceTimer === null) {
       this.debounceTimer = setTimeout(() => {
         this.debounceTimer = null;
         this.flush();

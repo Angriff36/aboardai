@@ -88,6 +88,9 @@ import { createEventHistoryRoutes } from './routes/event-history/index.js';
 import { getEventHistoryService } from './services/event-history-service.js';
 import { getTestRunnerService } from './services/test-runner-service.js';
 import { createProjectsRoutes } from './routes/projects/index.js';
+import { GroupEngine } from './groups/group-engine.js';
+import { GroupStore } from './groups/group-store.js';
+import { GroupQueue } from './services/group-queue.js';
 
 // Load environment variables
 dotenv.config();
@@ -451,6 +454,30 @@ eventHookService.initialize(events, settingsService, eventHistoryService, featur
           });
         }
         logger.info('[STARTUP] Initiated background resume of interrupted features');
+
+        // Resume running task groups (boot recovery: requeueStaleChildren + restart drive loops).
+        // Co-located with resumeInterruptedFeatures as both are crash-recovery boot hooks.
+        try {
+          const groupEngine = await GroupEngine.create();
+          for (const project of globalSettings.projects) {
+            const groupStore = new GroupStore(project.path);
+            const groupQueue = new GroupQueue(
+              groupEngine,
+              groupStore,
+              (projectPath, featureId, useWorktrees, isAutoMode) =>
+                autoModeService.executeFeature(projectPath, featureId, useWorktrees, isAutoMode),
+              (projectPath, featureId) => featureLoader.get(projectPath, featureId),
+              (projectPath) => featureLoader.getAll(projectPath),
+              events
+            );
+            groupQueue.resumeGroups(project.path).catch((err) => {
+              logger.warn(`[STARTUP] Failed to resume groups for ${project.path}:`, err);
+            });
+          }
+          logger.info('[STARTUP] Initiated background resume of task groups');
+        } catch (err) {
+          logger.warn('[STARTUP] Failed to initialize GroupEngine for boot resume:', err);
+        }
       }
     } catch (err) {
       logger.warn('[STARTUP] Failed to reconcile feature states:', err);
