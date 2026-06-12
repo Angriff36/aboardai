@@ -86,16 +86,16 @@ AboardAI Phase 2 (Provider Layer) is complete. The ClaudeProvider was rebuilt ar
 
 ### Phase 2 Final Gate Numbers
 
-| Gate                                          | Result                                                                           |
-| --------------------------------------------- | -------------------------------------------------------------------------------- |
-| `npm run build:packages`                      | PASS — all 8 libs compiled clean                                                 |
-| `npm run lint`                                | PASS — exit 0, zero errors/warnings                                              |
-| `npx vitest run` (root, all workspaces)       | PASS — 3,501 passed / 28 skipped / 0 failed (142 files)                          |
-| `npm test --workspaces --if-present` (libs)   | PASS — 278 passed / 0 failed (9 files)                                           |
-| `npm run build`                               | PASS — Vite client (3651+ modules) + Electron clean                              |
-| E2E `--workers=2`                             | PASS — 70 passed / 2 failed / 2 skipped (both failures = baseline deterministic) |
-| Server smoke (`/api/health`)                  | PASS — HTTP 200; `✓ Claude Code CLI authentication detected`                     |
-| `GET /api/models/providers`                   | PASS — anthropic available (no env key), cursor cli available+authenticated      |
+| Gate                                        | Result                                                                           |
+| ------------------------------------------- | -------------------------------------------------------------------------------- |
+| `npm run build:packages`                    | PASS — all 8 libs compiled clean                                                 |
+| `npm run lint`                              | PASS — exit 0, zero errors/warnings                                              |
+| `npx vitest run` (root, all workspaces)     | PASS — 3,501 passed / 28 skipped / 0 failed (142 files)                          |
+| `npm test --workspaces --if-present` (libs) | PASS — 278 passed / 0 failed (9 files)                                           |
+| `npm run build`                             | PASS — Vite client (3651+ modules) + Electron clean                              |
+| E2E `--workers=2`                           | PASS — 70 passed / 2 failed / 2 skipped (both failures = baseline deterministic) |
+| Server smoke (`/api/health`)                | PASS — HTTP 200; `✓ Claude Code CLI authentication detected`                     |
+| `GET /api/models/providers`                 | PASS — anthropic available (no env key), cursor cli available+authenticated      |
 
 ---
 
@@ -118,12 +118,55 @@ AboardAI Phase 3 (Normalized Event Pipeline) is complete. Every streamed provide
 
 ### Phase 3 Final Gate Numbers
 
-| Gate                                        | Result                                                                           |
-| ------------------------------------------- | -------------------------------------------------------------------------------- |
-| `npm run build:packages`                    | PASS — all 8 libs compiled clean                                                 |
-| `npm run lint`                              | PASS — exit 0, zero errors/warnings                                              |
-| `npx vitest run` (root, 148 test files)     | PASS — 3,606 passed / 28 skipped / 0 failed                                      |
-| `npm run build`                             | PASS — Vite client (3651 modules) + Electron clean                               |
-| E2E `--workers=2`                           | PASS — 70 passed / 2 failed / 2 skipped (both failures = baseline deterministic) |
-| Server smoke (`/api/health`)                | PASS — HTTP 200; no events module startup errors                                 |
-| Live pipeline proof (events.jsonl)          | PASS — 84 events written; result event confirmed; port 3008 freed after          |
+| Gate                                    | Result                                                                           |
+| --------------------------------------- | -------------------------------------------------------------------------------- |
+| `npm run build:packages`                | PASS — all 8 libs compiled clean                                                 |
+| `npm run lint`                          | PASS — exit 0, zero errors/warnings                                              |
+| `npx vitest run` (root, 148 test files) | PASS — 3,606 passed / 28 skipped / 0 failed                                      |
+| `npm run build`                         | PASS — Vite client (3651 modules) + Electron clean                               |
+| E2E `--workers=2`                       | PASS — 70 passed / 2 failed / 2 skipped (both failures = baseline deterministic) |
+| Server smoke (`/api/health`)            | PASS — HTTP 200; no events module startup errors                                 |
+| Live pipeline proof (events.jsonl)      | PASS — 84 events written; result event confirmed; port 3008 freed after          |
+
+---
+
+# AboardAI Phase 4: Task Groups — Execution Tracker
+
+Plan: `docs/superpowers/plans/2026-06-12-phase4-task-groups.md`
+Results: `docs/superpowers/plans/phase4-results.md`
+Branch: `phase4-task-groups` → merged to `main`
+
+- [x] Task 0: Branch + Manifest 2.4.1 install gate (.npmrc registry mapping only) — commit a4b3ba1
+- [x] Task 1: TaskGroup domain model in Manifest + typed engine wrapper + group-store — commit a5c0f3a
+- [x] Task 2: Per-path worktree mutex + EEXIST fallback — commit e637d83
+- [x] Task 3: GroupQueue (retry, settle, dependency ordering, boot resume) — commit e1cc2ff
+- [x] Task 4: /api/groups routes (create/list/get/start/cancel) — commit 2d48e02
+- [x] Task 5: Groups UI (satellite store, create dialog, groups panel, live events) — commit b6db54e
+- [x] Task 6 (gate): Phase gate — build/lint/test/E2E/live-proof/merge — (gate commit)
+
+## Phase 4 Review
+
+AboardAI Phase 4 (Task Groups) is complete. The `@angriff36/manifest` package (pinned 2.4.1)
+provides the TaskGroup lifecycle state machine compiled at server startup via `compileToIR`; a
+`GroupEngine` wrapper exposes typed commands with guard-denial errors; `GroupStore` atomically
+persists snapshots to `.aboardai/groups/{id}/group.json`. The `GroupQueue` drives children
+through `executeFeature` (useWorktrees=true) respecting dependency ordering via `SUCCESS_STATUSES`
+(verified|waiting_approval|completed), per-child retry, concurrent slot accounting (maxConcurrency
+guard), and settles to `review` (all success) or `failed` (any exhausted retry). A per-path
+`KeyedMutex` prevents the worktree-creation race. Group events flow to `events.jsonl` (9 events
+in the live proof). The UI gained a create-group dialog and groups panel with live `group:event`
+WebSocket updates. Gate fix: dependency-satisfaction broadened to `SUCCESS_STATUSES` so
+`waiting_approval` completions (mock agent) unblock dependents.
+
+### Phase 4 Final Gate Numbers
+
+| Gate                                        | Result                                                                                      |
+| ------------------------------------------- | ------------------------------------------------------------------------------------------- |
+| `npm run build:packages`                    | PASS — all 8 libs compiled clean                                                            |
+| `npm run lint`                              | PASS — exit 0, zero errors/warnings                                                         |
+| `npx vitest run` (root, 159 test files)     | PASS — **3,723 passed / 28 skipped / 0 failed** (+117 vs Phase 3 baseline)                  |
+| `npm test --workspace=apps/server -- --run` | PASS — 2,667 passed / 28 skipped / 0 failed                                                 |
+| `npm run build`                             | PASS — Vite client + Electron clean                                                         |
+| E2E `--workers=2` (best of 6 runs)          | PASS — 64–67 passed / 5–8 failed / 2 skipped; all failures in documented baseline           |
+| Server health (`/api/health`)               | PASS — HTTP 200 with ABOARDAI_MOCK_AGENT=true                                               |
+| Live group proof                            | PASS — group status `review`; all 3 children completed; C after A; 9 events; snapshot match |

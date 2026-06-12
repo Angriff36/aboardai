@@ -4,7 +4,10 @@
  * One drive loop per group (async, abortable via AbortController).
  * Slot accounting is purely via Manifest guards: claimSlot denial = backpressure.
  *
- * Dependency satisfaction uses @aboardai/dependency-resolver areDependenciesSatisfied.
+ * Dependency satisfaction: a child can run when all its feature deps are in
+ * SUCCESS_STATUSES (verified|waiting_approval|completed).  This is intentionally
+ * broader than areDependenciesSatisfied (completed|verified only) so that a dep
+ * that finished as waiting_approval still unblocks its dependents.
  * A child whose deps can NEVER be satisfied (a dep feature is failed/lost) is
  * claimed and immediately reportedFailure — no executeFeature call.
  *
@@ -29,7 +32,6 @@
 import path from 'path';
 import type { Feature } from '@aboardai/types';
 import { createLogger } from '@aboardai/utils';
-import { areDependenciesSatisfied } from '@aboardai/dependency-resolver';
 import type { GroupEngine } from '../groups/group-engine.js';
 import type { GroupStore } from '../groups/group-store.js';
 import { EventLogWriter } from '../events/event-log.js';
@@ -290,8 +292,8 @@ export class GroupQueue {
             if (depChild) {
               return depChild.status === 'failed' || depChild.status === 'skipped';
             }
-            // Dep is outside the group — unsatisfiable if not completed/verified
-            return dep.status !== 'completed' && dep.status !== 'verified';
+            // Dep is outside the group — unsatisfiable if not in a success state
+            return !SUCCESS_STATUSES.has(dep.status ?? '');
           });
 
           if (isUnsatisfiable) {
@@ -317,8 +319,18 @@ export class GroupQueue {
             continue;
           }
 
-          // Deps present — check if currently satisfied
-          if (!areDependenciesSatisfied(childFeature, allFeatures)) {
+          // Deps present — check if currently satisfied.
+          // Use SUCCESS_STATUSES (verified|waiting_approval|completed) as the
+          // "dep done" criterion — this matches the same set used by isFeatureSuccess
+          // so a dep that completed via mock-agent (waiting_approval) unblocks its
+          // dependents correctly.  areDependenciesSatisfied only accepts
+          // completed|verified, which excludes waiting_approval and would leave
+          // dependents stuck forever.
+          const depsSatisfied = (childFeature.dependencies ?? []).every((depId) => {
+            const dep = allFeatures.find((f) => f.id === depId);
+            return dep != null && SUCCESS_STATUSES.has(dep.status ?? '');
+          });
+          if (!depsSatisfied) {
             continue; // Blocked, skip for now
           }
         }
