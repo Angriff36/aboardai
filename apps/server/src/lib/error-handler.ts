@@ -117,7 +117,18 @@ const ERROR_PATTERNS: ErrorPattern[] = [
   {
     type: ErrorType.NETWORK,
     severity: ErrorSeverity.MEDIUM,
-    patterns: [/network/i, /connection/i, /dns/i, /timeout/i, /econnrefused/i, /enotfound/i],
+    patterns: [
+      /network/i,
+      /connection/i,
+      /dns/i,
+      /timeout/i,
+      /econnrefused/i,
+      /enotfound/i,
+      /stream disconnected/i,
+      /stream ended/i,
+      /connection reset/i,
+      /socket hang up/i,
+    ],
     userMessage: 'Network connection issue.',
     suggestedAction: 'Check your internet connection and try again.',
     retryable: true,
@@ -157,7 +168,14 @@ const ERROR_PATTERNS: ErrorPattern[] = [
   {
     type: ErrorType.MODEL_NOT_SUPPORTED,
     severity: ErrorSeverity.HIGH,
-    patterns: [/model.*not.*support/i, /unknown.*model/i, /invalid.*model/i],
+    patterns: [
+      /model.*not.*support/i,
+      /unknown.*model/i,
+      /invalid.*model/i,
+      /model_not_found/i,
+      /does not exist.*model|model.*does not exist/i,
+      /do not have access.*model|model.*do not have access/i,
+    ],
     userMessage: 'Model not supported.',
     suggestedAction: 'Check available models and use a supported one.',
     retryable: false,
@@ -382,6 +400,131 @@ export const ProviderErrorHandler = {
     isRateLimit: (error: unknown) => isRateLimitError(error),
   },
 };
+
+// ---------------------------------------------------------------------------
+// ProviderSupervisor extensions
+// ---------------------------------------------------------------------------
+
+/**
+ * Local structural type-guard for error result messages.
+ * Does NOT widen the shared ProviderMessage type.
+ */
+interface ErrorResultShape {
+  type: string;
+  is_error?: boolean;
+  api_error_status?: number | null;
+  subtype?: string;
+}
+
+function isErrorResultShape(msg: unknown): msg is ErrorResultShape {
+  if (typeof msg !== 'object' || msg === null) return false;
+  const m = msg as Record<string, unknown>;
+  return m.type === 'result' && m.is_error === true;
+}
+
+/**
+ * Classify an error result message from a provider stream.
+ *
+ * Returns an ErrorClassification if the message represents a failure that
+ * the supervisor should act on, or null if the message is a normal result.
+ *
+ * Status-code mapping:
+ * - 401/403 → AUTHENTICATION/PERMISSION (no retry)
+ * - 429      → RATE_LIMIT (retryable)
+ * - 5xx      → SERVER_ERROR (retryable, includes 529)
+ * - fallback → subtype regex check, then UNKNOWN
+ */
+export function classifyResultMessage(msg: unknown): ErrorClassification | null {
+  if (!isErrorResultShape(msg)) return null;
+
+  const shape = msg as ErrorResultShape;
+  const status = shape.api_error_status;
+
+  if (typeof status === 'number') {
+    if (status === 401) {
+      return {
+        type: ErrorType.AUTHENTICATION,
+        severity: ErrorSeverity.HIGH,
+        userMessage: 'Authentication failed in result message.',
+        technicalMessage: `api_error_status=${status}`,
+        retryable: false,
+      };
+    }
+    if (status === 403) {
+      return {
+        type: ErrorType.PERMISSION,
+        severity: ErrorSeverity.HIGH,
+        userMessage: 'Permission denied in result message.',
+        technicalMessage: `api_error_status=${status}`,
+        retryable: false,
+      };
+    }
+    if (status === 429) {
+      return {
+        type: ErrorType.RATE_LIMIT,
+        severity: ErrorSeverity.MEDIUM,
+        userMessage: 'Rate limit reached in result message.',
+        technicalMessage: `api_error_status=${status}`,
+        retryable: true,
+      };
+    }
+    if (status >= 500) {
+      return {
+        type: ErrorType.SERVER_ERROR,
+        severity: ErrorSeverity.HIGH,
+        userMessage: 'Server error in result message.',
+        technicalMessage: `api_error_status=${status}`,
+        retryable: true,
+      };
+    }
+  }
+
+  // Subtype fallback
+  const subtype = shape.subtype ?? '';
+  if (/auth/i.test(subtype)) {
+    return {
+      type: ErrorType.AUTHENTICATION,
+      severity: ErrorSeverity.HIGH,
+      userMessage: 'Authentication error in result subtype.',
+      technicalMessage: `subtype=${subtype}`,
+      retryable: false,
+    };
+  }
+  if (/rate.*limit|quota/i.test(subtype)) {
+    return {
+      type: ErrorType.RATE_LIMIT,
+      severity: ErrorSeverity.MEDIUM,
+      userMessage: 'Rate limit in result subtype.',
+      technicalMessage: `subtype=${subtype}`,
+      retryable: true,
+    };
+  }
+
+  // Generic error result
+  return {
+    type: ErrorType.UNKNOWN,
+    severity: ErrorSeverity.MEDIUM,
+    userMessage: 'Unknown error in result message.',
+    technicalMessage: `subtype=${subtype}, api_error_status=${status ?? 'none'}`,
+    retryable: true,
+  };
+}
+
+/**
+ * Detect provider-side stale session errors.
+ * Matches patterns used in agent-service.ts L105-113.
+ */
+export function isStaleSessionError(errorText: string): boolean {
+  const lower = errorText.toLowerCase();
+  return (
+    lower.includes('session not found') ||
+    lower.includes('session expired') ||
+    lower.includes('invalid session') ||
+    lower.includes('no such session') ||
+    /session.*expired/i.test(errorText) ||
+    /invalid.*session/i.test(errorText)
+  );
+}
 
 /**
  * Create a retry handler for retryable errors

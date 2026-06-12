@@ -39,6 +39,8 @@ import {
 import { extractXmlElements, extractImplementedFeatures } from '../lib/xml-extractor.js';
 import { createLogger, loadContextFiles, isAbortError } from '@aboardai/utils';
 import { ProviderFactory } from '../providers/provider-factory.js';
+import { superviseQuery } from '../providers/provider-supervisor.js';
+import { DEFAULT_SUPERVISOR_POLICY } from '@aboardai/types';
 import type { SettingsService } from './settings-service.js';
 import type { FeatureLoader } from './feature-loader.js';
 import { createChatOptions, validateWorkingDirectory } from '../lib/sdk-options.js';
@@ -262,7 +264,7 @@ export class IdeationService {
         credentials, // Pass credentials for resolving 'credentials' apiKeySource
       };
 
-      const stream = provider.executeQuery(executeOptions);
+      const stream = superviseQuery(provider, executeOptions, DEFAULT_SUPERVISOR_POLICY);
 
       let responseText = '';
       const assistantMessage: IdeationMessage = {
@@ -273,6 +275,7 @@ export class IdeationService {
       };
 
       for await (const msg of stream) {
+        if (msg.type === 'supervisor_status') continue; // no content, skip
         if (msg.type === 'assistant' && msg.message?.content) {
           for (const block of msg.message.content) {
             if (block.type === 'text') {
@@ -756,10 +759,11 @@ export class IdeationService {
         credentials, // Pass credentials for resolving 'credentials' apiKeySource
       };
 
-      const stream = provider.executeQuery(executeOptions);
+      const stream = superviseQuery(provider, executeOptions, DEFAULT_SUPERVISOR_POLICY);
 
       let responseText = '';
       for await (const msg of stream) {
+        if (msg.type === 'supervisor_status') continue; // no content, skip
         if (msg.type === 'assistant' && msg.message?.content) {
           for (const block of msg.message.content) {
             if (block.type === 'text') {

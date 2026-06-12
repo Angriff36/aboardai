@@ -17,6 +17,8 @@ import {
   classifyError,
 } from '@aboardai/utils';
 import { ProviderFactory } from '../providers/provider-factory.js';
+import { superviseQuery } from '../providers/provider-supervisor.js';
+import { DEFAULT_SUPERVISOR_POLICY, SupervisorExhaustedError } from '@aboardai/types';
 import { createChatOptions, validateWorkingDirectory } from '../lib/sdk-options.js';
 import type { SettingsService } from './settings-service.js';
 import {
@@ -498,7 +500,10 @@ export class AgentService {
         'Bash',
         'WebSearch',
         'WebFetch',
-        'TodoWrite',
+        'TaskCreate',
+        'TaskUpdate',
+        'TaskGet',
+        'TaskList',
       ];
 
       if (allowedTools) {
@@ -578,8 +583,8 @@ export class AgentService {
       // Set the prompt in options
       options.prompt = promptContent;
 
-      // Execute via provider
-      const stream = provider.executeQuery(options);
+      // Execute via supervised provider (fault-tolerant: retries stalls, network errors, rate limits)
+      const stream = superviseQuery(provider, options, DEFAULT_SUPERVISOR_POLICY);
 
       let currentAssistantMessage: Message | null = null;
       let responseText = '';
@@ -599,7 +604,27 @@ export class AgentService {
           await this.updateSession(sessionId, { sdkSessionId: msg.session_id });
         }
 
-        if (msg.type === 'assistant') {
+        if (msg.type === 'supervisor_status') {
+          // supervisor_status messages arrive in-stream from superviseQuery.
+          // Log them and emit as a 'supervisor' agent event.
+          // The UI switch in use-electron-agent.ts has no default case, so
+          // unknown event types are silently ignored — safe to emit.
+          const sv = msg as unknown as import('@aboardai/types').SupervisorStatusMessage;
+          this.logger.info(
+            `[AgentService] Supervisor: session=${sessionId} status=${sv.status}` +
+              (sv.attempt != null ? ` attempt=${sv.attempt}` : '') +
+              (sv.retryAfterMs != null ? ` retryAfterMs=${sv.retryAfterMs}` : '') +
+              (sv.detail ? ` detail=${sv.detail}` : '')
+          );
+          this.emitAgentEvent(sessionId, {
+            type: 'supervisor',
+            status: sv.status,
+            attempt: sv.attempt,
+            retryAfterMs: sv.retryAfterMs,
+            detail: sv.detail,
+          });
+          continue;
+        } else if (msg.type === 'assistant') {
           if (msg.message?.content) {
             for (const block of msg.message.content) {
               if (block.type === 'text') {
@@ -783,13 +808,46 @@ export class AgentService {
         return { success: false, aborted: true };
       }
 
+      // SupervisorExhaustedError: all retry attempts exhausted.
+      // Surface a resumable hint so the user knows they can retry later.
+      if (error instanceof SupervisorExhaustedError) {
+        this.logger.error(
+          `[AgentService] Supervisor exhausted for session ${sessionId}: ` +
+            `attempts=${error.attempts}, classification=${error.classification}`
+        );
+        session.isRunning = false;
+        session.abortController = null;
+
+        const exhaustedMsg =
+          `Connection to AI provider failed after ${error.attempts} attempt(s). ` +
+          `The session has been paused — you can try again when connectivity is restored.`;
+
+        const errorMessage: Message = {
+          id: this.generateId(),
+          role: 'assistant',
+          content: `Error: ${exhaustedMsg}`,
+          timestamp: new Date().toISOString(),
+          isError: true,
+        };
+        session.messages.push(errorMessage);
+        await this.saveSession(sessionId, session.messages);
+
+        this.emitAgentEvent(sessionId, {
+          type: 'error',
+          error: exhaustedMsg,
+          message: errorMessage,
+          resumable: true,
+        });
+
+        return { success: false };
+      }
+
       this.logger.error('Error:', error);
 
       // Strip ANSI escape codes and the "Error: " prefix from thrown error
       // messages so the UI receives clean text without double-prefixing.
       let rawThrownMsg = ((error as Error).message || '').replace(/\x1b\[[0-9;]*m/g, '').trim();
       rawThrownMsg = rawThrownMsg.replace(/^Error:\s*/i, '').trim() || rawThrownMsg;
-      const thrownErrorMsg = rawThrownMsg.toLowerCase();
 
       // Check if the thrown error is a provider-side session error.
       // Clear the stale sdkSessionId so the next retry starts fresh.

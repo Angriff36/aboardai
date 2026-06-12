@@ -330,16 +330,24 @@ export function getThinkingTokenBudget(level: ThinkingLevel | undefined): number
 }
 
 /**
- * Check if a model uses adaptive thinking (Opus 4.6+)
- * Adaptive thinking models let the SDK decide token allocation automatically.
+ * Check if a model uses adaptive thinking (Opus 4.8, Opus 4.6, 'claude-opus' alias).
+ *
+ * Adaptive thinking models let the SDK manage the thinking token budget
+ * automatically. For these models we never set `maxThinkingTokens` — the
+ * `adaptive` thinking level is the only meaningful choice above 'none'.
+ *
+ * NOT included: claude-sonnet-4-6. Sonnet 4.6 supports both adaptive and
+ * extended (budget-based) thinking, so it intentionally stays outside this
+ * list — treating it as adaptive-only would remove valid manual thinking
+ * levels from the UI.
  */
 export function isAdaptiveThinkingModel(model: string): boolean {
-  return model.includes('opus-4-6') || model === 'claude-opus';
+  return model.includes('opus-4-8') || model.includes('opus-4-6') || model === 'claude-opus';
 }
 
 /**
  * Get the available thinking levels for a given model.
- * - Opus 4.6: Only 'none' and 'adaptive' (SDK handles token allocation)
+ * - Opus 4.8 / Opus 4.6: Only 'none' and 'adaptive' (SDK handles token allocation)
  * - Others: Full range of manual thinking levels
  */
 export function getThinkingLevelsForModel(model: string): ThinkingLevel[] {
@@ -374,7 +382,7 @@ export function normalizeThinkingLevelForModel(
 /**
  * Get the default thinking level for a given model.
  * Used when selecting a model via the primary button in the two-stage selector.
- * Returns 'adaptive' for Opus models (which support adaptive thinking),
+ * Returns 'adaptive' for Opus 4.8 / Opus 4.6 (adaptive-thinking models),
  * and 'none' for all other models.
  */
 export function getDefaultThinkingLevel(model: string): ThinkingLevel {

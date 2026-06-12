@@ -60,3 +60,39 @@ AboardAI Phase 1 (Fork & Rebrand) is complete. Starting from automaker commit 58
 1. **E2E: board-background-persistence.spec.ts:41 and :444** — Two deterministic failures where the settings API call to `/api/settings/project` is never observed by the test's request tracker. Root-cause hypothesis: the `useProjectSettingsLoader` React hook that makes this call either fires before the test's `page.on('request')` listener is attached, or the hook is not triggered by the test's project-switch simulation (the localStorage injection may bypass the React state change that would normally trigger the hook). Deep integration issue requiring live-app debugging with Playwright inspector. Documented in `docs/superpowers/plans/phase1-baseline.md` under "Deterministic failures". Recommend Phase 5 backlog — investigate `useProjectSettingsLoader` call timing and test hook attachment ordering.
 
 2. **README.md automaker attribution link** — `README.md` contains one reference to `automaker` as the link text for `https://github.com/AutoMaker-Org/automaker` (intentional upstream credit). Excluded from the zero-reference gate via `:!README.md`. The URL itself cannot be changed. No action needed.
+
+---
+
+# AboardAI Phase 2: Provider Layer — Execution Tracker
+
+Plan: `docs/superpowers/plans/2026-06-11-phase2-provider-layer.md`
+Results: `docs/superpowers/plans/phase2-results.md`
+Branch: `phase2-provider-layer` → merged to `main`
+
+- [x] Task 0: SDK bumps (claude-agent-sdk 0.3.173, codex-sdk 0.139) — commit b4aa497
+- [x] Task 1: Supervision types in @aboardai/types + SDK 0.3 systemPrompt alignment — commit 04aef92
+- [x] Task 2: Fault-injection harness S1–S10 (red) — commit 62a2211
+- [x] Task 3: ProviderSupervisor — S1–S10 green — commit 43b7799
+- [x] Task 4: Repo green on SDK 0.3.173 (Task tools presets, content-block types, Windows env vars) — commit 157ac20
+- [x] Task 5: Supervisor early-return cleanup + S11 + fatal-result fail-fast root-cause fix — commit f6bf6fa
+- [x] Task 6: Model catalog aliases → Opus 4.8 / Sonnet 4.6 / Haiku 4.5 — commit 5b2c333
+- [x] Task 7: Supervisor wired into agent-service/agent-executor/ideation + structured retryAfter (S12) — commit 1673f83
+- [x] Task 8: Codex 0.139 refresh (resumeThread, event mapping, aggregated_output defense) — commit 0445312
+- [x] Task 9 (gate): Phase gate — formal build/lint/test/E2E/smoke — commits 3d6a10d + (gate record commit)
+
+## Phase 2 Review
+
+AboardAI Phase 2 (Provider Layer) is complete. The ClaudeProvider was rebuilt around SDK 0.3.173 with a ProviderSupervisor fault-injection harness (S1–S12), model catalog updated to Opus 4.8 / Sonnet 4.6 / Haiku 4.5, structured retryAfter error handling, and the isAdaptiveThinkingModel fix for claude-opus-4-8. A two-implementation competition selected the reliability-first design (impl A). All merge-time fix-list items were resolved. Phase gate: typecheck/lint/build clean; 3,501 server tests + 278 lib tests passing; E2E 70 passed / 2 failed / 2 skipped (both failures are documented Phase 1 deterministic failures, none introduced by Phase 2); server smoke confirmed `✓ Claude Code CLI authentication detected` with SDK 0.3.173. Branch merged to main at HEAD 5baf12d → new HEAD (see git log).
+
+### Phase 2 Final Gate Numbers
+
+| Gate                                          | Result                                                                           |
+| --------------------------------------------- | -------------------------------------------------------------------------------- |
+| `npm run build:packages`                      | PASS — all 8 libs compiled clean                                                 |
+| `npm run lint`                                | PASS — exit 0, zero errors/warnings                                              |
+| `npx vitest run` (root, all workspaces)       | PASS — 3,501 passed / 28 skipped / 0 failed (142 files)                          |
+| `npm test --workspaces --if-present` (libs)   | PASS — 278 passed / 0 failed (9 files)                                           |
+| `npm run build`                               | PASS — Vite client (3651+ modules) + Electron clean                              |
+| E2E `--workers=2`                             | PASS — 70 passed / 2 failed / 2 skipped (both failures = baseline deterministic) |
+| Server smoke (`/api/health`)                  | PASS — HTTP 200; `✓ Claude Code CLI authentication detected`                     |
+| `GET /api/models/providers`                   | PASS — anthropic available (no env key), cursor cli available+authenticated      |

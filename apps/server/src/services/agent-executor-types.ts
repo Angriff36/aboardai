@@ -36,7 +36,15 @@ export interface AgentExecutionOptions {
   sdkOptions?: {
     maxTurns?: number;
     allowedTools?: string[];
-    systemPrompt?: string | { type: 'preset'; preset: 'claude_code'; append?: string };
+    systemPrompt?:
+      | string
+      | string[]
+      | {
+          type: 'preset';
+          preset: 'claude_code';
+          append?: string;
+          excludeDynamicSections?: boolean;
+        };
     settingSources?: Array<'user' | 'project' | 'local'>;
   };
   provider: BaseProvider;

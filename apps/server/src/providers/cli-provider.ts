@@ -594,9 +594,11 @@ export abstract class CliProvider extends BaseProvider {
     const systemText =
       typeof options.systemPrompt === 'string'
         ? options.systemPrompt
-        : options.systemPrompt.append
-          ? options.systemPrompt.append
-          : '';
+        : Array.isArray(options.systemPrompt)
+          ? ''
+          : options.systemPrompt.append
+            ? options.systemPrompt.append
+            : '';
 
     if (!systemText) {
       return { ...options, systemPrompt: undefined };

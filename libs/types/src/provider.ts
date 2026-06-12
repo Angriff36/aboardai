@@ -102,6 +102,7 @@ export interface SystemPromptPreset {
   type: 'preset';
   preset: 'claude_code';
   append?: string;
+  excludeDynamicSections?: boolean;
 }
 
 /**
@@ -160,7 +161,7 @@ export interface ExecuteOptions {
   /** Original model ID with provider prefix for logging (e.g., "codex-gpt-5.1-codex-max") */
   originalModel?: string;
   cwd: string;
-  systemPrompt?: string | SystemPromptPreset;
+  systemPrompt?: string | string[] | SystemPromptPreset;
   maxTurns?: number;
   allowedTools?: string[];
   /**
@@ -259,7 +260,7 @@ export interface ContentBlock {
  * Message returned by a provider (matches Claude SDK streaming format)
  */
 export interface ProviderMessage {
-  type: 'assistant' | 'user' | 'error' | 'result';
+  type: 'assistant' | 'user' | 'error' | 'result' | 'supervisor_status';
   subtype?:
     | 'success'
     | 'error'
@@ -277,6 +278,63 @@ export interface ProviderMessage {
   parent_tool_use_id?: string | null;
   /** Structured output from SDK when using outputFormat */
   structured_output?: Record<string, unknown>;
+}
+
+/**
+ * Status message from ProviderSupervisor indicating stream reliability state
+ */
+export interface SupervisorStatusMessage {
+  type: 'supervisor_status';
+  status:
+    | 'started'
+    | 'stalled'
+    | 'reconnecting'
+    | 'resumed'
+    | 'rate_limited'
+    | 'interrupted'
+    | 'fatal';
+  detail?: string;
+  attempt?: number;
+  retryAfterMs?: number;
+}
+
+/**
+ * Configuration policy for ProviderSupervisor resilience handling
+ */
+export interface SupervisorPolicy {
+  stallTimeoutMs: number;
+  maxAttempts: number;
+  baseDelayMs: number;
+  maxDelayMs: number;
+}
+
+/**
+ * Default supervision policy for stream reliability
+ * - stallTimeoutMs: 120 seconds (detect stalled streams)
+ * - maxAttempts: 4 retry attempts
+ * - baseDelayMs: 2 seconds (initial retry delay)
+ * - maxDelayMs: 60 seconds (cap exponential backoff)
+ */
+export const DEFAULT_SUPERVISOR_POLICY: SupervisorPolicy = {
+  stallTimeoutMs: 120_000,
+  maxAttempts: 4,
+  baseDelayMs: 2_000,
+  maxDelayMs: 60_000,
+};
+
+/**
+ * Error thrown when ProviderSupervisor exhausts all recovery attempts
+ */
+export class SupervisorExhaustedError extends Error {
+  constructor(
+    message: string,
+    public readonly classification: string,
+    public readonly attempts: number,
+    public readonly lastError?: unknown
+  ) {
+    super(message);
+    this.name = 'SupervisorExhaustedError';
+  }
 }
 
 /**
