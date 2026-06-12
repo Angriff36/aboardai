@@ -96,3 +96,34 @@ AboardAI Phase 2 (Provider Layer) is complete. The ClaudeProvider was rebuilt ar
 | E2E `--workers=2`                             | PASS — 70 passed / 2 failed / 2 skipped (both failures = baseline deterministic) |
 | Server smoke (`/api/health`)                  | PASS — HTTP 200; `✓ Claude Code CLI authentication detected`                     |
 | `GET /api/models/providers`                   | PASS — anthropic available (no env key), cursor cli available+authenticated      |
+
+---
+
+# AboardAI Phase 3: Normalized Event Pipeline — Execution Tracker
+
+Plan: `docs/superpowers/plans/2026-06-12-phase3-event-pipeline.md`
+Results: `docs/superpowers/plans/phase3-results.md`
+Branch: `phase3-event-pipeline` → merged to `main`
+
+- [x] Task 1: NormalizedEvent types + feature:event wire type — commit e9c6011
+- [x] Task 2: NormalizedEventStream + golden fixtures — commit 2f63f38
+- [x] Task 3: EventLog JSONL writer/reader (crash-tolerant) — commit fcb0663
+- [x] Task 4: Engine consumes normalized events; markers via pipeline; events.jsonl live — commit 30f809e
+- [x] Task 5: Recovery replays events.jsonl with agent-output.md fallback — commit 39031c4
+- [x] Task 5 (gate): Phase gate — formal build/lint/test/E2E/smoke/merge — (gate commit)
+
+## Phase 3 Review
+
+AboardAI Phase 3 (Normalized Event Pipeline) is complete. Every streamed provider message is now mapped to a typed `NormalizedEvent` via `NormalizedEventStream`, appended crash-safely to `{feature}/events.jsonl` by `EventLog`, broadcast over WebSocket as `feature:event`, consumed by the auto-mode engine for marker detection (replacing direct regex scanning of raw text), and replayed by recovery. The pipeline was proven end-to-end live: a mock-mode feature run produced 84 normalized events including a terminal `result` event. Phase gate: build/lint/typecheck clean; 3,606 vitest tests passing (up from 3,501 — 6 new Phase 3 test files); E2E 70 passed / 2 failed / 2 skipped (both failures = documented Phase 1 deterministic baseline); live events.jsonl proof achieved.
+
+### Phase 3 Final Gate Numbers
+
+| Gate                                        | Result                                                                           |
+| ------------------------------------------- | -------------------------------------------------------------------------------- |
+| `npm run build:packages`                    | PASS — all 8 libs compiled clean                                                 |
+| `npm run lint`                              | PASS — exit 0, zero errors/warnings                                              |
+| `npx vitest run` (root, 148 test files)     | PASS — 3,606 passed / 28 skipped / 0 failed                                      |
+| `npm run build`                             | PASS — Vite client (3651 modules) + Electron clean                               |
+| E2E `--workers=2`                           | PASS — 70 passed / 2 failed / 2 skipped (both failures = baseline deterministic) |
+| Server smoke (`/api/health`)                | PASS — HTTP 200; no events module startup errors                                 |
+| Live pipeline proof (events.jsonl)          | PASS — 84 events written; result event confirmed; port 3008 freed after          |

@@ -17,20 +17,15 @@ import { TypedEventBus } from './typed-event-bus.js';
 import { FeatureStateManager } from './feature-state-manager.js';
 import { PlanApprovalService } from './plan-approval-service.js';
 import type { SettingsService } from './settings-service.js';
-import {
-  parseTasksFromSpec,
-  detectTaskStartMarker,
-  detectTaskCompleteMarker,
-  detectPhaseCompleteMarker,
-  detectSpecFallback,
-  extractSummary,
-} from './spec-parser.js';
+import { parseTasksFromSpec, detectSpecFallback, extractSummary } from './spec-parser.js';
 import { getPromptCustomization } from '../lib/settings-helpers.js';
 import type {
   AgentExecutionOptions,
   AgentExecutionResult,
   AgentExecutorCallbacks,
 } from './agent-executor-types.js';
+import { NormalizedEventStream } from '../events/normalizer.js';
+import { EventLogWriter } from '../events/event-log.js';
 
 // Re-export types for backward compatibility
 export type {
@@ -149,6 +144,12 @@ export class AgentExecutor {
     let responseText = previousContent
       ? `${previousContent}\n\n---\n\n## Follow-up Session\n\n`
       : '';
+
+    // One EventLogWriter per execute() invocation (shared across inner loops in this run).
+    // Each inner provider-call loop creates its own NormalizedEventStream for session-slice
+    // semantics; all streams feed the same writer and broadcast on the same bus.
+    const eventLogWriter = new EventLogWriter({ projectPath, featureId });
+    const providerName = provider.getName();
     let specDetected = specAlreadyDetected,
       tasksCompleted = 0,
       aborted = false;
@@ -208,12 +209,15 @@ export class AgentExecutor {
         existingApprovedPlanContent,
         responseText,
         scheduleWrite,
-        callbacks
+        callbacks,
+        undefined,
+        eventLogWriter
       );
       clearInterval(streamHeartbeat);
       if (writeTimeout) clearTimeout(writeTimeout);
       if (rawWriteTimeout) clearTimeout(rawWriteTimeout);
       await writeToFile();
+      await eventLogWriter.close();
 
       // Extract and save summary from the new content generated in this session
       await this.extractAndSaveSessionSummary(
@@ -222,7 +226,8 @@ export class AgentExecutor {
         result.responseText,
         previousContent,
         callbacks,
-        status
+        status,
+        result.pipelineSummaryFromStream
       );
 
       return {
@@ -235,6 +240,10 @@ export class AgentExecutor {
 
     logger.info(`Starting stream for feature ${featureId}...`);
 
+    // One NormalizedEventStream per provider-call (session-slice semantics).
+    const normalizedStream = new NormalizedEventStream({ provider: providerName, featureId });
+    let mainStreamSummary: string | undefined;
+
     try {
       const stream = superviseQuery(provider, executeOptions, DEFAULT_SUPERVISOR_POLICY);
       try {
@@ -244,6 +253,14 @@ export class AgentExecutor {
           }
           receivedAnyStreamMessage = true;
           appendRawEvent(msg);
+
+          // Feed into the normalized event pipeline
+          const normalizedEvents = normalizedStream.feed(msg);
+          for (const evt of normalizedEvents) {
+            eventLogWriter.append(evt);
+            this.eventBus.emit('feature:event', { featureId, projectPath, event: evt });
+          }
+
           // supervisor_status messages have no content — skip sentinel parsing and emit progress
           // NOTE: abort check is below so supervisor_status is skipped without triggering it
           if (msg.type === 'supervisor_status') {
@@ -321,7 +338,8 @@ export class AgentExecutor {
                     responseText,
                     requiresApproval,
                     scheduleWrite,
-                    callbacks
+                    callbacks,
+                    eventLogWriter
                   );
                   responseText = result.responseText;
                   tasksCompleted = result.tasksCompleted;
@@ -388,6 +406,18 @@ export class AgentExecutor {
           }
         }
         throw streamErr;
+      } finally {
+        // Finalize the normalized stream: emit summary event (if any)
+        // NOTE: eventLogWriter.close() is called in the outer finally to ensure it stays
+        // open across handleSpecGenerated / executeTasksLoop calls (which share the writer).
+        const finalizeEvents = normalizedStream.finalize();
+        for (const evt of finalizeEvents) {
+          if (evt.kind === 'summary' && evt.text) {
+            mainStreamSummary = evt.text;
+          }
+          eventLogWriter.append(evt);
+          this.eventBus.emit('feature:event', { featureId, projectPath, event: evt });
+        }
       }
     } finally {
       clearInterval(streamHeartbeat);
@@ -409,6 +439,8 @@ export class AgentExecutor {
           /* ignore */
         }
       }
+      // Always close the event log writer at the very end of execute()
+      await eventLogWriter.close();
     }
 
     // Capture summary if it hasn't been captured by handleSpecGenerated or executeTasksLoop
@@ -419,7 +451,8 @@ export class AgentExecutor {
       responseText,
       previousContent,
       callbacks,
-      status
+      status,
+      mainStreamSummary
     );
 
     return { responseText, specDetected, tasksCompleted, aborted };
@@ -452,6 +485,13 @@ export class AgentExecutor {
   /**
    * Extract summary ONLY from the new content generated in this session
    * and save it via the provided callback.
+   *
+   * Summary resolution order:
+   * 1. pipelineSummaryFromStream — 'summary' event produced by NormalizedEventStream.finalize()
+   *    for this run (same text as extractSummary would find, but pre-extracted).
+   * 2. extractSummary(sessionContent) — fallback scan of the session content slice.
+   * 3. Pipeline-status fallback — when no summary is found but status is a pipeline step,
+   *    use the cleaned session content as the summary (unchanged from pre-Phase-3 behaviour).
    */
   private async extractAndSaveSessionSummary(
     projectPath: string,
@@ -459,16 +499,24 @@ export class AgentExecutor {
     responseText: string,
     previousContent: string | undefined,
     callbacks: AgentExecutorCallbacks,
-    status?: string
+    status?: string,
+    pipelineSummaryFromStream?: string
   ): Promise<void> {
+    // 1. Use the summary emitted by the normalizer's finalize() if available
+    if (pipelineSummaryFromStream) {
+      await callbacks.saveFeatureSummary(projectPath, featureId, pipelineSummaryFromStream);
+      return;
+    }
+
     const sessionContent = responseText.substring(previousContent ? previousContent.length : 0);
+    // 2. Fall back to scanning sessionContent directly (preserves pre-Phase-3 behaviour)
     const summary = extractSummary(sessionContent);
     if (summary) {
       await callbacks.saveFeatureSummary(projectPath, featureId, summary);
       return;
     }
 
-    // If we're in a pipeline step, a summary is expected. Use a fallback if extraction fails.
+    // 3. If we're in a pipeline step, a summary is expected. Use a fallback if extraction fails.
     if (isPipelineStatus(status)) {
       // Strip any follow-up session scaffold before using as fallback
       const cleanSessionContent = AgentExecutor.stripFollowUpScaffold(sessionContent);
@@ -489,8 +537,14 @@ export class AgentExecutor {
     initialResponseText: string,
     scheduleWrite: () => void,
     callbacks: AgentExecutorCallbacks,
-    userFeedback?: string
-  ): Promise<{ responseText: string; tasksCompleted: number; aborted: boolean }> {
+    userFeedback?: string,
+    eventLogWriter?: EventLogWriter
+  ): Promise<{
+    responseText: string;
+    tasksCompleted: number;
+    aborted: boolean;
+    pipelineSummaryFromStream?: string;
+  }> {
     const {
       featureId,
       projectPath,
@@ -499,10 +553,12 @@ export class AgentExecutor {
       provider,
       sdkOptions,
     } = options;
+    const providerName = provider.getName();
     logger.info(`Starting task execution for feature ${featureId} with ${tasks.length} tasks`);
     const taskPrompts = await getPromptCustomization(this.settingsService, '[AutoMode]');
     let responseText = initialResponseText,
       tasksCompleted = 0;
+    let loopSummary: string | undefined;
 
     for (let taskIndex = 0; taskIndex < tasks.length; taskIndex++) {
       const task = tasks[taskIndex];
@@ -551,119 +607,140 @@ export class AgentExecutor {
         taskStartDetected = false,
         taskCompleteDetected = false;
 
-      for await (const msg of taskStream) {
-        if (msg.session_id && msg.session_id !== options.sdkSessionId) {
-          options.sdkSessionId = msg.session_id;
-        }
-        // supervisor_status messages have no content — emit progress and skip sentinel detection
-        if (msg.type === 'supervisor_status') {
-          const sv = msg as unknown as import('@aboardai/types').SupervisorStatusMessage;
-          if (sv.status === 'rate_limited') {
-            const waitSec = sv.retryAfterMs != null ? Math.round(sv.retryAfterMs / 1000) : '?';
-            this.eventBus.emitAutoModeEvent('auto_mode_progress', {
-              featureId,
-              branchName,
-              content: `Rate limited — waiting ${waitSec}s before resuming (attempt ${sv.attempt ?? '?'})`,
-            });
-          } else if (sv.status === 'stalled') {
-            this.eventBus.emitAutoModeEvent('auto_mode_progress', {
-              featureId,
-              branchName,
-              content: `Stream stalled — resuming with session ID (attempt ${sv.attempt ?? '?'})`,
-            });
-          } else if (sv.status === 'reconnecting') {
-            this.eventBus.emitAutoModeEvent('auto_mode_progress', {
-              featureId,
-              branchName,
-              content: `Connection lost — reconnecting (attempt ${sv.attempt ?? '?'})`,
-            });
-          } else if (sv.status === 'resumed') {
-            this.eventBus.emitAutoModeEvent('auto_mode_progress', {
-              featureId,
-              branchName,
-              content: `Resumed stream successfully`,
-            });
+      // Fresh NormalizedEventStream per task loop (session-slice semantics)
+      const taskNormStream = new NormalizedEventStream({ provider: providerName, featureId });
+
+      try {
+        for await (const msg of taskStream) {
+          if (msg.session_id && msg.session_id !== options.sdkSessionId) {
+            options.sdkSessionId = msg.session_id;
           }
-          continue;
-        }
-        if (msg.type === 'assistant' && msg.message?.content) {
-          for (const b of msg.message.content) {
-            if (b.type === 'text') {
-              const text = b.text || '';
-              taskOutput += text;
-              responseText += text;
-              this.eventBus.emitAutoModeEvent('auto_mode_progress', {
-                featureId,
-                branchName,
-                content: text,
-              });
-              scheduleWrite();
-              if (!taskStartDetected) {
-                const sid = detectTaskStartMarker(taskOutput);
-                if (sid) {
-                  taskStartDetected = true;
-                  await this.featureStateManager.updateTaskStatus(
-                    projectPath,
-                    featureId,
-                    sid,
-                    'in_progress'
-                  );
-                }
-              }
-              if (!taskCompleteDetected) {
-                const completeMarker = detectTaskCompleteMarker(taskOutput);
-                if (completeMarker) {
-                  taskCompleteDetected = true;
-                  await this.featureStateManager.updateTaskStatus(
-                    projectPath,
-                    featureId,
-                    completeMarker.id,
-                    'completed',
-                    completeMarker.summary
-                  );
-                }
-              }
-              const pn = detectPhaseCompleteMarker(text);
-              if (pn !== null)
+
+          // Feed into the normalized event pipeline
+          const normalizedEvents = taskNormStream.feed(msg);
+          for (const evt of normalizedEvents) {
+            eventLogWriter?.append(evt);
+            this.eventBus.emit('feature:event', { featureId, projectPath, event: evt });
+
+            // React to task_marker events instead of direct detect* calls
+            if (evt.kind === 'task_marker' && evt.marker) {
+              const { type: markerType, taskId, phase, summary: markerSummary } = evt.marker;
+              if (markerType === 'task_start' && taskId && !taskStartDetected) {
+                taskStartDetected = true;
+                await this.featureStateManager.updateTaskStatus(
+                  projectPath,
+                  featureId,
+                  taskId,
+                  'in_progress'
+                );
+              } else if (markerType === 'task_complete' && taskId && !taskCompleteDetected) {
+                taskCompleteDetected = true;
+                await this.featureStateManager.updateTaskStatus(
+                  projectPath,
+                  featureId,
+                  taskId,
+                  'completed',
+                  markerSummary
+                );
+              } else if (markerType === 'phase_complete' && phase !== undefined) {
                 this.eventBus.emitAutoModeEvent('auto_mode_phase_complete', {
                   featureId,
                   projectPath,
                   branchName,
-                  phaseNumber: pn,
+                  phaseNumber: phase,
                 });
-            } else if (b.type === 'tool_use')
-              this.eventBus.emitAutoModeEvent('auto_mode_tool', {
+              }
+            }
+          }
+
+          // supervisor_status messages have no content — emit progress and skip sentinel detection
+          if (msg.type === 'supervisor_status') {
+            const sv = msg as unknown as import('@aboardai/types').SupervisorStatusMessage;
+            if (sv.status === 'rate_limited') {
+              const waitSec = sv.retryAfterMs != null ? Math.round(sv.retryAfterMs / 1000) : '?';
+              this.eventBus.emitAutoModeEvent('auto_mode_progress', {
                 featureId,
                 branchName,
-                tool: b.name,
-                input: b.input,
+                content: `Rate limited — waiting ${waitSec}s before resuming (attempt ${sv.attempt ?? '?'})`,
               });
+            } else if (sv.status === 'stalled') {
+              this.eventBus.emitAutoModeEvent('auto_mode_progress', {
+                featureId,
+                branchName,
+                content: `Stream stalled — resuming with session ID (attempt ${sv.attempt ?? '?'})`,
+              });
+            } else if (sv.status === 'reconnecting') {
+              this.eventBus.emitAutoModeEvent('auto_mode_progress', {
+                featureId,
+                branchName,
+                content: `Connection lost — reconnecting (attempt ${sv.attempt ?? '?'})`,
+              });
+            } else if (sv.status === 'resumed') {
+              this.eventBus.emitAutoModeEvent('auto_mode_progress', {
+                featureId,
+                branchName,
+                content: `Resumed stream successfully`,
+              });
+            }
+            continue;
           }
-        } else if (msg.type === 'error') {
-          const fallback = `Error during task ${task.id}`;
-          const sanitized = AgentExecutor.sanitizeProviderError(msg.error || fallback);
-          logger.error(
-            `[executeTasksLoop] Feature ${featureId} task ${task.id} received error from provider. ` +
-              `raw="${msg.error}", sanitized="${sanitized}", session_id=${msg.session_id ?? 'none'}`
-          );
-          throw new Error(sanitized);
-        } else if (msg.type === 'result') {
-          if (msg.subtype === 'success') {
-            taskOutput += msg.result || '';
-            responseText += msg.result || '';
-          } else if (msg.subtype?.startsWith('error')) {
+          if (msg.type === 'assistant' && msg.message?.content) {
+            for (const b of msg.message.content) {
+              if (b.type === 'text') {
+                const text = b.text || '';
+                taskOutput += text;
+                responseText += text;
+                this.eventBus.emitAutoModeEvent('auto_mode_progress', {
+                  featureId,
+                  branchName,
+                  content: text,
+                });
+                scheduleWrite();
+              } else if (b.type === 'tool_use')
+                this.eventBus.emitAutoModeEvent('auto_mode_tool', {
+                  featureId,
+                  branchName,
+                  tool: b.name,
+                  input: b.input,
+                });
+            }
+          } else if (msg.type === 'error') {
+            const fallback = `Error during task ${task.id}`;
+            const sanitized = AgentExecutor.sanitizeProviderError(msg.error || fallback);
             logger.error(
-              `[executeTasksLoop] Feature ${featureId} task ${task.id} ended with error subtype: ${msg.subtype}. ` +
-                `session_id=${msg.session_id ?? 'none'}`
+              `[executeTasksLoop] Feature ${featureId} task ${task.id} received error from provider. ` +
+                `raw="${msg.error}", sanitized="${sanitized}", session_id=${msg.session_id ?? 'none'}`
             );
-            throw new Error(`Agent execution ended with: ${msg.subtype}`);
-          } else {
-            logger.warn(
-              `[executeTasksLoop] Feature ${featureId} task ${task.id} received unhandled result subtype: ${msg.subtype}`
-            );
+            throw new Error(sanitized);
+          } else if (msg.type === 'result') {
+            if (msg.subtype === 'success') {
+              taskOutput += msg.result || '';
+              responseText += msg.result || '';
+            } else if (msg.subtype?.startsWith('error')) {
+              logger.error(
+                `[executeTasksLoop] Feature ${featureId} task ${task.id} ended with error subtype: ${msg.subtype}. ` +
+                  `session_id=${msg.session_id ?? 'none'}`
+              );
+              throw new Error(`Agent execution ended with: ${msg.subtype}`);
+            } else {
+              logger.warn(
+                `[executeTasksLoop] Feature ${featureId} task ${task.id} received unhandled result subtype: ${msg.subtype}`
+              );
+            }
           }
         }
+      } finally {
+        // Finalize the task's normalized stream and flush any summary event
+        const taskFinalizeEvents = taskNormStream.finalize();
+        for (const evt of taskFinalizeEvents) {
+          if (evt.kind === 'summary' && evt.text) {
+            loopSummary = evt.text;
+          }
+          eventLogWriter?.append(evt);
+          this.eventBus.emit('feature:event', { featureId, projectPath, event: evt });
+        }
       }
+
       if (!taskCompleteDetected)
         await this.featureStateManager.updateTaskStatus(
           projectPath,
@@ -697,7 +774,7 @@ export class AgentExecutor {
         }
       }
     }
-    return { responseText, tasksCompleted, aborted: false };
+    return { responseText, tasksCompleted, aborted: false, pipelineSummaryFromStream: loopSummary };
   }
 
   private async handleSpecGenerated(
@@ -706,7 +783,8 @@ export class AgentExecutor {
     initialResponseText: string,
     requiresApproval: boolean,
     scheduleWrite: () => void,
-    callbacks: AgentExecutorCallbacks
+    callbacks: AgentExecutorCallbacks,
+    eventLogWriter?: EventLogWriter
   ): Promise<{ responseText: string; tasksCompleted: number }> {
     const {
       featureId,
@@ -808,34 +886,54 @@ export class AgentExecutor {
             version: planVersion,
           });
           let revText = '';
-          for await (const msg of superviseQuery(
-            provider,
-            this.buildExecOpts(options, revPrompt, sdkOptions?.maxTurns ?? DEFAULT_MAX_TURNS),
-            DEFAULT_SUPERVISOR_POLICY
-          )) {
-            if (msg.session_id && msg.session_id !== options.sdkSessionId) {
-              options.sdkSessionId = msg.session_id;
+          const revNormStream = new NormalizedEventStream({
+            provider: provider.getName(),
+            featureId,
+          });
+          try {
+            for await (const msg of superviseQuery(
+              provider,
+              this.buildExecOpts(options, revPrompt, sdkOptions?.maxTurns ?? DEFAULT_MAX_TURNS),
+              DEFAULT_SUPERVISOR_POLICY
+            )) {
+              if (msg.session_id && msg.session_id !== options.sdkSessionId) {
+                options.sdkSessionId = msg.session_id;
+              }
+
+              // Feed into the normalized event pipeline
+              const normalizedEvents = revNormStream.feed(msg);
+              for (const evt of normalizedEvents) {
+                eventLogWriter?.append(evt);
+                this.eventBus.emit('feature:event', { featureId, projectPath, event: evt });
+              }
+
+              if (msg.type === 'supervisor_status') continue; // no content, skip
+              if (msg.type === 'assistant' && msg.message?.content)
+                for (const b of msg.message.content)
+                  if (b.type === 'text') {
+                    revText += b.text || '';
+                    this.eventBus.emitAutoModeEvent('auto_mode_progress', {
+                      featureId,
+                      branchName,
+                      content: b.text,
+                    });
+                  }
+              if (msg.type === 'error') {
+                const cleanedError =
+                  (msg.error || 'Error during plan revision')
+                    .replace(/\x1b\[[0-9;]*m/g, '')
+                    .replace(/^Error:\s*/i, '')
+                    .trim() || 'Error during plan revision';
+                throw new Error(cleanedError);
+              }
+              if (msg.type === 'result' && msg.subtype === 'success') revText += msg.result || '';
             }
-            if (msg.type === 'supervisor_status') continue; // no content, skip
-            if (msg.type === 'assistant' && msg.message?.content)
-              for (const b of msg.message.content)
-                if (b.type === 'text') {
-                  revText += b.text || '';
-                  this.eventBus.emitAutoModeEvent('auto_mode_progress', {
-                    featureId,
-                    branchName,
-                    content: b.text,
-                  });
-                }
-            if (msg.type === 'error') {
-              const cleanedError =
-                (msg.error || 'Error during plan revision')
-                  .replace(/\x1b\[[0-9;]*m/g, '')
-                  .replace(/^Error:\s*/i, '')
-                  .trim() || 'Error during plan revision';
-              throw new Error(cleanedError);
+          } finally {
+            const revFinalizeEvents = revNormStream.finalize();
+            for (const evt of revFinalizeEvents) {
+              eventLogWriter?.append(evt);
+              this.eventBus.emit('feature:event', { featureId, projectPath, event: evt });
             }
-            if (msg.type === 'result' && msg.subtype === 'success') revText += msg.result || '';
           }
           const mi = revText.indexOf('[SPEC_GENERATED]');
           currentPlanContent = mi > 0 ? revText.substring(0, mi).trim() : revText.trim();
@@ -883,7 +981,8 @@ export class AgentExecutor {
         responseText,
         scheduleWrite,
         callbacks,
-        userFeedback
+        userFeedback,
+        eventLogWriter
       );
       responseText = r.responseText;
       tasksCompleted = r.tasksCompleted;
@@ -892,7 +991,8 @@ export class AgentExecutor {
         options,
         approvedPlanContent,
         userFeedback,
-        responseText
+        responseText,
+        eventLogWriter
       );
       responseText = r.responseText;
     }
@@ -923,50 +1023,70 @@ export class AgentExecutor {
     options: AgentExecutionOptions,
     planContent: string,
     userFeedback: string | undefined,
-    initialResponseText: string
+    initialResponseText: string,
+    eventLogWriter?: EventLogWriter
   ): Promise<{ responseText: string }> {
-    const { featureId, branchName = null, provider } = options;
+    const { featureId, projectPath, branchName = null, provider } = options;
+    const providerName = provider.getName();
     logger.info(`No parsed tasks, using single-agent execution for feature ${featureId}`);
     const prompts = await getPromptCustomization(this.settingsService, '[AutoMode]');
     const contPrompt = prompts.taskExecution.continuationAfterApprovalTemplate
       .replace(/\{\{userFeedback\}\}/g, userFeedback || '')
       .replace(/\{\{approvedPlan\}\}/g, planContent);
     let responseText = initialResponseText;
-    for await (const msg of superviseQuery(
-      provider,
-      this.buildExecOpts(options, contPrompt, options.sdkOptions?.maxTurns ?? DEFAULT_MAX_TURNS),
-      DEFAULT_SUPERVISOR_POLICY
-    )) {
-      if (msg.session_id && msg.session_id !== options.sdkSessionId) {
-        options.sdkSessionId = msg.session_id;
-      }
-      if (msg.type === 'supervisor_status') continue; // no content, skip
-      if (msg.type === 'assistant' && msg.message?.content)
-        for (const b of msg.message.content) {
-          if (b.type === 'text') {
-            responseText += b.text || '';
-            this.eventBus.emitAutoModeEvent('auto_mode_progress', {
-              featureId,
-              branchName,
-              content: b.text,
-            });
-          } else if (b.type === 'tool_use')
-            this.eventBus.emitAutoModeEvent('auto_mode_tool', {
-              featureId,
-              branchName,
-              tool: b.name,
-              input: b.input,
-            });
+    const contNormStream = new NormalizedEventStream({ provider: providerName, featureId });
+    try {
+      for await (const msg of superviseQuery(
+        provider,
+        this.buildExecOpts(options, contPrompt, options.sdkOptions?.maxTurns ?? DEFAULT_MAX_TURNS),
+        DEFAULT_SUPERVISOR_POLICY
+      )) {
+        if (msg.session_id && msg.session_id !== options.sdkSessionId) {
+          options.sdkSessionId = msg.session_id;
         }
-      else if (msg.type === 'error') {
-        const cleanedError =
-          (msg.error || 'Unknown error during implementation')
-            .replace(/\x1b\[[0-9;]*m/g, '')
-            .replace(/^Error:\s*/i, '')
-            .trim() || 'Unknown error during implementation';
-        throw new Error(cleanedError);
-      } else if (msg.type === 'result' && msg.subtype === 'success')
-        responseText += msg.result || '';
+
+        // Feed into the normalized event pipeline
+        const normalizedEvents = contNormStream.feed(msg);
+        for (const evt of normalizedEvents) {
+          eventLogWriter?.append(evt);
+          this.eventBus.emit('feature:event', { featureId, projectPath, event: evt });
+        }
+
+        if (msg.type === 'supervisor_status') continue; // no content, skip
+        if (msg.type === 'assistant' && msg.message?.content)
+          for (const b of msg.message.content) {
+            if (b.type === 'text') {
+              responseText += b.text || '';
+              this.eventBus.emitAutoModeEvent('auto_mode_progress', {
+                featureId,
+                branchName,
+                content: b.text,
+              });
+            } else if (b.type === 'tool_use')
+              this.eventBus.emitAutoModeEvent('auto_mode_tool', {
+                featureId,
+                branchName,
+                tool: b.name,
+                input: b.input,
+              });
+          }
+        else if (msg.type === 'error') {
+          const cleanedError =
+            (msg.error || 'Unknown error during implementation')
+              .replace(/\x1b\[[0-9;]*m/g, '')
+              .replace(/^Error:\s*/i, '')
+              .trim() || 'Unknown error during implementation';
+          throw new Error(cleanedError);
+        } else if (msg.type === 'result' && msg.subtype === 'success')
+          responseText += msg.result || '';
+      }
+    } finally {
+      // Finalize the continuation's normalized stream
+      const contFinalizeEvents = contNormStream.finalize();
+      for (const evt of contFinalizeEvents) {
+        eventLogWriter?.append(evt);
+        this.eventBus.emit('feature:event', { featureId, projectPath, event: evt });
+      }
     }
     return { responseText };
   }

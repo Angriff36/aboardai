@@ -1,0 +1,62 @@
+{
+  "description": "error-result: type:error message + result with is_error → result{isError:true} + error event",
+  "input": [
+    {
+      "type": "assistant",
+      "session_id": "session-err-001",
+      "message": {
+        "role": "assistant",
+        "content": [{ "type": "text", "text": "Attempting risky operation..." }]
+      }
+    },
+    {
+      "type": "error",
+      "session_id": "session-err-001",
+      "error": "ENOMEM: out of memory"
+    },
+    {
+      "type": "result",
+      "subtype": "error_during_execution",
+      "session_id": "session-err-001",
+      "result": "Execution failed"
+    }
+  ],
+  "expected": [
+    {
+      "v": 1,
+      "id": "__monotonic__",
+      "ts": "__any__",
+      "kind": "session",
+      "provider": "claude",
+      "featureId": "feat-007",
+      "sessionId": "session-err-001"
+    },
+    {
+      "v": 1,
+      "id": "__monotonic__",
+      "ts": "__any__",
+      "kind": "agent_message",
+      "provider": "claude",
+      "featureId": "feat-007",
+      "text": "Attempting risky operation..."
+    },
+    {
+      "v": 1,
+      "id": "__monotonic__",
+      "ts": "__any__",
+      "kind": "error",
+      "provider": "claude",
+      "featureId": "feat-007",
+      "text": "ENOMEM: out of memory"
+    },
+    {
+      "v": 1,
+      "id": "__monotonic__",
+      "ts": "__any__",
+      "kind": "result",
+      "provider": "claude",
+      "featureId": "feat-007",
+      "result": { "subtype": "error_during_execution", "isError": true }
+    }
+  ]
+}

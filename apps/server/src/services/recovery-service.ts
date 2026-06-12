@@ -19,6 +19,8 @@ import {
 } from '@aboardai/platform';
 import * as secureFs from '../lib/secure-fs.js';
 import { getPromptCustomization } from '../lib/settings-helpers.js';
+import { readEventLog } from '../events/event-log.js';
+import { renderEventsToContext } from '../events/event-renderer.js';
 import type { TypedEventBus } from './typed-event-bus.js';
 import type { ConcurrencyManager, RunningFeature } from './concurrency-manager.js';
 import type { SettingsService } from './settings-service.js';
@@ -219,10 +221,21 @@ export class RecoveryService {
         return await this.resumePipelineFn(projectPath, feature, useWorktrees, pipelineInfo);
       const hasContext = await this.contextExists(projectPath, featureId);
       if (hasContext) {
-        const context = (await secureFs.readFile(
-          path.join(getFeatureDir(projectPath, featureId), 'agent-output.md'),
-          'utf-8'
-        )) as string;
+        // Prefer structured events.jsonl replay when available (≥1 event).
+        // Falls back to agent-output.md when events.jsonl is absent/empty/unreadable.
+        let context: string;
+        const eventLog = await readEventLog(projectPath, featureId);
+        if (eventLog.length > 0) {
+          logger.info(
+            `[resumeFeature] Replaying ${eventLog.length} events from events.jsonl for feature ${featureId}`
+          );
+          context = renderEventsToContext(eventLog);
+        } else {
+          context = (await secureFs.readFile(
+            path.join(getFeatureDir(projectPath, featureId), 'agent-output.md'),
+            'utf-8'
+          )) as string;
+        }
         this.eventBus.emitAutoModeEvent('auto_mode_feature_resuming', {
           featureId,
           featureName: feature.title,

@@ -1,0 +1,82 @@
+{
+  "description": "claude-file-and-command: tool_use(Edit with file_path) + tool_use(Bash with command) → generic+derived pairs",
+  "input": [
+    {
+      "type": "assistant",
+      "session_id": "session-def-456",
+      "message": {
+        "role": "assistant",
+        "content": [
+          {
+            "type": "tool_use",
+            "name": "Edit",
+            "tool_use_id": "tu-edit-001",
+            "input": { "file_path": "/src/utils.ts", "old_string": "foo", "new_string": "bar" }
+          }
+        ]
+      }
+    },
+    {
+      "type": "assistant",
+      "session_id": "session-def-456",
+      "message": {
+        "role": "assistant",
+        "content": [
+          {
+            "type": "tool_use",
+            "name": "Bash",
+            "tool_use_id": "tu-bash-001",
+            "input": { "command": "npm test" }
+          }
+        ]
+      }
+    }
+  ],
+  "expected": [
+    {
+      "v": 1,
+      "id": "__monotonic__",
+      "ts": "__any__",
+      "kind": "session",
+      "provider": "claude",
+      "featureId": "feat-002",
+      "sessionId": "session-def-456"
+    },
+    {
+      "v": 1,
+      "id": "__monotonic__",
+      "ts": "__any__",
+      "kind": "tool_use",
+      "provider": "claude",
+      "featureId": "feat-002",
+      "tool": { "name": "Edit", "toolUseId": "tu-edit-001" }
+    },
+    {
+      "v": 1,
+      "id": "__monotonic__",
+      "ts": "__any__",
+      "kind": "file_edit",
+      "provider": "claude",
+      "featureId": "feat-002",
+      "file": { "path": "/src/utils.ts", "tool": "Edit" }
+    },
+    {
+      "v": 1,
+      "id": "__monotonic__",
+      "ts": "__any__",
+      "kind": "tool_use",
+      "provider": "claude",
+      "featureId": "feat-002",
+      "tool": { "name": "Bash", "toolUseId": "tu-bash-001" }
+    },
+    {
+      "v": 1,
+      "id": "__monotonic__",
+      "ts": "__any__",
+      "kind": "command_run",
+      "provider": "claude",
+      "featureId": "feat-002",
+      "command": { "command": "npm test" }
+    }
+  ]
+}

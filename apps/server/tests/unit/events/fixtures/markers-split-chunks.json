@@ -1,0 +1,92 @@
+{
+  "description": "markers-split-chunks: marker split across text chunks; re-send of overlapping text must NOT duplicate markers",
+  "input": [
+    {
+      "type": "assistant",
+      "session_id": "session-marker-abc",
+      "message": {
+        "role": "assistant",
+        "content": [{ "type": "text", "text": "Starting work now. [TASK_ST" }]
+      }
+    },
+    {
+      "type": "assistant",
+      "session_id": "session-marker-abc",
+      "message": {
+        "role": "assistant",
+        "content": [{ "type": "text", "text": "ART] T001\nDoing the work...\n" }]
+      }
+    },
+    {
+      "type": "assistant",
+      "session_id": "session-marker-abc",
+      "message": {
+        "role": "assistant",
+        "content": [{ "type": "text", "text": "[TASK_COMPLETE] T001: implementation done\n" }]
+      }
+    }
+  ],
+  "expected": [
+    {
+      "v": 1,
+      "id": "__monotonic__",
+      "ts": "__any__",
+      "kind": "session",
+      "provider": "claude",
+      "featureId": "feat-004",
+      "sessionId": "session-marker-abc"
+    },
+    {
+      "v": 1,
+      "id": "__monotonic__",
+      "ts": "__any__",
+      "kind": "agent_message",
+      "provider": "claude",
+      "featureId": "feat-004",
+      "text": "Starting work now. [TASK_ST"
+    },
+    {
+      "v": 1,
+      "id": "__monotonic__",
+      "ts": "__any__",
+      "kind": "agent_message",
+      "provider": "claude",
+      "featureId": "feat-004",
+      "text": "ART] T001\nDoing the work...\n"
+    },
+    {
+      "v": 1,
+      "id": "__monotonic__",
+      "ts": "__any__",
+      "kind": "task_marker",
+      "provider": "claude",
+      "featureId": "feat-004",
+      "marker": {
+        "type": "task_start",
+        "taskId": "T001"
+      }
+    },
+    {
+      "v": 1,
+      "id": "__monotonic__",
+      "ts": "__any__",
+      "kind": "agent_message",
+      "provider": "claude",
+      "featureId": "feat-004",
+      "text": "[TASK_COMPLETE] T001: implementation done\n"
+    },
+    {
+      "v": 1,
+      "id": "__monotonic__",
+      "ts": "__any__",
+      "kind": "task_marker",
+      "provider": "claude",
+      "featureId": "feat-004",
+      "marker": {
+        "type": "task_complete",
+        "taskId": "T001",
+        "summary": "implementation done"
+      }
+    }
+  ]
+}

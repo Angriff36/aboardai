@@ -111,6 +111,7 @@ export {
 
 // Event types
 export type { EventType, EventCallback } from './event.js';
+export type { NormalizedEventKind, NormalizedEvent } from './normalized-event.js';
 
 // Spec types
 export type { SpecOutput } from './spec.js';

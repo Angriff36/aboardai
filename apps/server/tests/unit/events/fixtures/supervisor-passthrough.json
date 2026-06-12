@@ -1,0 +1,28 @@
+{
+  "description": "supervisor-passthrough: supervisor_status(rate_limited, retryAfterMs) → status event",
+  "input": [
+    {
+      "type": "supervisor_status",
+      "status": "rate_limited",
+      "attempt": 2,
+      "retryAfterMs": 30000,
+      "detail": "Rate limit hit on claude-sonnet-4-5"
+    }
+  ],
+  "expected": [
+    {
+      "v": 1,
+      "id": "__monotonic__",
+      "ts": "__any__",
+      "kind": "status",
+      "provider": "claude",
+      "featureId": "feat-006",
+      "status": {
+        "status": "rate_limited",
+        "attempt": 2,
+        "retryAfterMs": 30000,
+        "detail": "Rate limit hit on claude-sonnet-4-5"
+      }
+    }
+  ]
+}

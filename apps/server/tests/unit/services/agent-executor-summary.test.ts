@@ -41,8 +41,11 @@ describe('AgentExecutor Summary Extraction', () => {
   beforeEach(() => {
     vi.clearAllMocks();
 
+    // Note: emit() added here because agent-executor now calls eventBus.emit('feature:event', ...)
+    // for normalized pipeline events. Existing outcome assertions are unchanged.
     mockEventBus = {
       emitAutoModeEvent: vi.fn(),
+      emit: vi.fn(),
     } as unknown as TypedEventBus;
 
     mockFeatureStateManager = {
