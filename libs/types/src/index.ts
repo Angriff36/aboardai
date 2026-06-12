@@ -21,6 +21,9 @@ export type {
   ReasoningEffort,
   // System prompt configuration for CLAUDE.md auto-loading
   SystemPromptPreset,
+  // Provider supervision types
+  SupervisorStatusMessage,
+  SupervisorPolicy,
 } from './provider.js';
 
 // Provider constants and utilities
@@ -28,6 +31,8 @@ export {
   DEFAULT_TIMEOUT_MS,
   REASONING_TIMEOUT_MULTIPLIERS,
   calculateReasoningTimeout,
+  DEFAULT_SUPERVISOR_POLICY,
+  SupervisorExhaustedError,
 } from './provider.js';
 
 // Codex CLI types
