@@ -74,6 +74,9 @@ const CODEX_EVENT_TYPES = {
   itemStarted: 'item.started',
   itemUpdated: 'item.updated',
   turnCompleted: 'turn.completed',
+  turnStarted: 'turn.started',
+  turnFailed: 'turn.failed',
+  threadStarted: 'thread.started',
   error: 'error',
 } as const;
 
@@ -803,6 +806,10 @@ export class CodexProvider extends BaseProvider {
       }
 
       const toolUseTracker = new CodexToolUseTracker();
+      // Accumulate command_execution output deltas as a fallback for the known
+      // Codex CLI bug (issue #10141) where aggregated_output on the final
+      // item.completed event can be empty even when output arrived via deltas.
+      const commandOutputDeltas = new Map<string, string>();
       const sandboxCheck = checkSandboxCompatibility(
         options.cwd,
         codexSettings.sandboxMode !== 'danger-full-access'
@@ -981,6 +988,26 @@ export class CodexProvider extends BaseProvider {
           continue;
         }
 
+        // Safe no-ops for lifecycle events that carry no UI-relevant payload.
+        if (eventType === CODEX_EVENT_TYPES.threadStarted) {
+          // thread_id already captured above; nothing more to emit.
+          logger.debug('[CodexProvider] thread.started event received');
+          continue;
+        }
+
+        if (eventType === CODEX_EVENT_TYPES.turnStarted) {
+          logger.debug('[CodexProvider] turn.started event received');
+          continue;
+        }
+
+        if (eventType === CODEX_EVENT_TYPES.turnFailed) {
+          const failText =
+            extractText(event.error ?? event.message ?? event.reason) || 'Codex turn failed';
+          logger.debug('[CodexProvider] turn.failed event received', { failText });
+          yield { type: 'error', error: failText };
+          continue;
+        }
+
         if (!eventType) {
           const fallbackText = extractText(event);
           if (fallbackText) {
@@ -1019,6 +1046,29 @@ export class CodexProvider extends BaseProvider {
               ],
             },
           };
+          continue;
+        }
+
+        // Accumulate command_execution output deltas (issue #10141 defense):
+        // The final item.completed event may have empty aggregated_output even
+        // when output arrived via item.updated deltas. Accumulate here and fall
+        // back to the concatenated deltas when extractCommandOutput returns null.
+        if (
+          eventType === CODEX_EVENT_TYPES.itemUpdated &&
+          itemType === CODEX_ITEM_TYPES.commandExecution
+        ) {
+          const deltaText =
+            typeof item.outputDelta === 'string'
+              ? item.outputDelta
+              : typeof item.output_delta === 'string'
+                ? item.output_delta
+                : null;
+          if (deltaText) {
+            const itemId = getIdentifierFromRecord(item, ITEM_ID_KEYS) ?? '';
+            const existing = commandOutputDeltas.get(itemId) ?? '';
+            commandOutputDeltas.set(itemId, existing + deltaText);
+          }
+          // No UI event emitted for deltas — the final item.completed handles display.
           continue;
         }
 
@@ -1066,8 +1116,19 @@ export class CodexProvider extends BaseProvider {
           }
 
           if (itemType === CODEX_ITEM_TYPES.commandExecution) {
+            // Use aggregated output from item; fall back to accumulated deltas if empty
+            // (defense against Codex CLI issue #10141 where aggregated_output can be empty).
+            const itemId = getIdentifierFromRecord(item, ITEM_ID_KEYS) ?? '';
+            const accumulatedDeltas = commandOutputDeltas.get(itemId) ?? '';
+            if (accumulatedDeltas) {
+              commandOutputDeltas.delete(itemId);
+            }
             const commandOutput =
-              extractCommandOutput(item) ?? extractCommandText(item) ?? extractText(item) ?? '';
+              extractCommandOutput(item) ??
+              (accumulatedDeltas || null) ??
+              extractCommandText(item) ??
+              extractText(item) ??
+              '';
             if (commandOutput) {
               const toolUseId = toolUseTracker.resolve(event, item);
               const toolResultBlock: {
