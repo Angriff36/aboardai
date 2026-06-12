@@ -129,7 +129,7 @@ describe('generateBacklogPlan', () => {
       '/tmp/project',
       expect.objectContaining({
         prompt: 'Please add a signup feature',
-        model: 'claude-opus-4-6',
+        model: 'claude-opus-4-8',
         result: partialResult,
       })
     );

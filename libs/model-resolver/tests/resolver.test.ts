@@ -484,12 +484,12 @@ describe('model-resolver', () => {
 
       it('should handle full Claude model string in entry', () => {
         const entry: PhaseModelEntry = {
-          model: 'claude-opus-4-6',
+          model: 'claude-opus-4-8',
           thinkingLevel: 'high',
         };
         const result = resolvePhaseModel(entry);
 
-        expect(result.model).toBe('claude-opus-4-6');
+        expect(result.model).toBe('claude-opus-4-8');
         expect(result.thinkingLevel).toBe('high');
       });
     });
