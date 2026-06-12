@@ -170,3 +170,49 @@ WebSocket updates. Gate fix: dependency-satisfaction broadened to `SUCCESS_STATU
 | E2E `--workers=2` (best of 6 runs)          | PASS — 64–67 passed / 5–8 failed / 2 skipped; all failures in documented baseline           |
 | Server health (`/api/health`)               | PASS — HTTP 200 with ABOARDAI_MOCK_AGENT=true                                               |
 | Live group proof                            | PASS — group status `review`; all 3 children completed; C after A; 9 events; snapshot match |
+
+---
+
+# AboardAI Phase 5: Polish & v1 Gate — Execution Tracker
+
+Plan: `docs/superpowers/plans/2026-06-12-phase5-polish.md`
+Results: `docs/superpowers/plans/phase5-results.md`
+Branch: `phase5-polish` → merged to `main`
+
+- [x] Task 1: Fix board-background-persistence deterministic failures — commit 008e88e
+- [x] Task 2: Resolve orphaned multi-project-dashboard spec — commit 3481da8
+- [x] Task 3: Break electron<->app-store import cycle — commit 2d16a19
+- [x] Task 4: Agent board-mutation tool (update_feature_status, A2 scoped) — commit 2723da2
+- [x] Task 5: Docs cleanup + Gemini TODO — commit 94aef93
+- [x] Task 6 (gate): v1 final gate + closing summary — (this commit)
+
+## Phase 5 Review
+
+AboardAI Phase 5 (Polish & v1 Gate) is complete and AboardAI v1 is delivered. The two deterministic E2E failures (board-background-persistence) were fixed by correcting Windows path JSON-escaping in the hook. The orphaned multi-project-dashboard spec was removed (redundant coverage). The electron<->app-store circular import was broken by extracting shared types. The UpdateFeatureStatus prompt/tool gap was closed by implementing `mcp__aboardai__update_feature_status` via the SDK in-process MCP server. Four stale docs were deleted and README was updated for current state. The v1 final gate ran clean: 3,744 unit tests, ZERO deterministic E2E failures (74 tests, 71 passed, 1 confirmed flake, 2 pre-existing skips), live smoke proof (health 200, feature events.jsonl, group → review). Electron Windows packaging is a known non-blocking environment issue (private registry dependency). Branch merged to main.
+
+### Phase 5 Final Gate Numbers
+
+| Gate                                        | Result                                                                        |
+| ------------------------------------------- | ----------------------------------------------------------------------------- |
+| `npm run build:packages`                    | PASS — all 8 libs + server compiled clean                                     |
+| `npm run lint`                              | PASS — exit 0, zero errors/warnings                                           |
+| `npx vitest run` (root, 162 test files)     | PASS — **3,744 passed / 28 skipped / 0 failed**                               |
+| `npm test --workspaces --if-present` (libs) | PASS — 278 passed / 0 failed (9 files)                                        |
+| `npm run build`                             | PASS — Vite client + Electron clean                                           |
+| E2E `--workers=2`                           | PASS — 71 passed / 1 flake / 2 skipped / **0 deterministic failures**         |
+| Server smoke (`/api/health`)                | PASS — HTTP 200; mock feature: 3 events; group: 2×3 events, status=review     |
+| Electron Windows package                    | KNOWN ISSUE — `@angriff36/manifest` not on public npm registry (non-blocking) |
+
+---
+
+## v1 COMPLETE — Closing Review
+
+AboardAI v1 achieved all 6 spec goals (see `docs/superpowers/plans/phase5-results.md` for the full v1 CLOSING SUMMARY table). Five build phases completed 2026-06-11 through 2026-06-12:
+
+- **Phase 1** — Fork & rebrand complete (commit 5baf12d gate)
+- **Phase 2** — Provider layer: SDK 0.3.173, S1–S12 supervisor, model catalog
+- **Phase 3** — Normalized event pipeline: events.jsonl, WebSocket, recovery
+- **Phase 4** — Task groups: GroupEngine/Queue, concurrency, retry, UI
+- **Phase 5** — Polish: 0 deterministic E2E failures, agent board tool, stale docs cleaned
+
+v1 main HEAD: see `git log --oneline -3`
