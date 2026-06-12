@@ -17,6 +17,7 @@ export type EventType =
   | 'feature:error'
   | 'feature:progress'
   | 'feature:tool-use'
+  | 'feature:event'
   | 'feature:follow-up-started'
   | 'feature:follow-up-completed'
   | 'feature:verified'
