@@ -88,6 +88,12 @@ interface ModelCapability {
  * - sonnet-4-6: 1M context, adaptive + extended thinking
  * - haiku-4-5-20251001: 200k context, extended thinking via budget only
  * - opus-4-6, sonnet-4-20250514: deprecated (noted in description)
+ *
+ * IMPORTANT: order matters for prefix-matching in getModelCapability().
+ * More-specific (longer) ids must appear BEFORE shorter ids that would
+ * otherwise match as a prefix. Example: 'claude-opus-4-8' must precede
+ * 'claude-opus-4-6' so that a date-pinned 'claude-opus-4-8-20260101' hits
+ * the opus-4-8 capability entry, not opus-4-6.
  */
 const MODEL_CAPABILITIES: readonly ModelCapability[] = [
   {
@@ -182,23 +188,44 @@ function getModelCapability(model: string): ModelCapability {
 /**
  * Map AboardAI's ReasoningEffort onto the SDK's EffortLevel.
  *
- * The SDK accepts only 'low' | 'medium' | 'high' | 'xhigh' | 'max'. AboardAI's
- * ReasoningEffort additionally has 'none' and 'minimal' (and lacks 'max').
- * Defensive mapping:
- * - 'none'/'minimal' -> 'low' (lowest level the SDK accepts)
- * - 'low'/'medium'/'high'/'xhigh' -> identity
- * Returns undefined for genuinely unrecognized values.
+ * SDK EffortLevel: 'low' | 'medium' | 'high' | 'xhigh' | 'max'
+ * AboardAI ReasoningEffort: 'none' | 'minimal' | 'low' | 'medium' | 'high' | 'xhigh'
+ *
+ * Differences:
+ * - 'none' and 'minimal' have no SDK counterpart. We clamp both to 'low'.
+ *   Rationale: omitting effort entirely is NOT equivalent to "no effort" —
+ *   for opus-4-8 the SDK default is 'high', which is the OPPOSITE of the
+ *   user's intent when they chose 'none' or 'minimal'. 'low' is the closest
+ *   available level.
+ * - 'max' exists in the SDK EffortLevel but NOT in ReasoningEffort (as of this
+ *   writing). If the type is extended, add it here — the default branch would
+ *   silently swallow it otherwise.
+ *
+ * Exhaustive table (every ReasoningEffort value must appear as a case):
+ *   none    → 'low'   (no SDK 'none'; see rationale above)
+ *   minimal → 'low'   (no SDK 'minimal'; same rationale)
+ *   low     → 'low'
+ *   medium  → 'medium'
+ *   high    → 'high'
+ *   xhigh   → 'xhigh'
+ *
+ * Returns undefined for genuinely unrecognized / future values so the caller
+ * omits the effort field rather than sending a bad value.
  */
 function mapEffortToSdk(effort: ReasoningEffort | undefined): SdkEffortLevel | undefined {
   switch (effort) {
+    // AboardAI-only levels — clamp to lowest SDK level (see JSDoc for rationale)
     case 'none':
     case 'minimal':
       return 'low';
+    // Identity mappings
     case 'low':
     case 'medium':
     case 'high':
     case 'xhigh':
       return effort;
+    // SDK also has 'max' but ReasoningEffort does not (yet). When/if added,
+    // add an explicit case here so the exhaustive table stays accurate.
     default:
       return undefined;
   }
@@ -251,15 +278,24 @@ function isClaudeCompatibleProvider(config: ProviderConfig): config is ClaudeCom
 
 /**
  * Build environment for the SDK with only explicitly allowed variables.
- * When a provider/profile is provided, uses its configuration (clean switch - don't inherit from process.env).
- * When no provider is provided, uses direct Anthropic API settings from process.env.
+ *
+ * Path A — ClaudeCompatibleProvider ("clean switch"): the subprocess env is
+ * built entirely from explicit settings. Watchdog vars are seeded from
+ * WATCHDOG_ENV_DEFAULTS and are NEVER read from process.env on this path —
+ * a hostile process.env.CLAUDE_STREAM_IDLE_TIMEOUT_MS cannot shrink the
+ * timeout and induce spurious watchdog trips that look like legitimate
+ * provider behaviour.
+ *
+ * Path B — ClaudeApiProfile (legacy, profile-configured): clean switch for
+ * non-system vars; watchdog defaults can be overridden by process.env (the
+ * operator explicitly chose this profile, so operator intent wins).
+ *
+ * Path C — no provider ("direct Anthropic"): passes auth + endpoint vars from
+ * process.env; watchdog defaults can be overridden by process.env.
  *
  * Supports both:
  * - ClaudeCompatibleProvider (new system with models[] array)
  * - ClaudeApiProfile (legacy system with modelMappings)
- *
- * Stream watchdog vars are always seeded with defaults, then overridden by any
- * value the caller already has in process.env (caller intent wins).
  *
  * @param providerConfig - Optional provider configuration for alternative endpoint
  * @param credentials - Optional credentials object for resolving 'credentials' apiKeySource
@@ -270,8 +306,9 @@ function buildEnv(
 ): Record<string, string | undefined> {
   const env: Record<string, string | undefined> = {};
 
-  // Seed watchdog defaults FIRST so caller-provided process.env values (applied
-  // below via the SYSTEM/explicit passthrough) can override them.
+  // Seed watchdog defaults. For the ClaudeCompatibleProvider path these are
+  // FIXED — process.env is never consulted for them (see docstring).
+  // For other paths they are overridable via the final passthrough loop below.
   for (const [key, value] of Object.entries(WATCHDOG_ENV_DEFAULTS)) {
     env[key] = value;
   }
@@ -366,10 +403,16 @@ function buildEnv(
     }
   }
 
-  // Always add system vars from process.env. These are added LAST so that an
-  // explicit process.env watchdog override (CLAUDE_ENABLE_STREAM_WATCHDOG /
-  // CLAUDE_STREAM_IDLE_TIMEOUT_MS) takes precedence over the seeded defaults.
-  for (const key of [...SYSTEM_ENV_VARS, ...Object.keys(WATCHDOG_ENV_DEFAULTS)]) {
+  // Always pass system vars from process.env (PATH, HOME, APPDATA, etc.).
+  // For non-compat paths also allow process.env to override the watchdog
+  // defaults seeded above; for the ClaudeCompatibleProvider path the watchdog
+  // vars are intentionally excluded — their fixed defaults must hold.
+  const cleanSwitchPath = providerConfig ? isClaudeCompatibleProvider(providerConfig) : false;
+  const extraKeys = cleanSwitchPath
+    ? SYSTEM_ENV_VARS // compat: system vars only — no watchdog override
+    : [...SYSTEM_ENV_VARS, ...Object.keys(WATCHDOG_ENV_DEFAULTS)]; // others: watchdog overridable
+
+  for (const key of extraKeys) {
     if (process.env[key]) {
       env[key] = process.env[key];
     }
@@ -545,18 +588,15 @@ export class ClaudeProvider extends BaseProvider {
 
       // Build enhanced error message with additional guidance for rate limits.
       //
-      // Reliability detail: the supervisor parses a precise retry-after delay
-      // from the error MESSAGE text via a `retry after Ns` / `reset ... Ns`
-      // regex. getUserFriendlyErrorMessage() phrases the delay as
-      // "Please wait N seconds", which that regex does NOT match — so without
-      // help the supervisor would fall back to generic exponential backoff and
-      // ignore the server's retry-after hint. We append a parser-friendly
-      // `(retry after Ns)` suffix so the supervisor honors the exact delay.
+      // The supervisor (ProviderSupervisor, Task 7 / commit 1673f83) reads the
+      // structured `err.retryAfter` property directly (S12) — it no longer
+      // parses the message text for a delay. The old `(retry after Ns)` suffix
+      // that used to feed a text-regex parser is therefore redundant and would
+      // double-render the wait time in UI messages. The suffix is omitted; the
+      // structured `retryAfter` set below remains the authoritative channel.
       let message: string;
       if (errorInfo.isRateLimit) {
-        const retryHint =
-          typeof errorInfo.retryAfter === 'number' ? ` (retry after ${errorInfo.retryAfter}s)` : '';
-        message = `${userMessage}${retryHint}\n\nTip: If you're running multiple features in auto-mode, consider reducing concurrency (maxConcurrency setting) to avoid hitting rate limits.`;
+        message = `${userMessage}\n\nTip: If you're running multiple features in auto-mode, consider reducing concurrency (maxConcurrency setting) to avoid hitting rate limits.`;
       } else {
         message = userMessage;
       }

@@ -231,11 +231,10 @@ describe('ClaudeProvider × ProviderSupervisor', () => {
 
     const { resumes, callCount } = installSdkRuns([
       {
-        // Phrasing the provider's extractRetryAfter() can parse ("wait N seconds")
-        // so retryAfter=2 propagates into the enhanced message, which the
-        // provider's `(retry after Ns)` suffix then exposes to the supervisor's
-        // own retry-after parser. Without the suffix the two parsers' regexes
-        // disagree and the supervisor would fall back to generic backoff.
+        // "please wait 2 seconds" is parseable by classifyError(), so retryAfter=2
+        // is set on the enhanced error's structured property. The supervisor
+        // (extractRateLimitDelayMs) prefers that structured value — it does NOT
+        // need a text suffix. The exact 2000ms wait proves the structured path works.
         kind: 'throw-after',
         messages: [initMsg(SESSION), textMsg('partial', SESSION)],
         error: new Error('429 rate limit exceeded, please wait 2 seconds before retrying'),
@@ -257,9 +256,10 @@ describe('ClaudeProvider × ProviderSupervisor', () => {
     expect(callCount()).toBeGreaterThanOrEqual(2);
 
     // Resume carried the captured session id; status shows rate_limited with
-    // the precise 2000ms delay parsed from the provider's enhanced error text.
-    // The exact 2000ms (vs generic backoff of 100ms) proves the server's
-    // retry-after hint survived the provider's error rewrite and was honored.
+    // the precise 2000ms delay read from the provider's structured retryAfter
+    // property. The exact 2000ms (vs generic backoff of 100ms) proves the
+    // server's retry-after hint survived the provider's error rewrite and was
+    // honored via the structured channel (not text parsing).
     expect(resumes[1]).toBe(SESSION);
     const rl = messages
       .filter((m) => m.type === 'supervisor_status')

@@ -386,8 +386,15 @@ describe('claude-provider.ts', () => {
       }
 
       expect(caught?.type).toBe('rate_limit');
+      // Structured retryAfter (in seconds) must be set so the supervisor can
+      // read it directly without text parsing (S12 structured path).
+      expect(caught?.retryAfter).toBe(5);
       // Message should include the auto-mode concurrency tip for rate limits.
       expect(caught?.message).toMatch(/maxConcurrency/i);
+      // Message must NOT contain a `(retry after Ns)` text suffix — the
+      // supervisor reads the structured property; the suffix is redundant and
+      // would double-render the wait time in UI messages.
+      expect(caught?.message).not.toMatch(/\(retry after \d+s\)/);
 
       consoleErrorSpy.mockRestore();
     });
@@ -488,6 +495,54 @@ describe('claude-provider.ts', () => {
       expect(lastQueryOptions()).toMatchObject({ effort: 'low' });
     });
 
+    it("[Fix2] effort model (opus-4-8): 'none' maps to 'low' — omitting effort would leave SDK at its default 'high' (wrong direction)", async () => {
+      // The SDK default for opus-4-8 is 'high'. When the user chooses 'none'
+      // they want minimal effort, not maximal — so we clamp to 'low' rather
+      // than omitting the field (which would silently use 'high').
+      mockQuery([{ type: 'text', text: 'test' }]);
+
+      const generator = provider.executeQuery({
+        prompt: 'Test',
+        model: 'claude-opus-4-8',
+        cwd: '/test',
+        reasoningEffort: 'none',
+      });
+
+      await collectAsyncGenerator(generator);
+
+      expect(lastQueryOptions()).toMatchObject({ effort: 'low' });
+    });
+
+    it('[Fix2] effort model (opus-4-8): exhaustive — all ReasoningEffort values produce a defined SDK effort', async () => {
+      const cases: Array<[string, string]> = [
+        ['none', 'low'],
+        ['minimal', 'low'],
+        ['low', 'low'],
+        ['medium', 'medium'],
+        ['high', 'high'],
+        ['xhigh', 'xhigh'],
+      ];
+
+      for (const [input, expected] of cases) {
+        mockQuery([{ type: 'text', text: 'test' }]);
+
+        const generator = provider.executeQuery({
+          prompt: 'Test',
+          model: 'claude-opus-4-8',
+          cwd: '/test',
+          reasoningEffort: input as never,
+        });
+
+        await collectAsyncGenerator(generator);
+
+        expect(lastQueryOptions()).toMatchObject(
+          { effort: expected },
+          // @ts-expect-error vitest overload; message only shown on failure
+          `reasoningEffort '${input}' should map to SDK effort '${expected}'`
+        );
+      }
+    });
+
     it('non-effort model (sonnet-4-6): does NOT pass effort even when requested', async () => {
       mockQuery([{ type: 'text', text: 'test' }]);
 
@@ -564,7 +619,7 @@ describe('claude-provider.ts', () => {
       expect(env.CLAUDE_STREAM_IDLE_TIMEOUT_MS).toBe('90000');
     });
 
-    it('lets caller process.env override the watchdog defaults', async () => {
+    it('lets caller process.env override the watchdog defaults (direct/non-compat path)', async () => {
       process.env.CLAUDE_ENABLE_STREAM_WATCHDOG = '0';
       process.env.CLAUDE_STREAM_IDLE_TIMEOUT_MS = '12345';
       mockQuery([{ type: 'text', text: 'test' }]);
@@ -580,6 +635,59 @@ describe('claude-provider.ts', () => {
       const env = lastQueryOptions().env as Record<string, string | undefined>;
       expect(env.CLAUDE_ENABLE_STREAM_WATCHDOG).toBe('0');
       expect(env.CLAUDE_STREAM_IDLE_TIMEOUT_MS).toBe('12345');
+    });
+
+    it('[Fix1] ClaudeCompatibleProvider path ignores hostile process.env watchdog override (clean-switch isolation)', async () => {
+      // A hostile process.env.CLAUDE_STREAM_IDLE_TIMEOUT_MS must NOT leak into
+      // the compat-provider subprocess env — it would shrink the timeout and
+      // cause spurious watchdog trips that look like legitimate provider errors.
+      process.env.CLAUDE_STREAM_IDLE_TIMEOUT_MS = '100';
+      process.env.CLAUDE_ENABLE_STREAM_WATCHDOG = '0';
+      mockQuery([{ type: 'text', text: 'test' }]);
+
+      const compatProvider = {
+        id: 'compat-1',
+        name: 'Test Compat',
+        providerType: 'anthropic' as const,
+        baseUrl: 'https://api.example.com',
+        apiKeySource: 'inline' as const,
+        apiKey: 'test-key',
+        models: [],
+      };
+
+      const generator = provider.executeQuery({
+        prompt: 'Test',
+        model: 'claude-opus-4-8',
+        cwd: '/test',
+        claudeCompatibleProvider: compatProvider as never,
+      });
+
+      await collectAsyncGenerator(generator);
+
+      const env = lastQueryOptions().env as Record<string, string | undefined>;
+      // Must use fixed defaults, NOT the hostile process.env values
+      expect(env.CLAUDE_STREAM_IDLE_TIMEOUT_MS).toBe('90000');
+      expect(env.CLAUDE_ENABLE_STREAM_WATCHDOG).toBe('1');
+    });
+
+    it('[Fix1] Direct (no-provider) path allows process.env watchdog override', async () => {
+      // On the direct-Anthropic path, the operator controls the environment and
+      // their overrides must be respected.
+      process.env.CLAUDE_STREAM_IDLE_TIMEOUT_MS = '100';
+      mockQuery([{ type: 'text', text: 'test' }]);
+
+      const generator = provider.executeQuery({
+        prompt: 'Test',
+        model: 'claude-opus-4-8',
+        cwd: '/test',
+        // no claudeCompatibleProvider — direct path
+      });
+
+      await collectAsyncGenerator(generator);
+
+      const env = lastQueryOptions().env as Record<string, string | undefined>;
+      // Direct path: process.env override is honored
+      expect(env.CLAUDE_STREAM_IDLE_TIMEOUT_MS).toBe('100');
     });
   });
 
