@@ -28,7 +28,7 @@ AboardAI is a hard-fork of [automaker](c:/Projects/referencerepos/automaker) (MI
 
 **Hard-fork automaker** rather than greenfield or hybrid. Rationale: it is MIT-licensed TypeScript containing exactly the valued features (~209k LOC, ~163 Playwright E2E tests across 26 spec files, clean monorepo with 8 shared libs); rebuilding the working 80% would add weeks of agent-hours and regression risk for no benefit. The weak 20% (providers, half-finished auto-mode refactor) is replaced surgically.
 
-License compliance: automaker is MIT — we retain its copyright notice in `LICENSE`/`NOTICE` and license AboardAI under MIT. vibe-kanban is Apache-2.0 and Rust; we borrow *ideas* (adapter pattern, log normalization, worktree race-safety), not code. ai-agent-board and OpenHands are MIT.
+License compliance: automaker is MIT — we retain its copyright notice in `LICENSE`/`NOTICE` and license AboardAI under MIT. vibe-kanban is Apache-2.0 and Rust; we borrow _ideas_ (adapter pattern, log normalization, worktree race-safety), not code. ai-agent-board and OpenHands are MIT.
 
 ## Architecture
 
@@ -55,7 +55,8 @@ A single `AgentProvider` interface (inspired by vibe-kanban's `StandardCodingAge
 - `listModels()` — current model catalog per provider
 
 Implementations, in priority order:
-1. **ClaudeProvider** — latest `@anthropic-ai/claude-agent-sdk`; auth via Claude Code subscription login (OAuth/CLI credentials), API key fallback; models: Opus 4.8, Sonnet 4.6, Haiku 4.5 with alias resolution in `@aboardai/model-resolver`.
+
+1. **ClaudeProvider** — latest `@anthropic-ai/claude-agent-sdk`; auth is **API-key first** with local CLI-login passthrough as the SDK's default behavior for personal use _(amended 2026-06-11 — see Amendment A1)_; models: Opus 4.8, Sonnet 4.6, Haiku 4.5 with alias resolution in `@aboardai/model-resolver`.
 2. **CodexProvider** — current `@openai/codex-sdk`.
 3. **GeminiProvider, CopilotProvider, OpenCodeProvider** — ported from automaker behind the new interface, availability-probed, best-effort.
 
@@ -64,6 +65,7 @@ Implementations, in priority order:
 ### Component 2 — Auto-mode engine (refactor completed)
 
 Keep automaker's facade + sub-services (loop coordinator, execution service, agent executor, concurrency manager, worktree resolver, recovery service, plan approval, feature state manager). Work items:
+
 - Finish the partial refactor (remove the legacy 216 KB service remnants; implement the `analyzeProject()` TODO).
 - Replace sentinel-string scraping (`[TASK_START]`, `<summary>`) parsing internals with the normalized event pipeline (Component 3) while keeping the same prompt-visible markers, since the prompts depend on them.
 - Verification step unchanged: lint → typecheck → test → build in the feature's worktree, plus the Playwright self-verification instruction in prompts.
@@ -71,6 +73,7 @@ Keep automaker's facade + sub-services (loop coordinator, execution service, age
 ### Component 3 — Normalized event pipeline (new)
 
 Every raw provider message is mapped to a `NormalizedEvent` (`file_edit`, `command_run`, `agent_message`, `question`, `task_marker`, `error`, `status`, …) by a per-provider normalizer. Events are:
+
 - appended to `{feature}/events.jsonl` as they happen (crash-safe resume source),
 - broadcast over the existing WebSocket to the UI activity feed,
 - the single source the auto-mode engine reads for task/summary markers.
@@ -78,6 +81,8 @@ Every raw provider message is mapped to a `NormalizedEvent` (`file_edit`, `comma
 ### Component 4 — Task groups (new)
 
 From ai-agent-board: a `TaskGroup` holds 2–20 features, `maxConcurrency` (1–N slider), per-child retry count, shared base branch. A `GroupQueue` drains pending children into auto-mode as slots free, marks the group `review` when all succeed, `failed` with per-child detail otherwise. Builds directly on automaker's per-feature worktree isolation; the worktree creation path gets vibe-kanban-style per-path mutex protection against concurrent-creation races.
+
+_Design option (amended 2026-06-11 — see Amendment A2):_ model the TaskGroup/Feature lifecycle in `@angriff36/manifest` (Ryan's domain-modeling DSL) — entities + transition commands with ordered guards ("implementation requires dependencies satisfied AND a free concurrency slot") + emitted events that feed Component 3's `events.jsonl`. Candidate stretch goal: expose board mutations to agents as Manifest agent-sdk guarded tools (`toAnthropicTools()`), so agents cannot make illegal state transitions. Decision deferred to the Phase 4 task plan; Phases 2–3 are unaffected.
 
 ### Component 5 — Prompts & ideation (preserved, re-tuned)
 
@@ -107,6 +112,7 @@ From ai-agent-board: a `TaskGroup` holds 2–20 features, `maxConcurrency` (1–
 ## Build orchestration
 
 Five phases, each gated by verification:
+
 1. **Fork & rebrand** — copy source, rename packages/dirs/brand, git init, prove build + dev run on Windows. (Mechanical: Haiku agents.)
 2. **Provider layer** — new interface + supervisor; ClaudeProvider built as competing implementations by parallel Opus agents against a shared fault-injection test harness, winner chosen by adversarial review; Codex/others by Sonnet agents. The Phase 2 task plan must define, before agents launch: the fault-injection harness scenarios (stall, disconnect, rate-limit, auth failure, mid-stream crash) and the winner-selection rubric (harness pass rate, then adversarial review findings, then code clarity).
 3. **Event pipeline** — normalizers + JSONL persistence + engine integration. (Sonnet.)
@@ -119,3 +125,9 @@ Five phases, each gated by verification:
 - **SDK behavioral drift** (new Agent SDK vs 0.1.76): mitigated by the fault-injection harness and competing implementations.
 - **Rename sweep misses** (~1,400 files): mitigated by automated search verification (zero remaining `automaker` references outside NOTICE/attribution) as a phase gate.
 - **E2E suite assumes old branding/ports**: test updates are in-scope for Phase 1.
+
+## Amendments
+
+**A1 — Auth policy correction (2026-06-11).** Phase 2 SDK research (`docs/superpowers/research/claude-agent-sdk-2026.md`, Q3) found Anthropic policy prohibits third-party apps from _offering_ claude.ai/subscription login without prior approval. Original spec language ("auth via Claude Code subscription login, API key fallback") inverted the permitted order. Corrected design: `ANTHROPIC_API_KEY` is the documented, distributable auth path; the SDK's automatic pickup of a local Claude Code CLI login remains available implicitly for personal use (verified working in the Phase 1 dev-run proof) but is not presented as a product login feature. UI copy and docs must reflect API-key-first.
+
+**A2 — Manifest as Phase 4 domain-model option (2026-06-11).** `@angriff36/manifest` v2.4.x (Ryan's published DSL: entities, commands with ordered guards, policies, events; deterministic runtime; ~3k tests; agent-sdk with `toAnthropicTools()`; MCP server) is approved as a design option for Component 4. Rationale: the TaskGroup/Feature lifecycle is exactly the commands+guards+events shape; Phase 4 is greenfield within the fork so there is no rewrite cost; Manifest events can feed Component 3's `events.jsonl`; its audit sink aligns with the normalized-event-log goal. Scope guard: NOT to be used in Phases 2–3 (provider layer/event pipeline port — wrong shape, scope creep). Version must be pinned (fast-moving dependency). Final adopt/skip decision happens in the Phase 4 task plan; the stretch goal of agent-governed board mutations (guarded tool surface instead of raw JSON writes) is evaluated there too.
