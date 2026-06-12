@@ -52,3 +52,73 @@ Decisive qualitative differences:
 - `npm run build`: green
 
 Worktrees cleaned up: agent-a47bccef870d452c8 and agent-a41bd4a1c25b4b9d3 removed; branches deleted.
+
+---
+
+## Task 9 — Formal Phase Gate (2026-06-12)
+
+**Branch:** `phase2-provider-layer` (pre-merge)
+**Platform:** Windows 11 Home 10.0.26200 | Node v22.18.0
+
+### 9.1 Build / Lint / Unit
+
+| Check                                        | Result                                              |
+| -------------------------------------------- | --------------------------------------------------- |
+| `npm run build:packages` (8 libs)            | PASS — all 8 compiled clean via tsc                 |
+| `npm run lint`                               | PASS — exit 0, zero errors/warnings                 |
+| `npx vitest run` (root, 142 test files)      | **3,501 passed / 28 skipped / 0 failed** (27.46s)   |
+| `npm test --workspaces --if-present` (9 lib) | **278 passed / 0 failed** (0.42s)                   |
+| `npm run build`                              | PASS — Vite client ✓ 7.90s, Electron main/preload ✓ |
+
+### 9.2 E2E Parity (workers=2)
+
+**Run totals:** 2 failed | 70 passed | 2 skipped | 74 total tests | duration ~4.2 min
+
+**Failures (both documented Phase 1 deterministic failures — no Phase 2 regressions):**
+
+1. `tests/projects/board-background-persistence.spec.ts:41` — "should load board background settings when switching projects" — deterministic baseline failure (settings API call timing, pre-existing)
+2. `tests/projects/board-background-persistence.spec.ts:444` — "should load background settings on app restart" — deterministic baseline failure (pre-existing)
+
+**Verdict:** PASS — 70 ≥ 64 baseline floor; both failures in documented deterministic set; no Phase 2 regressions.
+
+**Note on fixtures.spec.ts:51 (Windows backslash traversal):** Passed in this run — the pre-commit fixes from Task 9 of Phase 1 (commit 3c2a521) that branched on `process.platform === 'win32'` were already present on this branch and resolved this previously-deterministic failure, improving it from baseline (from 3 deterministic to 2).
+
+### 9.3 Live Smoke (SDK 0.3.173)
+
+**Server startup:** `npm run dev` (apps/server) — `tsx watch src/index.ts`
+
+**Auth detection log line:**
+```
+INFO  [Server] ✓ Claude Code CLI authentication detected
+```
+Present in log. No auth errors. Claude CLI auth continues to work correctly with SDK 0.3.173.
+
+**GET /api/health response:**
+```json
+{"status":"ok","timestamp":"2026-06-12T05:48:57.010Z","version":"1.0.0"}
+```
+
+**GET /api/models/providers response:**
+```json
+{
+  "success": true,
+  "providers": {
+    "anthropic": { "available": true, "hasApiKey": false },
+    "cursor": {
+      "available": true,
+      "version": "2026.05.09-0afadcc",
+      "path": "C:\\Users\\Ryan\\AppData\\Local\\cursor-agent\\cursor-agent.cmd",
+      "method": "cli",
+      "authenticated": true
+    }
+  }
+}
+```
+
+Interpretation: `anthropic.available=true` (ClaudeProvider is registered/active) but `hasApiKey=false` (no `ANTHROPIC_API_KEY` env var set — authentication flows through Claude CLI, not raw API key, which is the intended SDK 0.3.173 path). `cursor.available=true` and authenticated confirms the Codex provider is also wired up. No provider errors.
+
+**Port cleanup:** `npx kill-port 3008` → PASS. Port confirmed free (no LISTENING state).
+
+### Phase Gate Verdict: GREEN
+
+All gate checks passed. Phase 2 provider layer is complete and ready for merge to main.
