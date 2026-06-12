@@ -278,6 +278,14 @@ export default defineConfig(({ command }) => {
       // @radix-ui/*: all use @radix-ui/react-context which does the same capture;
       // @radix-ui/react-slider was already fixed; the remaining 13 primitives imported
       // in src/ are added here to prevent the same crash on other routes.
+      //
+      // @codemirror/state + @codemirror/view: CodeMirror uses instanceof checks internally
+      // (e.g. EditorState, Extension). If two copies of @codemirror/state load in the same
+      // page (e.g. @uiw/react-codemirror bundles its own while lang-*/view come from a
+      // second copy), those checks fail with "Unrecognized extension value in extension set
+      // ([object Object]). This sometimes happens because multiple instances of
+      // @codemirror/state are loaded". Deduping forces a single copy regardless of how
+      // many @codemirror/* sub-packages are pre-bundled.
       dedupe: [
         'react',
         'react-dom',
@@ -300,6 +308,10 @@ export default defineConfig(({ command }) => {
         '@radix-ui/react-switch',
         '@radix-ui/react-tabs',
         '@radix-ui/react-tooltip',
+        // CodeMirror singleton — instanceof checks in @codemirror/state break if two
+        // copies are present; dedupe ensures all @codemirror/* sub-packages share one.
+        '@codemirror/state',
+        '@codemirror/view',
       ],
     },
     server: {
@@ -480,6 +492,49 @@ export default defineConfig(({ command }) => {
         '@dnd-kit/sortable',
         '@dnd-kit/utilities',
         '@uiw/react-codemirror',
+        // @codemirror/* family — pre-bundle ALL entries so noDiscovery doesn't serve them
+        // as raw ESM modules. Raw serving breaks instanceof checks inside CodeMirror:
+        // "Unrecognized extension value in extension set ([object Object]). This sometimes
+        // happens because multiple instances of @codemirror/state are loaded." — crash
+        // manifests when opening the ideation or specs views that render CodeMirror editors.
+        // @uiw/react-codemirror above carries its own @codemirror/state resolution; the
+        // lang-*/view/merge/search packages below must be pre-bundled alongside it so Vite
+        // resolves to the SAME state singleton (enforced by resolve.dedupe above).
+        '@codemirror/state',
+        '@codemirror/view',
+        '@codemirror/commands',
+        '@codemirror/language',
+        '@codemirror/search',
+        '@codemirror/merge',
+        '@codemirror/lang-javascript', // handles both JS and TS via @codemirror/lang-javascript
+        '@codemirror/lang-python',
+        '@codemirror/lang-json',
+        '@codemirror/lang-html',
+        '@codemirror/lang-css',
+        '@codemirror/lang-markdown',
+        '@codemirror/lang-xml',
+        '@codemirror/lang-sql',
+        '@codemirror/lang-rust',
+        '@codemirror/lang-java',
+        '@codemirror/lang-cpp',
+        '@codemirror/lang-php',
+        '@codemirror/legacy-modes/mode/dockerfile',
+        '@codemirror/legacy-modes/mode/go',
+        '@codemirror/legacy-modes/mode/javascript',
+        '@codemirror/legacy-modes/mode/ruby',
+        '@codemirror/legacy-modes/mode/shell',
+        '@codemirror/legacy-modes/mode/swift',
+        '@codemirror/legacy-modes/mode/toml',
+        '@codemirror/legacy-modes/mode/yaml',
+        '@lezer/highlight',
+        // @xterm/* — pre-bundle all xterm addon packages alongside the core so noDiscovery
+        // does not leave them raw. Raw serving still works at runtime but bypasses the
+        // single-copy guarantee and causes unnecessary cold-start disk reads.
+        '@xterm/xterm',
+        '@xterm/addon-fit',
+        '@xterm/addon-search',
+        '@xterm/addon-web-links',
+        '@xterm/addon-webgl',
         'zod',
       ],
     },
