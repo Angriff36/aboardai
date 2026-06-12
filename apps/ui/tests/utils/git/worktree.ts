@@ -148,7 +148,8 @@ export async function cleanupTestRepo(repoPath: string): Promise<void> {
 }
 
 /**
- * Recursively remove directory contents then the directory (avoids ENOTEMPTY on some systems)
+ * Recursively remove directory contents then the directory (avoids ENOTEMPTY on some systems).
+ * Tolerates EBUSY/EPERM on Windows when the server still holds file handles — best-effort only.
  */
 function rmDirRecursive(dir: string): void {
   const entries = fs.readdirSync(dir, { withFileTypes: true });
@@ -156,9 +157,25 @@ function rmDirRecursive(dir: string): void {
     const fullPath = path.join(dir, entry.name);
     if (entry.isDirectory()) {
       rmDirRecursive(fullPath);
-      fs.rmdirSync(fullPath);
+      try {
+        fs.rmdirSync(fullPath);
+      } catch (e) {
+        const code = (e as NodeJS.ErrnoException)?.code;
+        // Tolerate EBUSY/EPERM (Windows file locks) and ENOENT (already removed)
+        if (code !== 'EBUSY' && code !== 'EPERM' && code !== 'ENOENT') {
+          throw e;
+        }
+      }
     } else {
-      fs.unlinkSync(fullPath);
+      try {
+        fs.unlinkSync(fullPath);
+      } catch (e) {
+        const code = (e as NodeJS.ErrnoException)?.code;
+        // Tolerate EBUSY/EPERM (Windows file locks) and ENOENT (already removed)
+        if (code !== 'EBUSY' && code !== 'EPERM' && code !== 'ENOENT') {
+          throw e;
+        }
+      }
     }
   }
 }
@@ -180,7 +197,10 @@ export function cleanupTempDir(tempDir: string): void {
       try {
         fs.rmdirSync(tempDir);
       } catch (e2) {
-        if ((e2 as NodeJS.ErrnoException)?.code !== 'ENOENT') {
+        const code2 = (e2 as NodeJS.ErrnoException)?.code;
+        // Tolerate ENOENT (already removed), ENOTEMPTY and EBUSY (Windows file locks
+        // from the dev-server still holding handles on test project files — best-effort cleanup).
+        if (code2 !== 'ENOENT' && code2 !== 'ENOTEMPTY' && code2 !== 'EBUSY' && code2 !== 'EPERM') {
           throw e2;
         }
       }

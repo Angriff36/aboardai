@@ -411,9 +411,16 @@ test.describe('Board Background Persistence', () => {
 
     // Verify that the settings API was called for project A at least once (initial load).
     // Note: When switching back, the app may use cached settings and skip re-fetching.
-    const projectASettingsCalls = settingsApiCalls.filter((call) =>
-      call.body.includes(projectAPath)
-    );
+    // Use JSON.parse to compare the projectPath field directly — Windows paths contain
+    // backslashes that get JSON-escaped as \\ in the raw body string, so a plain
+    // String.includes(windowsPath) always returns false on Windows.
+    const projectASettingsCalls = settingsApiCalls.filter((call) => {
+      try {
+        return (JSON.parse(call.body) as Record<string, unknown>).projectPath === projectAPath;
+      } catch {
+        return call.body.includes(projectAPath);
+      }
+    });
 
     // Debug: log all API calls if test fails
     if (projectASettingsCalls.length < 1) {
@@ -602,14 +609,26 @@ test.describe('Board Background Persistence', () => {
     // Should go straight to board view (not welcome) since we have currentProject
     await expect(page.locator('[data-testid="board-view"]')).toBeVisible({ timeout: 15000 });
 
-    // Wait for settings to load by checking API calls
+    // Wait for settings to load by checking API calls.
+    // Parse the JSON body to compare projectPath directly — Windows paths contain
+    // backslashes that are JSON-escaped as \\ in the raw body string, so a plain
+    // String.includes(windowsPath) always returns false on Windows.
+    const matchesProjectPath = (body: string, targetPath: string): boolean => {
+      try {
+        return (JSON.parse(body) as Record<string, unknown>).projectPath === targetPath;
+      } catch {
+        return body.includes(targetPath);
+      }
+    };
     await expect(async () => {
-      const calls = settingsApiCalls.filter((call) => call.body.includes(projectPath));
+      const calls = settingsApiCalls.filter((call) => matchesProjectPath(call.body, projectPath));
       expect(calls.length).toBeGreaterThanOrEqual(1);
     }).toPass({ timeout: 10000 });
 
     // Verify that the settings API was called for this project
-    const projectSettingsCalls = settingsApiCalls.filter((call) => call.body.includes(projectPath));
+    const projectSettingsCalls = settingsApiCalls.filter((call) =>
+      matchesProjectPath(call.body, projectPath)
+    );
 
     // Debug: log all API calls if test fails
     if (projectSettingsCalls.length < 1) {
