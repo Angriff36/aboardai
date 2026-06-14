@@ -27,6 +27,7 @@ export const MODAL_CONSTANTS = {
 
   // View modes
   VIEW_MODES: {
+    TRAJECTORY: 'trajectory',
     SUMMARY: 'summary',
     PARSED: 'parsed',
     RAW: 'raw',

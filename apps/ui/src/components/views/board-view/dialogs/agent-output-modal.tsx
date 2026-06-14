@@ -7,7 +7,15 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { List, FileText, GitBranch, ClipboardList, ChevronLeft, ChevronRight } from 'lucide-react';
+import {
+  List,
+  FileText,
+  GitBranch,
+  ClipboardList,
+  ChevronLeft,
+  ChevronRight,
+  Activity,
+} from 'lucide-react';
 import { Spinner } from '@/components/ui/spinner';
 import { getElectronAPI } from '@/lib/electron';
 import { LogViewer } from '@/components/ui/log-viewer';
@@ -26,7 +34,12 @@ import { useAgentOutput, useFeature } from '@/hooks/queries';
 import { cn } from '@/lib/utils';
 import { MODAL_CONSTANTS } from '@/components/views/board-view/dialogs/agent-output-modal.constants';
 import type { AutoModeEvent } from '@/types/electron';
-import type { BacklogPlanEvent } from '@aboardai/types';
+import type { BacklogPlanEvent, NormalizedEvent } from '@aboardai/types';
+import { TrajectoryView } from '../trajectory/trajectory-view';
+import { useTrajectoryStore } from '@/store/trajectory-store';
+
+/** Stable empty array to avoid re-render churn when a feature has no trajectory events yet */
+const EMPTY_EVENTS: NormalizedEvent[] = [];
 
 interface AgentOutputModalProps {
   open: boolean;
@@ -191,6 +204,20 @@ export function AgentOutputModal({
   const resolvedStatus = feature?.status ?? featureStatus;
   const resolvedBranchName = feature?.branchName ?? branchName;
 
+  // Trajectory: read events for this feature from the trajectory store
+  const trajectoryEvents = useTrajectoryStore((s) => s.eventsByFeature[featureId] ?? EMPTY_EVENTS);
+
+  // Trajectory: load past events (replay) and subscribe to live events
+  useEffect(() => {
+    if (!resolvedProjectPath) return;
+    const store = useTrajectoryStore.getState();
+    store.load(resolvedProjectPath, featureId).catch(() => {
+      // Replay load failed (e.g. no events yet / read error) — non-fatal; live events still stream in.
+    });
+    const unsub = store.registerFeatureEvents();
+    return () => unsub();
+  }, [featureId, resolvedProjectPath]);
+
   // Reset streamed content when modal opens or featureId changes
   useEffect(() => {
     if (open) {
@@ -227,9 +254,8 @@ export function AgentOutputModal({
     setActivePhaseIndex(0);
   }, [normalizedSummary]);
 
-  // Determine the effective view mode - default to summary if available, otherwise parsed
-  const effectiveViewMode =
-    viewMode ?? (summary ? MODAL_CONSTANTS.VIEW_MODES.SUMMARY : MODAL_CONSTANTS.VIEW_MODES.PARSED);
+  // Determine the effective view mode - default to trajectory
+  const effectiveViewMode = viewMode ?? MODAL_CONSTANTS.VIEW_MODES.TRAJECTORY;
   const scrollRef = useRef<HTMLDivElement>(null);
   const autoScrollRef = useRef(true);
   const useWorktrees = useAppStore((state) => state.useWorktrees);
@@ -532,6 +558,18 @@ export function AgentOutputModal({
               Agent Output
             </DialogTitle>
             <div className="flex items-center gap-1 bg-muted rounded-lg p-1 overflow-x-auto">
+              <button
+                onClick={() => setViewMode('trajectory')}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-all whitespace-nowrap ${
+                  effectiveViewMode === 'trajectory'
+                    ? 'bg-primary/20 text-primary shadow-sm'
+                    : 'text-muted-foreground hover:text-foreground hover:bg-accent'
+                }`}
+                data-testid="view-mode-trajectory"
+              >
+                <Activity className="w-3.5 h-3.5" />
+                Trajectory
+              </button>
               {summary && (
                 <button
                   onClick={() => setViewMode('summary')}
@@ -601,7 +639,11 @@ export function AgentOutputModal({
           />
         )}
 
-        {effectiveViewMode === 'changes' ? (
+        {effectiveViewMode === 'trajectory' ? (
+          <div className="overflow-y-auto p-3">
+            <TrajectoryView events={trajectoryEvents} />
+          </div>
+        ) : effectiveViewMode === 'changes' ? (
           <div
             className={`flex-1 min-h-0 ${MODAL_CONSTANTS.COMPONENT_HEIGHTS.SMALL_MIN} ${MODAL_CONSTANTS.COMPONENT_HEIGHTS.SMALL_MAX} overflow-y-auto scrollbar-visible`}
           >
