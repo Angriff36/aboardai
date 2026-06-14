@@ -35,6 +35,40 @@ describe('EventCard', () => {
     expect(screen.getByText('secret reasoning')).toBeTruthy();
   });
 
+  it('shows truncation marker when thinkingTruncated is true', () => {
+    render(
+      <EventCard
+        event={ev('thinking', {
+          text: 'long reasoning...',
+          thinkingChars: 4000,
+          thinkingTruncated: true,
+        })}
+      />
+    );
+    // expand the card first
+    fireEvent.click(screen.getByText(/thinking/i));
+    expect(screen.getByText(/truncated/i)).toBeTruthy();
+  });
+
+  it('does not show truncation marker when thinkingTruncated is false', () => {
+    render(
+      <EventCard
+        event={ev('thinking', {
+          text: 'short reasoning',
+          thinkingChars: 15,
+          thinkingTruncated: false,
+        })}
+      />
+    );
+    fireEvent.click(screen.getByText(/thinking/i));
+    expect(screen.queryByText(/truncated/i)).toBeNull();
+  });
+
+  it('summary event renders a "summary" pill label', () => {
+    render(<EventCard event={ev('summary', { text: 'All done.' })} />);
+    expect(screen.getByText('summary')).toBeTruthy();
+  });
+
   it('file_edit diff is collapsed by default and expands on click', () => {
     render(
       <EventCard

@@ -19,7 +19,10 @@ export function EventCard({ event }: { event: NormalizedEvent }) {
             <span className="text-muted-foreground">{open ? 'hide' : 'reasoning'}</span>
           </button>
           {open && event.text && (
-            <p className="mt-1 text-xs whitespace-pre-wrap text-muted-foreground">{event.text}</p>
+            <p className="mt-1 text-xs whitespace-pre-wrap text-muted-foreground">
+              {event.text}
+              {event.thinkingTruncated && <span className="italic"> … truncated</span>}
+            </p>
           )}
         </div>
       );
@@ -81,7 +84,7 @@ export function EventCard({ event }: { event: NormalizedEvent }) {
       return (
         <div className="rounded-md border border-border/60 bg-card/40 px-3 py-2 my-1 text-xs whitespace-pre-wrap">
           <span className={`${pill} bg-zinc-500/20 mr-2`}>
-            {event.kind === 'error' ? 'error' : 'message'}
+            {event.kind === 'error' ? 'error' : event.kind === 'summary' ? 'summary' : 'message'}
           </span>
           {event.text}
         </div>

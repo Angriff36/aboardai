@@ -215,7 +215,10 @@ export function AgentOutputModal({
       // Replay load failed (e.g. no events yet / read error) — non-fatal; live events still stream in.
     });
     const unsub = store.registerFeatureEvents();
-    return () => unsub();
+    return () => {
+      unsub();
+      useTrajectoryStore.getState().clear(featureId);
+    };
   }, [featureId, resolvedProjectPath]);
 
   // Reset streamed content when modal opens or featureId changes
