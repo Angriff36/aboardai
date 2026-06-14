@@ -167,7 +167,7 @@ Successfully implemented a responsive navigation menu with hamburger menu for mo
       expect(description).toHaveTextContent('Implement a responsive navigation menu');
     });
 
-    it('should show loading state when output is loading', () => {
+    it('should show loading state when output is loading (after switching to Logs view)', async () => {
       mockUseAgentOutput.mockReturnValue({
         data: '',
         isLoading: true,
@@ -177,10 +177,16 @@ Successfully implemented a responsive navigation menu with hamburger menu for mo
 
       render(<AgentOutputModal {...defaultProps} />);
 
-      expect(screen.getByText('Loading output...')).toBeInTheDocument();
+      // The modal defaults to Trajectory view; switch to Logs view to see the log-specific messages
+      const logsButton = screen.getByTestId('view-mode-parsed');
+      fireEvent.click(logsButton);
+
+      await waitFor(() => {
+        expect(screen.getByText('Loading output...')).toBeInTheDocument();
+      });
     });
 
-    it('should show no output message when output is empty', () => {
+    it('should show no output message when output is empty (after switching to Logs view)', async () => {
       mockUseAgentOutput.mockReturnValue({
         data: '',
         isLoading: false,
@@ -190,9 +196,15 @@ Successfully implemented a responsive navigation menu with hamburger menu for mo
 
       render(<AgentOutputModal {...defaultProps} />);
 
-      expect(
-        screen.getByText('No output yet. The agent will stream output here as it works.')
-      ).toBeInTheDocument();
+      // The modal defaults to Trajectory view; switch to Logs view to see the log-specific messages
+      const logsButton = screen.getByTestId('view-mode-parsed');
+      fireEvent.click(logsButton);
+
+      await waitFor(() => {
+        expect(
+          screen.getByText('No output yet. The agent will stream output here as it works.')
+        ).toBeInTheDocument();
+      });
     });
 
     it('should display parsed output in LogViewer', () => {
@@ -265,6 +277,15 @@ Successfully implemented a responsive navigation menu with hamburger menu for mo
     it('should auto-scroll to bottom when output changes', async () => {
       const { rerender } = render(<AgentOutputModal {...defaultProps} />);
 
+      // Switch to Logs view first — the modal defaults to Trajectory, so the font-mono
+      // scroll container only exists after switching to parsed/raw view.
+      const logsButton = screen.getByTestId('view-mode-parsed');
+      fireEvent.click(logsButton);
+
+      await waitFor(() => {
+        expect(logsButton).toHaveClass('bg-primary/20');
+      });
+
       // Find the scroll container - the div with overflow-y-auto that contains the log output
       const modal = screen.getByTestId('agent-output-modal');
       const scrollContainer = modal.querySelector('.overflow-y-auto.font-mono') as HTMLDivElement;
@@ -298,6 +319,15 @@ Successfully implemented a responsive navigation menu with hamburger menu for mo
 
     it('should update scrollTop when output is appended', async () => {
       const { rerender } = render(<AgentOutputModal {...defaultProps} />);
+
+      // Switch to Logs view first — the modal defaults to Trajectory, so the font-mono
+      // scroll container only exists after switching to parsed/raw view.
+      const logsButton = screen.getByTestId('view-mode-parsed');
+      fireEvent.click(logsButton);
+
+      await waitFor(() => {
+        expect(logsButton).toHaveClass('bg-primary/20');
+      });
 
       const modal = screen.getByTestId('agent-output-modal');
       const scrollContainer = modal.querySelector('.overflow-y-auto.font-mono') as HTMLDivElement;

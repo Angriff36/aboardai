@@ -22,8 +22,9 @@ describe('MODAL_CONSTANTS', () => {
   });
 
   describe('VIEW_MODES', () => {
-    it('should define all four view modes', () => {
+    it('should define all five view modes including trajectory', () => {
       expect(MODAL_CONSTANTS.VIEW_MODES).toEqual({
+        TRAJECTORY: 'trajectory',
         SUMMARY: 'summary',
         PARSED: 'parsed',
         RAW: 'raw',
@@ -32,6 +33,7 @@ describe('MODAL_CONSTANTS', () => {
     });
 
     it('should have string values for each mode', () => {
+      expect(typeof MODAL_CONSTANTS.VIEW_MODES.TRAJECTORY).toBe('string');
       expect(typeof MODAL_CONSTANTS.VIEW_MODES.SUMMARY).toBe('string');
       expect(typeof MODAL_CONSTANTS.VIEW_MODES.PARSED).toBe('string');
       expect(typeof MODAL_CONSTANTS.VIEW_MODES.RAW).toBe('string');

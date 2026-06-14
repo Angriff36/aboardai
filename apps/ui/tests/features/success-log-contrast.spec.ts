@@ -126,9 +126,12 @@ test.describe('Success log output contrast', () => {
     const modal = page.locator('[data-testid="agent-output-modal"]');
     await expect(modal).toBeVisible({ timeout: 10000 });
 
-    // The modal opens in Logs view by default. Verify the Logs tab is active.
+    // The modal now opens in Trajectory view by default; switch to Logs view so
+    // the parsed-log assertions below can find their expected content.
     const parsedButton = page.getByTestId('view-mode-parsed');
     await expect(parsedButton).toBeVisible({ timeout: 5000 });
+    await parsedButton.click();
+    await expect(parsedButton).toHaveClass(/bg-primary\/20/, { timeout: 5000 });
   }
 
   test('should display success log output with improved contrast', async ({ page }) => {
@@ -228,7 +231,8 @@ All tasks completed successfully.
     const modal = page.locator('[data-testid="agent-output-modal"]');
 
     // Verify the parsed log view shows content
-    await expect(modal.locator('text=Summary')).toBeVisible({ timeout: 5000 });
+    // Use .first() because "Summary" appears in the tab button and log entry badges
+    await expect(modal.locator('text=Summary').first()).toBeVisible({ timeout: 5000 });
 
     // Verify the description is shown
     await expect(modal.locator('text=Testing badge contrast in success logs')).toBeVisible();
