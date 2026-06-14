@@ -54,6 +54,7 @@ import type {
   ReasoningEffort,
   Feature,
   TaskGroupSnapshot,
+  NormalizedEvent,
 } from '@aboardai/types';
 import { getGlobalFileBrowser } from '@/contexts/file-browser-context';
 
@@ -207,7 +208,7 @@ const getServerUrl = (): string => {
   }
   // Use VITE_HOSTNAME if set, otherwise default to localhost
   const hostname = import.meta.env.VITE_HOSTNAME || 'localhost';
-  return `http://${hostname}:3008`;
+  return `http://${hostname}:47820`;
 };
 
 /**
@@ -609,7 +610,8 @@ type EventType =
   | 'test-runner:output'
   | 'test-runner:completed'
   | 'notification:created'
-  | 'group:event';
+  | 'group:event'
+  | 'feature:event';
 
 /**
  * Dev server log event payloads for WebSocket streaming
@@ -2028,6 +2030,17 @@ export class HttpApiClient implements ElectronAPI {
       conflictCount?: number;
       error?: string;
     }>;
+    getEvents: (
+      projectPath: string,
+      featureId: string
+    ) => Promise<{ success: boolean; events?: NormalizedEvent[]; error?: string }>;
+    onFeatureEvent: (
+      callback: (payload: {
+        featureId: string;
+        projectPath: string;
+        event: NormalizedEvent;
+      }) => void
+    ) => () => void;
   } = {
     getAll: (projectPath: string) =>
       this.get(`/api/features/list?projectPath=${encodeURIComponent(projectPath)}`),
@@ -2157,6 +2170,20 @@ export class HttpApiClient implements ElectronAPI {
         action,
         targetBranch,
       }),
+    getEvents: (
+      projectPath: string,
+      featureId: string
+    ): Promise<{ success: boolean; events?: NormalizedEvent[]; error?: string }> =>
+      this.post('/api/features/events', { projectPath, featureId }),
+    onFeatureEvent: (
+      callback: (payload: {
+        featureId: string;
+        projectPath: string;
+        event: NormalizedEvent;
+      }) => void
+    ): (() => void) => {
+      return this.subscribeToEvent('feature:event', callback as EventCallback);
+    },
   };
 
   // Auto Mode API
