@@ -20,6 +20,14 @@ export type NormalizedEventKind =
   | 'error' // error message or error-result
   | 'result'; // terminal result (subtype, success/error)
 
+/** A simple replacement-hunk diff for a single edit (old lines removed, new lines added). */
+export interface FileDiff {
+  unified: string; // hunk text: removed lines prefixed '- ', added lines prefixed '+ '
+  adds: number;
+  dels: number;
+  truncated: boolean; // true if `unified` was capped
+}
+
 export interface NormalizedEvent {
   v: 1; // schema version
   id: string; // monotonic per-stream: `${seq}` zero-padded
@@ -28,9 +36,9 @@ export interface NormalizedEvent {
   provider: string; // provider name ('claude', 'codex', ...)
   featureId?: string;
   // kind-specific payload (one of):
-  text?: string; // agent_message (chunk), summary, error
+  text?: string; // agent_message (chunk), summary, error, thinking (when persisted)
   tool?: { name: string; inputPreview?: string; toolUseId?: string };
-  file?: { path: string; tool: string };
+  file?: { path: string; tool: string; diff?: FileDiff };
   command?: { command: string };
   marker?: {
     type: 'task_start' | 'task_complete' | 'phase_complete';
@@ -42,4 +50,7 @@ export interface NormalizedEvent {
   sessionId?: string;
   result?: { subtype?: string; isError: boolean };
   thinkingChars?: number; // thinking: length only (content not persisted by default)
+  toolUseId?: string; // tool_result: id of the tool_use this result belongs to (correlation)
+  thinkingTruncated?: boolean; // thinking: true if `text` was capped
+  textTruncated?: boolean; // tool_result: true if `text` was capped
 }
