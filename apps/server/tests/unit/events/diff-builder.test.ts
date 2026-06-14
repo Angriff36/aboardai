@@ -7,6 +7,11 @@ describe('buildDiff', () => {
     expect(d).toEqual({ unified: '- a\n- b\n+ a\n+ c', adds: 2, dels: 2, truncated: false });
   });
 
+  it('Edit with only old_string is a pure deletion', () => {
+    const d = buildDiff({ old_string: 'x' }, 'Edit');
+    expect(d).toEqual({ unified: '- x', adds: 0, dels: 1, truncated: false });
+  });
+
   it('Write: whole content is all-adds, zero dels', () => {
     const d = buildDiff({ content: 'x\ny' }, 'Write');
     expect(d).toEqual({ unified: '+ x\n+ y', adds: 2, dels: 0, truncated: false });
