@@ -23,8 +23,8 @@ export type NormalizedEventKind =
 /** A simple replacement-hunk diff for a single edit (old lines removed, new lines added). */
 export interface FileDiff {
   unified: string; // hunk text: removed lines prefixed '- ', added lines prefixed '+ '
-  adds: number;
-  dels: number;
+  adds: number; // number of added lines
+  dels: number; // number of removed lines
   truncated: boolean; // true if `unified` was capped
 }
 
@@ -51,6 +51,6 @@ export interface NormalizedEvent {
   result?: { subtype?: string; isError: boolean };
   thinkingChars?: number; // thinking: length only (content not persisted by default)
   toolUseId?: string; // tool_result: id of the tool_use this result belongs to (correlation)
-  thinkingTruncated?: boolean; // thinking: true if `text` was capped
+  thinkingTruncated?: boolean; // thinking: true if persisted 'text' was capped
   textTruncated?: boolean; // tool_result: true if `text` was capped
 }

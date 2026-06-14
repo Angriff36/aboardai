@@ -115,7 +115,7 @@ export type { EventType, EventCallback } from './event.js';
 
 // Group types (Task Groups domain model)
 export type { GroupChildStatus, TaskGroupStatus, TaskGroupSnapshot } from './group.js';
-export type { NormalizedEventKind, NormalizedEvent } from './normalized-event.js';
+export type { NormalizedEventKind, NormalizedEvent, FileDiff } from './normalized-event.js';
 
 // Spec types
 export type { SpecOutput } from './spec.js';
