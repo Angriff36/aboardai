@@ -12,6 +12,7 @@ export interface TrajectoryGroup {
 export function groupTrajectory(events: NormalizedEvent[]): TrajectoryGroup[] {
   const groups: TrajectoryGroup[] = [];
   let current: TrajectoryGroup = { key: 'activity', title: 'Activity', done: false, events: [] };
+  let autoTaskCount = 0;
 
   const flush = () => {
     if (current.events.length > 0 || current.done) groups.push(current);
@@ -21,8 +22,17 @@ export function groupTrajectory(events: NormalizedEvent[]): TrajectoryGroup[] {
     if (e.kind === 'task_marker' && e.marker) {
       if (e.marker.type === 'task_start') {
         flush();
-        const id = e.marker.taskId ?? `task-${groups.length + 1}`;
-        current = { key: id, title: id, done: false, events: [] };
+        let key: string;
+        let title: string;
+        if (e.marker.taskId) {
+          key = e.marker.taskId;
+          title = e.marker.taskId;
+        } else {
+          autoTaskCount += 1;
+          key = `__auto-task-${autoTaskCount}`; // prefixed so it can't collide with a real taskId
+          title = `Task ${autoTaskCount}`;
+        }
+        current = { key, title, done: false, events: [] };
       } else if (e.marker.type === 'task_complete') {
         current.done = true;
         if (e.marker.summary) current.summary = e.marker.summary;

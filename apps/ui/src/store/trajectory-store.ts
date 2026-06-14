@@ -22,9 +22,18 @@ export const useTrajectoryStore = create<TrajectoryStoreState & TrajectoryStoreA
     load: async (projectPath: string, featureId: string) => {
       const api = getHttpApiClient();
       const res = await api.features.getEvents(projectPath, featureId);
-      if (res.success && res.events) {
-        set((s) => ({ eventsByFeature: { ...s.eventsByFeature, [featureId]: res.events! } }));
+      if (!res.success || !res.events) {
+        throw new Error(res.error ?? 'Failed to load trajectory events');
       }
+      const serverEvents = res.events;
+      set((s) => {
+        const live = s.eventsByFeature[featureId] ?? [];
+        const serverKeys = new Set(serverEvents.map(dedupeKey));
+        const liveTail = live.filter((e) => !serverKeys.has(dedupeKey(e)));
+        return {
+          eventsByFeature: { ...s.eventsByFeature, [featureId]: [...serverEvents, ...liveTail] },
+        };
+      });
     },
 
     appendEvent: (featureId: string, event: NormalizedEvent) => {
