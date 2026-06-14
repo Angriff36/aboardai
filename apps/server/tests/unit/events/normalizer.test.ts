@@ -502,7 +502,7 @@ describe('NormalizedEventStream — derived-event pairing order', () => {
 });
 
 describe('NormalizedEventStream — thinking', () => {
-  it('emits thinkingChars only, no text or thinking content', () => {
+  it('emits thinkingChars, text, and thinkingTruncated for thinking blocks', () => {
     const stream = new NormalizedEventStream({
       provider: 'claude',
       featureId: 'test',
@@ -521,21 +521,21 @@ describe('NormalizedEventStream — thinking', () => {
     expect(evts).toHaveLength(1);
     expect(evts[0].kind).toBe('thinking');
     expect(evts[0].thinkingChars).toBe(thinking.length);
-    expect(evts[0].text).toBeUndefined();
-    // Verify content is NOT leaked
-    expect(JSON.stringify(evts[0])).not.toContain('reasoning chain');
+    // text is now emitted (enriched behavior)
+    expect(evts[0].text).toBe(thinking);
+    expect(evts[0].thinkingTruncated).toBe(false);
   });
 });
 
 describe('NormalizedEventStream — tool_result truncation', () => {
-  it('truncates tool_result content at 500 chars', () => {
+  it('truncates tool_result content at 4000 chars', () => {
     const stream = new NormalizedEventStream({
       provider: 'claude',
       featureId: 'test',
       clock: fixedClock,
     });
 
-    const longContent = 'x'.repeat(600);
+    const longContent = 'x'.repeat(4500);
     const evts = stream.feed({
       type: 'user',
       message: {
@@ -546,7 +546,9 @@ describe('NormalizedEventStream — tool_result truncation', () => {
 
     expect(evts).toHaveLength(1);
     expect(evts[0].kind).toBe('tool_result');
-    expect(evts[0].text!.length).toBeLessThanOrEqual(501); // 500 + ellipsis char
+    expect(evts[0].text!.length).toBeLessThanOrEqual(4001); // 4000 + ellipsis char
+    expect(evts[0].textTruncated).toBe(true);
+    expect(evts[0].toolUseId).toBe('tu-1');
   });
 
   it('does not truncate short tool_result content', () => {

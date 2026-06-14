@@ -21,8 +21,10 @@ import {
   detectAllPhaseCompleteMarkers,
   extractSummary,
 } from '../services/spec-parser.js';
+import { buildDiff } from './diff-builder.js';
 
-const TOOL_RESULT_MAX_CHARS = 500;
+const TOOL_RESULT_MAX_CHARS = 4000;
+const THINKING_MAX_CHARS = 4000;
 
 // Tool names that derive file_edit events
 const FILE_EDIT_TOOLS = new Set(['Edit', 'Write', 'MultiEdit', 'NotebookEdit']);
@@ -174,10 +176,7 @@ export class NormalizedEventStream {
 
     for (const block of blocks) {
       if (block.type === 'tool_result') {
-        const raw = block.content ?? '';
-        const truncated =
-          raw.length > TOOL_RESULT_MAX_CHARS ? raw.substring(0, TOOL_RESULT_MAX_CHARS) + '…' : raw;
-        events.push(this.make('tool_result', { text: truncated }));
+        events.push(this.toolResultEvent(block.content ?? '', block.tool_use_id));
       }
     }
 
@@ -199,9 +198,12 @@ export class NormalizedEventStream {
       }
 
       case 'thinking': {
-        const chars = (block.thinking ?? '').length;
-        // No content emitted — only length
-        events.push(this.make('thinking', { thinkingChars: chars }));
+        const full = block.thinking ?? '';
+        const truncated = full.length > THINKING_MAX_CHARS;
+        const text = truncated ? full.substring(0, THINKING_MAX_CHARS) + '…' : full;
+        events.push(
+          this.make('thinking', { thinkingChars: full.length, text, thinkingTruncated: truncated })
+        );
         break;
       }
 
@@ -220,7 +222,8 @@ export class NormalizedEventStream {
         if (FILE_EDIT_TOOLS.has(name)) {
           const filePath = this.extractFilePath(block.input);
           if (filePath) {
-            events.push(this.make('file_edit', { file: { path: filePath, tool: name } }));
+            const diff = buildDiff(block.input, name);
+            events.push(this.make('file_edit', { file: { path: filePath, tool: name, diff } }));
           }
         } else if (COMMAND_RUN_TOOLS.has(name)) {
           const command = this.extractCommand(block.input);
@@ -235,10 +238,7 @@ export class NormalizedEventStream {
 
       case 'tool_result': {
         // tool_result blocks inside assistant messages (e.g. cursor completed events)
-        const raw = block.content ?? '';
-        const truncated =
-          raw.length > TOOL_RESULT_MAX_CHARS ? raw.substring(0, TOOL_RESULT_MAX_CHARS) + '…' : raw;
-        events.push(this.make('tool_result', { text: truncated }));
+        events.push(this.toolResultEvent(block.content ?? '', block.tool_use_id));
         break;
       }
     }
@@ -312,6 +312,13 @@ export class NormalizedEventStream {
       featureId: this.featureId,
       ...payload,
     };
+  }
+
+  /** Build a tool_result event with 4k cap, textTruncated flag, and toolUseId correlation */
+  private toolResultEvent(raw: string, toolUseId?: string): NormalizedEvent {
+    const truncated = raw.length > TOOL_RESULT_MAX_CHARS;
+    const text = truncated ? raw.substring(0, TOOL_RESULT_MAX_CHARS) + '…' : raw;
+    return this.make('tool_result', { text, textTruncated: truncated, toolUseId });
   }
 
   /** Truncate tool input to a short preview string */
