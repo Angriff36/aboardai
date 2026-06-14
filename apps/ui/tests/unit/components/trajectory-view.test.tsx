@@ -34,6 +34,25 @@ describe('EventCard', () => {
     fireEvent.click(screen.getByText(/thinking/i));
     expect(screen.getByText('secret reasoning')).toBeTruthy();
   });
+
+  it('file_edit diff is collapsed by default and expands on click', () => {
+    render(
+      <EventCard
+        event={ev('file_edit', {
+          file: {
+            path: 'a.ts',
+            tool: 'Edit',
+            diff: { unified: '- a\n+ b', adds: 1, dels: 1, truncated: false },
+          },
+        })}
+      />
+    );
+    // The diff body renders each unified line as its own <div>; '+ b' is not visible until expanded.
+    expect(screen.queryByText('+ b')).toBeNull();
+    // The path sits inside the toggle button, so clicking it expands the diff.
+    fireEvent.click(screen.getByText('a.ts'));
+    expect(screen.getByText('+ b')).toBeTruthy();
+  });
 });
 
 describe('TrajectoryView', () => {
@@ -45,5 +64,25 @@ describe('TrajectoryView', () => {
   it('renders grouped events', () => {
     render(<TrajectoryView events={[ev('command_run', { command: { command: 'ls' } })]} />);
     expect(screen.getByText('ls')).toBeTruthy();
+  });
+
+  it('done task group starts collapsed (inner events hidden)', () => {
+    render(
+      <TrajectoryView
+        events={[
+          ev('task_marker', { marker: { type: 'task_start', taskId: 'T001' } }, '1'),
+          ev('command_run', { command: { command: 'ls' } }, '2'),
+          ev(
+            'task_marker',
+            { marker: { type: 'task_complete', taskId: 'T001', summary: 'done' } },
+            '3'
+          ),
+        ]}
+      />
+    );
+    // The group header is present...
+    expect(screen.getByTestId('phase-T001')).toBeTruthy();
+    // ...but its inner event is not visible because done groups start collapsed.
+    expect(screen.queryByText('ls')).toBeNull();
   });
 });

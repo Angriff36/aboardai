@@ -1,16 +1,18 @@
-import { useState } from 'react';
+import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import type { NormalizedEvent } from '@aboardai/types';
 import { groupTrajectory } from '@/lib/trajectory-grouping';
 import { EventCard } from './event-card';
 
 export function TrajectoryView({ events }: { events: NormalizedEvent[] }) {
+  // Hooks must run unconditionally, so compute groups before the empty-state early-return.
+  const groups = useMemo(() => groupTrajectory(events), [events]);
+
   if (events.length === 0) {
     return (
       <div className="p-6 text-sm text-muted-foreground text-center">No activity recorded yet.</div>
     );
   }
 
-  const groups = groupTrajectory(events);
   return (
     <div className="space-y-2">
       {groups.map((g) => (
@@ -41,10 +43,14 @@ function PhaseGroup({
   done: boolean;
   summary?: string;
   count: number;
-  children: React.ReactNode;
+  children: ReactNode;
 }) {
   // Done groups start collapsed; the active (not-done) group starts expanded.
   const [open, setOpen] = useState(!done);
+  // Auto-collapse when a group transitions active→done while mounted (live task_complete).
+  useEffect(() => {
+    if (done) setOpen(false);
+  }, [done]);
   return (
     <div className="rounded-lg border border-border">
       <button
