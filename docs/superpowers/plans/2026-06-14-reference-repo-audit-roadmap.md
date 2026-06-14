@@ -1,6 +1,6 @@
 # Post-v1 Reference-Repo Audit & Differentiation Roadmap
 
-**Status:** AUDIT COMPLETE 2026-06-14 — feeds post-v1 work (no code committed by this doc)
+**Status:** AUDIT COMPLETE 2026-06-14 — P1 (agent trajectory view) SHIPPED 2026-06-14 on branch feat/trajectory-view
 **Trigger:** v1 looked/felt like automaker. This doc records an honest audit of what AboardAI actually
 differs from automaker, plus a concrete, ranked list of _user-visible_ features worth pulling from the
 three unused reference repos to make the product distinct.
@@ -78,12 +78,12 @@ with port difficulty given the language mismatch.
 
 Where multiple independently-built tools point at the _same_ gap = strongest signal.
 
-| Priority | Feature                                                                               | Converging sources                              | Why it matters                                                                                                             | Effort |
-| -------- | ------------------------------------------------------------------------------------- | ----------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- | ------ |
-| **P1**   | **Agent trajectory view** (structured per-event UI vs flat log)                       | OpenHands #1, ai-agent-board #3, vibe-kanban #6 | Single biggest reason it "feels like automaker." Backend data already exists (Phase 3). Mostly frontend. Prereq for P2/P4. | Medium |
-| **P2**   | **In-app diff review w/ inline comments → batched agent feedback**                    | vibe-kanban #1, OpenHands #3                    | Turns the worktree into a real review→fix→re-review loop. Most distinctive review UX.                                      | Medium |
-| **P3**   | **Multi-attempt / forking** (retry w/ different provider/model, compare, pick winner) | vibe-kanban #3                                  | Matches AboardAI's _own_ stated philosophy ("competing implementations judged"). Never built.                              | Medium |
-| **P4**   | **Action confirmation + risk gating**                                                 | OpenHands #2                                    | Safety brake for autonomous worktree mutations. Hangs off the same event UI as P1.                                         | Medium |
+| Priority                  | Feature                                                                               | Converging sources                              | Why it matters                                                                                                             | Effort |
+| ------------------------- | ------------------------------------------------------------------------------------- | ----------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- | ------ |
+| **P1** ✅ DONE 2026-06-14 | **Agent trajectory view** (structured per-event UI vs flat log)                       | OpenHands #1, ai-agent-board #3, vibe-kanban #6 | Single biggest reason it "feels like automaker." Backend data already exists (Phase 3). Mostly frontend. Prereq for P2/P4. | Medium |
+| **P2**                    | **In-app diff review w/ inline comments → batched agent feedback**                    | vibe-kanban #1, OpenHands #3                    | Turns the worktree into a real review→fix→re-review loop. Most distinctive review UX.                                      | Medium |
+| **P3**                    | **Multi-attempt / forking** (retry w/ different provider/model, compare, pick winner) | vibe-kanban #3                                  | Matches AboardAI's _own_ stated philosophy ("competing implementations judged"). Never built.                              | Medium |
+| **P4**                    | **Action confirmation + risk gating**                                                 | OpenHands #2                                    | Safety brake for autonomous worktree mutations. Hangs off the same event UI as P1.                                         | Medium |
 
 **Easy-wins batch (do together):** transcript/trajectory export (all 3); Cmd+K command palette (vibe-kanban);
 parallelism slider (ai-agent-board).
