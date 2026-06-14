@@ -640,7 +640,7 @@ export function AgentOutputModal({
         )}
 
         {effectiveViewMode === 'trajectory' ? (
-          <div className="overflow-y-auto p-3">
+          <div className="flex-1 min-h-0 overflow-y-auto p-3">
             <TrajectoryView events={trajectoryEvents} />
           </div>
         ) : effectiveViewMode === 'changes' ? (
