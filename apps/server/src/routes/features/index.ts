@@ -24,6 +24,7 @@ import {
   createOrphanedResolveHandler,
   createOrphanedBulkResolveHandler,
 } from './routes/orphaned.js';
+import { createEventsHandler } from './routes/events.js';
 
 export function createFeaturesRoutes(
   featureLoader: FeatureLoader,
@@ -44,6 +45,7 @@ export function createFeaturesRoutes(
     createListHandler(featureLoader, autoModeService)
   );
   router.post('/get', validatePathParams('projectPath'), createGetHandler(featureLoader));
+  router.post('/events', validatePathParams('projectPath'), createEventsHandler());
   router.post(
     '/create',
     validatePathParams('projectPath'),
