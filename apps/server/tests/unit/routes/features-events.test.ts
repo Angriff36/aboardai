@@ -39,4 +39,16 @@ describe('POST /api/features/events handler', () => {
     expect(res.statusCode).toBe(200);
     expect((res.body as { success: boolean; events: unknown[] }).events).toHaveLength(1);
   });
+
+  it('500 when readEventLog throws', async () => {
+    const { readEventLog } = await import('../../../src/events/event-log.js');
+    vi.mocked(readEventLog).mockRejectedValueOnce(new Error('disk failure'));
+    const res = mockRes();
+    await createEventsHandler()(
+      { body: { projectPath: '/p', featureId: 'f1' } } as never,
+      res as never
+    );
+    expect(res.statusCode).toBe(500);
+    expect((res.body as { success: boolean }).success).toBe(false);
+  });
 });
