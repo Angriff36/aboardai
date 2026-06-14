@@ -39,6 +39,12 @@ import type {
   IdeationStreamEvent,
   IdeationAnalysisEvent,
   Notification,
+  ModelId,
+  ThinkingLevel,
+  ReasoningEffort,
+  Feature,
+  TaskGroupSnapshot,
+  NormalizedEvent,
 } from '@aboardai/types';
 import type { Message, SessionListItem } from '@/types/electron';
 import type {
@@ -48,14 +54,6 @@ import type {
   ZaiUsageResponse,
 } from '@/store/types';
 import type { WorktreeAPI, GitAPI, ModelDefinition, ProviderStatus } from '@/types/electron';
-import type {
-  ModelId,
-  ThinkingLevel,
-  ReasoningEffort,
-  Feature,
-  TaskGroupSnapshot,
-  NormalizedEvent,
-} from '@aboardai/types';
 import { getGlobalFileBrowser } from '@/contexts/file-browser-context';
 
 const logger = createLogger('HttpClient');
