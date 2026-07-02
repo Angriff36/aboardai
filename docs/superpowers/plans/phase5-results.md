@@ -48,6 +48,8 @@ This closes the spec's "inherit and keep green" goal.
 
 ### 6.3 Electron Windows Package
 
+> **RESOLVED 2026-07-02 (commit cd92a70):** `@angriff36/manifest` is now published publicly on registry.npmjs.org (repo bumped to 2.22.0). The `.npmrc` scope mapping and NODE_AUTH_TOKEN requirement were removed; `build:electron:win` builds a signed NSIS installer end to end (`apps/ui/release/AboardAI-1.0.0-x64.exe`). The section below is the historical record of the original blocker.
+
 **Result: BLOCKED — known environment issue (non-blocking for v1)**
 
 Error: `@angriff36/manifest@2.4.1` is a private scoped package not published to the public npm registry. The `prepare-server.mjs` packaging script runs `npm install --omit=dev` in a fresh bundle directory without access to the workspace-local install.
@@ -146,9 +148,8 @@ npm error 404  '@angriff36/manifest@2.4.1' is not in this registry.
   - **Reason:** Agent sessions (Agent view in sidebar) are currently independent chat with agents. Wiring them to board/context requires `projectPath` context passing through session state. Minor integration but not critical for v1.
   - **Post-v1:** Pass projectPath to agent sessions so tools reference active project.
 
-- **Electron Windows installer packaging** — `@angriff36/manifest` not on public npm registry
-  - **Reason:** The `prepare-server.mjs` bundling script runs `npm install --omit=dev` outside the workspace, where private-scoped packages cannot be resolved.
-  - **Post-v1:** Publish `@angriff36/manifest` to a private registry, or bundle it as a local file: reference in the packaging step.
+- **Electron Windows installer packaging** — ~~`@angriff36/manifest` not on public npm registry~~ **RESOLVED 2026-07-02:** package published publicly to npmjs (2.18.0+), repo pinned to 2.22.0, installer builds (commit cd92a70).
+  - **Reason (historical):** The `prepare-server.mjs` bundling script runs `npm install --omit=dev` outside the workspace, where private-scoped packages could not be resolved.
 
 ---
 
