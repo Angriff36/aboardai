@@ -24,7 +24,7 @@
     "test:unit": "vitest run tests/unit"
   },
   "dependencies": {
-    "@angriff36/manifest": "2.4.1",
+    "@angriff36/manifest": "2.22.0",
     "@anthropic-ai/claude-agent-sdk": "0.3.173",
     "@aboardai/dependency-resolver": "1.0.0",
     "@aboardai/git-utils": "1.0.0",

@@ -53,6 +53,8 @@ Base-branch precedence (decided): at group-creation time (API layer), children W
 
 ### Task 0: Branch + Manifest install gate — _Sonnet_
 
+> **SUPERSEDED 2026-07-02:** `@angriff36/manifest` is now public on registry.npmjs.org (2.18.0+; repo uses 2.22.0). The `.npmrc` GitHub Packages scope mapping and NODE_AUTH_TOKEN are gone — do NOT re-add them. The instructions below are the historical record only.
+
 **Files:** Create `.npmrc` (repo root, ONE line: `@angriff36:registry=https://npm.pkg.github.com`); Modify `apps/server/package.json` (add `"@angriff36/manifest": "2.4.1"` — EXACT pin, no caret).
 
 - [ ] 0.1 Verify branch `phase4-task-groups` (orchestrator creates it). Add `.npmrc` + dependency; `npm install` (600000ms). HARD RULE: the `.npmrc` contains ONLY the registry mapping — never any token.
