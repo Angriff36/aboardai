@@ -159,6 +159,86 @@ describe('AutoModeServiceFacade Agent Runner', () => {
     );
   });
 
+  it('should pass custom subagents to AgentExecutor when enabled', async () => {
+    const mockProvider = { getName: () => 'mock-provider' };
+    (ProviderFactory.getProviderForModel as any).mockReturnValue(mockProvider);
+    (settingsHelpers.resolveProviderContext as any).mockResolvedValue({
+      provider: undefined,
+      credentials: undefined,
+      resolvedModel: undefined,
+    });
+    (settingsHelpers.getSubagentsConfiguration as any).mockResolvedValue({
+      enabled: true,
+      sources: ['user', 'project'],
+      shouldIncludeInTools: true,
+    });
+    const customSubagents = {
+      'code-explorer': {
+        description: 'Explores the codebase',
+        prompt: 'You explore code.',
+        model: 'haiku',
+      },
+    };
+    (settingsHelpers.getCustomSubagents as any).mockResolvedValue(customSubagents);
+
+    const runAgentFn = (facade as any).executionService.runAgentFn;
+
+    await runAgentFn(
+      '/workdir',
+      'feature-1',
+      'prompt',
+      new AbortController(),
+      '/project',
+      [],
+      'model-1',
+      {}
+    );
+
+    // Subagents load from project settings at the project path, not the worktree
+    expect(settingsHelpers.getCustomSubagents).toHaveBeenCalledWith(
+      mockSettingsService,
+      '/project'
+    );
+    expect(mockAgentExecutor.execute).toHaveBeenCalledWith(
+      expect.objectContaining({
+        agents: customSubagents,
+      }),
+      expect.any(Object)
+    );
+  });
+
+  it('should not load subagents when disabled in settings', async () => {
+    const mockProvider = { getName: () => 'mock-provider' };
+    (ProviderFactory.getProviderForModel as any).mockReturnValue(mockProvider);
+    (settingsHelpers.resolveProviderContext as any).mockResolvedValue({
+      provider: undefined,
+      credentials: undefined,
+      resolvedModel: undefined,
+    });
+    (settingsHelpers.getSubagentsConfiguration as any).mockResolvedValue({
+      enabled: false,
+      sources: [],
+      shouldIncludeInTools: false,
+    });
+
+    const runAgentFn = (facade as any).executionService.runAgentFn;
+
+    await runAgentFn(
+      '/workdir',
+      'feature-1',
+      'prompt',
+      new AbortController(),
+      '/project',
+      [],
+      'model-1',
+      {}
+    );
+
+    expect(settingsHelpers.getCustomSubagents).not.toHaveBeenCalled();
+    const executeArg = mockAgentExecutor.execute.mock.calls[0][0];
+    expect(executeArg.agents).toBeUndefined();
+  });
+
   it('should use resolvedModel from provider config for createAutoModeOptions if it maps to a Claude model', async () => {
     const mockProvider = { getName: () => 'mock-provider' };
     (ProviderFactory.getProviderForModel as any).mockReturnValue(mockProvider);

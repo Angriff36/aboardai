@@ -129,6 +129,7 @@ export class AgentExecutor {
         mcpServers && Object.keys(mcpServers).length > 0
           ? (mcpServers as Record<string, { command: string }>)
           : undefined,
+      agents: options.agents,
       thinkingLevel: options.thinkingLevel,
       reasoningEffort: options.reasoningEffort,
       credentials,
@@ -1013,6 +1014,7 @@ export class AgentExecutor {
         o.mcpServers && Object.keys(o.mcpServers).length > 0
           ? (o.mcpServers as Record<string, { command: string }>)
           : undefined,
+      agents: o.agents,
       credentials: o.credentials,
       claudeCompatibleProvider: o.claudeCompatibleProvider,
       sdkSessionId: o.sdkSessionId,

@@ -9,6 +9,7 @@ import type {
   ParsedTask,
   ClaudeCompatibleProvider,
   Credentials,
+  AgentDefinition,
 } from '@aboardai/types';
 import type { BaseProvider } from '../providers/base-provider.js';
 
@@ -32,6 +33,8 @@ export interface AgentExecutionOptions {
   credentials?: Credentials;
   claudeCompatibleProvider?: ClaudeCompatibleProvider;
   mcpServers?: Record<string, unknown>;
+  /** Custom subagents for specialized task delegation (per-agent model overrides) */
+  agents?: Record<string, AgentDefinition>;
   sdkSessionId?: string;
   sdkOptions?: {
     maxTurns?: number;

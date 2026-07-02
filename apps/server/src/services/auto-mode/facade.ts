@@ -14,7 +14,13 @@
 import path from 'path';
 import { exec } from 'child_process';
 import { promisify } from 'util';
-import type { Feature, PlanningMode, ThinkingLevel, ReasoningEffort } from '@aboardai/types';
+import type {
+  Feature,
+  PlanningMode,
+  ThinkingLevel,
+  ReasoningEffort,
+  AgentDefinition,
+} from '@aboardai/types';
 import {
   DEFAULT_MAX_CONCURRENCY,
   DEFAULT_MODELS,
@@ -32,6 +38,8 @@ import {
   resolveProviderContext,
   getMCPServersFromSettings,
   getDefaultMaxTurnsSetting,
+  getSubagentsConfiguration,
+  getCustomSubagents,
 } from '../../lib/settings-helpers.js';
 import { execGitCommand } from '@aboardai/git-utils';
 import { TypedEventBus } from '../typed-event-bus.js';
@@ -310,6 +318,22 @@ export class AutoModeServiceFacade {
         });
         mcpServers = { ...mcpServers, aboardai: aboardaiServer };
 
+        // Load custom subagents (global + project merged, gated by enableSubagents)
+        // so auto-mode runs can delegate to per-agent model overrides — mirrors
+        // agent-service.ts. Loaded from the project path, not the worktree:
+        // worktrees may not contain .aboardai/.
+        let customSubagents: Record<string, AgentDefinition> | undefined;
+        try {
+          if (settingsService) {
+            const subagentsConfig = await getSubagentsConfiguration(settingsService);
+            if (subagentsConfig?.enabled) {
+              customSubagents = await getCustomSubagents(settingsService, pPath);
+            }
+          }
+        } catch {
+          // Subagents are optional - continue without them
+        }
+
         // Read user-configured max turns from settings
         const userMaxTurns = await getDefaultMaxTurnsSetting(settingsService, '[AutoModeFacade]');
 
@@ -363,6 +387,7 @@ export class AutoModeServiceFacade {
             credentials,
             claudeCompatibleProvider,
             mcpServers,
+            agents: customSubagents,
             sdkOptions: {
               maxTurns: sdkOpts.maxTurns,
               allowedTools: sdkOpts.allowedTools as string[] | undefined,
