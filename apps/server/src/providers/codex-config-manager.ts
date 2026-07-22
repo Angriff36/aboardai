@@ -70,16 +70,25 @@ export class CodexConfigManager {
     const configDir = path.join(cwd, CODEX_CONFIG_DIR);
     const configPath = path.join(configDir, CODEX_CONFIG_FILENAME);
 
-    await secureFs.mkdir(configDir, { recursive: true });
-
     const blocks: string[] = [];
     for (const [name, server] of Object.entries(mcpServers)) {
+      // In-process SDK servers (e.g. the aboardai board tools) have no
+      // command/url — the Codex CLI subprocess can't reach them and rejects
+      // the block with "invalid transport", failing the whole run.
+      if (server.type === 'sdk') {
+        continue;
+      }
       blocks.push(...buildServerBlock(name, server), '');
     }
 
     const content = blocks.join('\n').trim();
     if (content) {
+      await secureFs.mkdir(configDir, { recursive: true });
       await secureFs.writeFile(configPath, content + '\n', 'utf-8');
+    } else {
+      // Remove any stale config from a previous run so Codex doesn't keep
+      // loading a broken file.
+      await secureFs.rm(configPath, { force: true });
     }
   }
 }
