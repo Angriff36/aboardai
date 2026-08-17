@@ -6,7 +6,7 @@ import type { Request, Response } from 'express';
 import { getTerminalService } from '../../../services/terminal-service.js';
 
 export function createSessionResizeHandler() {
-  return (req: Request, res: Response): void => {
+  return (req: Request<{ id: string }>, res: Response): void => {
     const terminalService = getTerminalService();
     const { id } = req.params;
     const { cols, rows } = req.body;
