@@ -258,24 +258,39 @@ export async function performMerge(
   let branchDeleted = false;
 
   if (options?.deleteWorktreeAndBranch) {
-    // Remove the worktree
+    let checkoutIsClean = false;
     try {
-      await execGitCommand(['worktree', 'remove', worktreePath, '--force'], projectPath);
-      worktreeDeleted = true;
-    } catch {
-      // Try with prune if remove fails
+      const status = await execGitCommand(['status', '--porcelain'], worktreePath, {
+        LC_ALL: 'C',
+      });
+      checkoutIsClean = status.trim().length === 0;
+      if (!checkoutIsClean) {
+        logger.warn(`Retaining dirty merged worktree and branch: ${worktreePath}`);
+      }
+    } catch (statusError) {
+      logger.warn(`Could not verify merged worktree is clean; retaining it: ${worktreePath}`, {
+        error: statusError instanceof Error ? statusError.message : String(statusError),
+      });
+    }
+
+    if (checkoutIsClean) {
       try {
-        await execGitCommand(['worktree', 'prune'], projectPath);
+        await execGitCommand(['worktree', 'remove', worktreePath], projectPath);
         worktreeDeleted = true;
       } catch {
-        logger.warn(`Failed to remove worktree: ${worktreePath}`);
+        try {
+          await execGitCommand(['worktree', 'prune'], projectPath);
+        } catch {
+          // Pruning stale metadata is best-effort and never proves deletion.
+        }
+        logger.warn(`Failed to safely remove worktree: ${worktreePath}`);
       }
     }
 
-    // Delete the branch (but not main/master)
-    if (branchName !== 'main' && branchName !== 'master') {
+    // Delete only a merged branch whose clean checkout was safely removed.
+    if (worktreeDeleted && branchName !== 'main' && branchName !== 'master') {
       try {
-        await execGitCommand(['branch', '-D', branchName], projectPath);
+        await execGitCommand(['branch', '-d', branchName], projectPath);
         branchDeleted = true;
       } catch {
         logger.warn(`Failed to delete branch: ${branchName}`);

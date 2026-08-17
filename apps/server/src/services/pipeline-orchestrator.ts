@@ -592,7 +592,7 @@ export class PipelineOrchestrator {
         worktreePath || projectPath,
         targetBranch || 'main',
         {
-          deleteWorktreeAndBranch: false,
+          deleteWorktreeAndBranch: feature.worktreeMode === 'isolated',
         },
         this.eventBus.getUnderlyingEmitter()
       );
