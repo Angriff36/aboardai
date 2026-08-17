@@ -26,6 +26,15 @@ const codex: ModelAssignmentCandidate = {
   reasoningEffort: 'high',
   isProviderDefault: true,
 };
+const openrouter: ModelAssignmentCandidate = {
+  key: 'provider:openrouter:openrouter/model',
+  model: 'openrouter/model',
+  displayName: 'OpenRouter Model',
+  providerKey: 'claude-compatible:openrouter',
+  providerLabel: 'OpenRouter',
+  providerId: 'openrouter',
+  isProviderDefault: true,
+};
 const features = [
   { id: 'f1', title: 'First', status: 'backlog' },
   { id: 'f2', title: 'Second', status: 'backlog' },
@@ -34,11 +43,17 @@ const features = [
 
 describe('BalanceModelsDialog', () => {
   const verifyAccess = vi.fn();
+  const setProviderEnabled = vi.fn();
 
   beforeEach(() => {
     vi.clearAllMocks();
     vi.mocked(useFeatureModelCatalog).mockReturnValue({
       candidates: [cursor, codex],
+      groups: [
+        { key: 'cursor', label: 'Cursor', enabled: true, candidates: [cursor] },
+        { key: 'codex', label: 'Codex', enabled: true, candidates: [codex] },
+      ],
+      setProviderEnabled,
       isLoading: false,
       error: null,
     });
@@ -70,6 +85,7 @@ describe('BalanceModelsDialog', () => {
 
     expect(screen.getByRole('radio', { name: 'Automatic' })).toBeChecked();
     expect(screen.getByRole('button', { name: 'Apply Distribution' })).toBeDisabled();
+    await user.click(screen.getByRole('button', { name: 'Toggle Codex models' }));
 
     await user.click(screen.getByRole('button', { name: 'Verify Models' }));
 
@@ -113,6 +129,7 @@ describe('BalanceModelsDialog', () => {
 
     await user.click(screen.getByRole('radio', { name: 'Manual' }));
     await user.click(screen.getByRole('checkbox', { name: 'Cursor · Cursor Auto' }));
+    await user.click(screen.getByRole('button', { name: 'Toggle Codex models' }));
     await user.click(screen.getByRole('checkbox', { name: 'Codex · GPT-5.2 Codex' }));
     await user.click(screen.getByRole('button', { name: 'Verify Models' }));
     expect(await screen.findByRole('button', { name: 'Apply Distribution' })).toBeEnabled();
@@ -120,5 +137,50 @@ describe('BalanceModelsDialog', () => {
     await user.click(screen.getByRole('checkbox', { name: 'Codex · GPT-5.2 Codex' }));
     expect(screen.getByRole('button', { name: 'Apply Distribution' })).toBeDisabled();
     expect(screen.queryByText('2 features')).not.toBeInTheDocument();
+  });
+
+  it('collapses models by provider and can globally enable a disabled provider', async () => {
+    const user = userEvent.setup();
+    vi.mocked(useFeatureModelCatalog).mockReturnValue({
+      candidates: [cursor, codex],
+      groups: [
+        { key: 'cursor', label: 'Cursor', enabled: true, candidates: [cursor] },
+        { key: 'codex', label: 'Codex', enabled: true, candidates: [codex] },
+        {
+          key: 'claude-compatible:openrouter',
+          label: 'OpenRouter',
+          enabled: false,
+          candidates: [openrouter],
+          customProviderId: 'openrouter',
+        },
+      ],
+      setProviderEnabled,
+      isLoading: false,
+      error: null,
+    });
+
+    render(
+      <BalanceModelsDialog
+        open
+        projectPath="C:\\project"
+        features={features}
+        onOpenChange={vi.fn()}
+        onUpdateFeature={vi.fn()}
+        onComplete={vi.fn()}
+      />
+    );
+
+    expect(screen.getByRole('button', { name: 'Toggle Cursor models' })).toHaveAttribute(
+      'aria-expanded',
+      'true'
+    );
+    expect(screen.getByRole('button', { name: 'Toggle Codex models' })).toHaveAttribute(
+      'aria-expanded',
+      'false'
+    );
+    expect(screen.queryByText('OpenRouter Model')).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole('switch', { name: 'Use OpenRouter' }));
+    expect(setProviderEnabled).toHaveBeenCalledWith('claude-compatible:openrouter', true);
   });
 });

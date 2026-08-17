@@ -28,6 +28,7 @@ import { getHttpApiClient } from '@/lib/http-api-client';
 import { useFeatureModelCatalog } from '@/components/views/settings-view/model-defaults/use-feature-model-catalog';
 import { applyModelAssignments, type AssignmentProgress } from '../shared/bulk-model-assignment';
 import { createAutomaticCandidates, distributeModels } from '../shared/model-distribution';
+import { ProviderModelGroup } from './provider-model-group';
 
 interface BalanceModelsDialogProps {
   open: boolean;
@@ -52,7 +53,13 @@ export function BalanceModelsDialog({
   onUpdateFeature,
   onComplete,
 }: BalanceModelsDialogProps) {
-  const { candidates, isLoading, error: catalogError } = useFeatureModelCatalog();
+  const {
+    candidates,
+    groups,
+    setProviderEnabled,
+    isLoading,
+    error: catalogError,
+  } = useFeatureModelCatalog();
   const [snapshot, setSnapshot] = useState<Feature[]>(features);
   const [mode, setMode] = useState<DistributionMode>('automatic');
   const [manualKeys, setManualKeys] = useState<string[]>([]);
@@ -67,7 +74,9 @@ export function BalanceModelsDialog({
     failed: 0,
   });
   const [failedAssignments, setFailedAssignments] = useState<ModelDistributionAssignment[]>([]);
+  const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
   const wasOpen = useRef(false);
+  const initializedGroups = useRef(false);
 
   useEffect(() => {
     if (open && !wasOpen.current) {
@@ -78,9 +87,19 @@ export function BalanceModelsDialog({
       setVerification({});
       setOperationError(null);
       setFailedAssignments([]);
+      setExpandedGroups(new Set());
+      initializedGroups.current = false;
     }
+    if (!open) initializedGroups.current = false;
     wasOpen.current = open;
   }, [features, open]);
+
+  useEffect(() => {
+    if (!open || initializedGroups.current || groups.length === 0) return;
+    const firstEnabledGroup = groups.find((group) => group.enabled);
+    setExpandedGroups(firstEnabledGroup ? new Set([firstEnabledGroup.key]) : new Set());
+    initializedGroups.current = true;
+  }, [groups, open]);
 
   const automaticCandidates = useMemo(() => createAutomaticCandidates(candidates), [candidates]);
   const selectedCandidates = useMemo(
@@ -202,52 +221,98 @@ export function BalanceModelsDialog({
               <div className="border-b border-border px-4 py-3 text-sm font-medium">
                 {mode === 'automatic' ? 'Automatic candidates' : 'Choose models'}
               </div>
-              <div className="max-h-56 divide-y divide-border overflow-y-auto">
+              <div className="max-h-64 overflow-y-auto">
                 {selectedCandidates.length === 0 && mode === 'automatic' && (
                   <div className="px-4 py-5 text-sm text-muted-foreground">
                     No enabled model subscriptions were found.
                   </div>
                 )}
-                {(mode === 'automatic' ? automaticCandidates : candidates).map((candidate) => {
-                  const result = verification[candidate.key];
-                  const selected = mode === 'automatic' || manualKeys.includes(candidate.key);
+                {groups.map((group) => {
+                  const visibleCandidates = (
+                    mode === 'automatic' ? automaticCandidates : group.candidates
+                  ).filter((candidate) => candidate.providerKey === group.key);
                   return (
-                    <div key={candidate.key} className="flex items-center gap-3 px-4 py-3">
-                      {mode === 'manual' && (
-                        <Checkbox
-                          aria-label={`${candidate.providerLabel} · ${candidate.displayName}`}
-                          checked={selected}
-                          onCheckedChange={(checked) => {
-                            setManualKeys((current) =>
-                              checked
-                                ? [...current, candidate.key]
-                                : current.filter((key) => key !== candidate.key)
+                    <ProviderModelGroup
+                      key={group.key}
+                      label={group.label}
+                      enabled={group.enabled}
+                      modelCount={group.candidates.length}
+                      open={expandedGroups.has(group.key)}
+                      onOpenChange={(nextOpen) => {
+                        setExpandedGroups((current) => {
+                          const next = new Set(current);
+                          if (nextOpen) next.add(group.key);
+                          else next.delete(group.key);
+                          return next;
+                        });
+                      }}
+                      onEnabledChange={(enabled) => {
+                        invalidateVerification();
+                        if (!enabled) {
+                          const groupKeys = new Set(
+                            group.candidates.map((candidate) => candidate.key)
+                          );
+                          setManualKeys((current) => current.filter((key) => !groupKeys.has(key)));
+                        } else {
+                          setExpandedGroups((current) => new Set(current).add(group.key));
+                        }
+                        void setProviderEnabled(group.key, enabled);
+                      }}
+                    >
+                      <div className="divide-y divide-border">
+                        {group.enabled && visibleCandidates.length === 0 && (
+                          <div className="px-10 py-3 text-xs text-muted-foreground">
+                            No automatic candidate selected from this provider.
+                          </div>
+                        )}
+                        {group.enabled &&
+                          visibleCandidates.map((candidate) => {
+                            const result = verification[candidate.key];
+                            const selected =
+                              mode === 'automatic' || manualKeys.includes(candidate.key);
+                            return (
+                              <div
+                                key={candidate.key}
+                                className="flex items-center gap-3 px-4 py-3 pl-10"
+                              >
+                                {mode === 'manual' && (
+                                  <Checkbox
+                                    aria-label={`${candidate.providerLabel} · ${candidate.displayName}`}
+                                    checked={selected}
+                                    onCheckedChange={(checked) => {
+                                      setManualKeys((current) =>
+                                        checked
+                                          ? [...current, candidate.key]
+                                          : current.filter((key) => key !== candidate.key)
+                                      );
+                                      invalidateVerification();
+                                    }}
+                                  />
+                                )}
+                                <div className="min-w-0 flex-1">
+                                  <div className="truncate text-sm font-medium">
+                                    {candidate.displayName}
+                                  </div>
+                                </div>
+                                {selected && (
+                                  <div
+                                    aria-label={`${candidate.displayName} verification status`}
+                                    className="text-xs font-medium text-muted-foreground"
+                                  >
+                                    {phase === 'verifying'
+                                      ? 'Verifying'
+                                      : result?.status === 'verified'
+                                        ? 'Verified'
+                                        : result?.status === 'unavailable'
+                                          ? 'Unavailable'
+                                          : 'Pending'}
+                                  </div>
+                                )}
+                              </div>
                             );
-                            invalidateVerification();
-                          }}
-                        />
-                      )}
-                      <div className="min-w-0 flex-1">
-                        <div className="truncate text-sm font-medium">{candidate.displayName}</div>
-                        <div className="truncate text-xs text-muted-foreground">
-                          {candidate.providerLabel}
-                        </div>
+                          })}
                       </div>
-                      {selected && (
-                        <div
-                          aria-label={`${candidate.displayName} verification status`}
-                          className="text-xs font-medium text-muted-foreground"
-                        >
-                          {phase === 'verifying'
-                            ? 'Verifying'
-                            : result?.status === 'verified'
-                              ? 'Verified'
-                              : result?.status === 'unavailable'
-                                ? 'Unavailable'
-                                : 'Pending'}
-                        </div>
-                      )}
-                    </div>
+                    </ProviderModelGroup>
                   );
                 })}
               </div>
