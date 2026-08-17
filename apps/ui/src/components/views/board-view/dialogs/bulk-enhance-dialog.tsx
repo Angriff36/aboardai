@@ -1,5 +1,4 @@
 import { useEffect, useRef, useState } from 'react';
-import type { ModelId, ThinkingLevel } from '@aboardai/types';
 import {
   AlertTriangle,
   CheckCircle2,
@@ -37,12 +36,8 @@ import type {
   BulkEnhancementProgress,
   BulkEnhancementResult,
 } from '../shared/enhancement/bulk-enhancement';
-
-export interface BulkEnhanceRunOptions {
-  mode: EnhancementMode;
-  model: ModelId;
-  thinkingLevel?: ThinkingLevel;
-}
+import type { BulkEnhanceRunOptions } from '../shared/enhancement/bulk-feature-enhancement';
+export type { BulkEnhanceRunOptions } from '../shared/enhancement/bulk-feature-enhancement';
 
 interface BulkEnhanceDialogProps {
   open: boolean;
@@ -71,6 +66,7 @@ export function BulkEnhanceDialog({
 }: BulkEnhanceDialogProps) {
   const [mode, setMode] = useState<EnhancementMode>('improve');
   const [phase, setPhase] = useState<DialogPhase>('setup');
+  const [batchFeatureCount, setBatchFeatureCount] = useState(featureCount);
   const [progress, setProgress] = useState<BulkEnhancementProgress>(EMPTY_PROGRESS);
   const [result, setResult] = useState<BulkEnhancementResult | null>(null);
   const [batchError, setBatchError] = useState<string | null>(null);
@@ -81,6 +77,7 @@ export function BulkEnhanceDialog({
     if (open && !wasOpen.current) {
       setMode('improve');
       setPhase('setup');
+      setBatchFeatureCount(featureCount);
       setProgress({ ...EMPTY_PROGRESS, total: featureCount });
       setResult(null);
       setBatchError(null);
@@ -89,7 +86,7 @@ export function BulkEnhanceDialog({
   }, [featureCount, open]);
 
   const run = async (featureIds?: string[]) => {
-    const total = featureIds?.length ?? featureCount;
+    const total = featureIds?.length ?? batchFeatureCount;
     setPhase('running');
     setProgress({ completed: 0, total, failed: 0 });
     setBatchError(null);
@@ -133,7 +130,9 @@ export function BulkEnhanceDialog({
               <Sparkles className="h-5 w-5" />
             </div>
             <div className="space-y-1">
-              <DialogTitle>Enhance {featureCount} Features</DialogTitle>
+              <DialogTitle>
+                Enhance {batchFeatureCount} Feature{batchFeatureCount === 1 ? '' : 's'}
+              </DialogTitle>
               <DialogDescription>
                 Apply one existing Enhance with AI action to every selected feature.
               </DialogDescription>
@@ -234,7 +233,7 @@ export function BulkEnhanceDialog({
               <div className="flex flex-col items-center rounded-xl border border-green-500/30 bg-green-500/10 px-4 py-6 text-center">
                 <CheckCircle2 className="mb-3 h-8 w-8 text-green-500" />
                 <div className="font-medium text-foreground">
-                  All {successfulCount} features enhanced
+                  All {successfulCount} feature{successfulCount === 1 ? '' : 's'} enhanced
                 </div>
                 <p className="mt-1 text-sm text-muted-foreground">
                   Every updated description has been saved.
@@ -279,11 +278,11 @@ export function BulkEnhanceDialog({
               </Button>
               <Button
                 onClick={() => void run()}
-                disabled={featureCount === 0}
+                disabled={batchFeatureCount === 0}
                 data-testid="bulk-enhance-start-button"
               >
                 <Sparkles className="mr-2 h-4 w-4" />
-                Enhance {featureCount} Features
+                Enhance {batchFeatureCount} Feature{batchFeatureCount === 1 ? '' : 's'}
               </Button>
             </>
           )}

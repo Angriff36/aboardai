@@ -71,6 +71,7 @@ describe('BulkEnhanceDialog', () => {
 
   it('names failed features and retries only those items', async () => {
     const user = userEvent.setup();
+    const onFinished = vi.fn();
     const onRun = vi
       .fn()
       .mockResolvedValueOnce({
@@ -79,14 +80,14 @@ describe('BulkEnhanceDialog', () => {
       })
       .mockResolvedValueOnce({ succeededIds: ['feature-2'], failures: [] });
 
-    render(
+    const view = render(
       <BulkEnhanceDialog
         open
         featureCount={2}
         featureNames={{ 'feature-1': 'First feature', 'feature-2': 'Checkout clarity' }}
         onOpenChange={vi.fn()}
         onRun={onRun}
-        onFinished={vi.fn()}
+        onFinished={onFinished}
       />
     );
 
@@ -95,6 +96,18 @@ describe('BulkEnhanceDialog', () => {
     expect(await screen.findByText('Checkout clarity')).toBeInTheDocument();
     expect(screen.getByText('provider failed')).toBeInTheDocument();
 
+    view.rerender(
+      <BulkEnhanceDialog
+        open
+        featureCount={1}
+        featureNames={{ 'feature-2': 'Checkout clarity' }}
+        onOpenChange={vi.fn()}
+        onRun={onRun}
+        onFinished={onFinished}
+      />
+    );
+    expect(screen.getByRole('heading', { name: 'Enhance 2 Features' })).toBeInTheDocument();
+
     await user.click(screen.getByRole('button', { name: 'Retry Failed' }));
 
     expect(onRun).toHaveBeenLastCalledWith(
@@ -102,5 +115,6 @@ describe('BulkEnhanceDialog', () => {
       expect.any(Function),
       ['feature-2']
     );
+    expect(await screen.findByText('All 1 feature enhanced')).toBeInTheDocument();
   });
 });
