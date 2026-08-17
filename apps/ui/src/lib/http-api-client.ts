@@ -45,6 +45,8 @@ import type {
   Feature,
   TaskGroupSnapshot,
   NormalizedEvent,
+  ModelAssignmentCandidate,
+  ModelAccessVerificationResult,
 } from '@aboardai/types';
 import type { Message, SessionListItem } from '@/types/electron';
 import type {
@@ -1446,6 +1448,12 @@ export class HttpApiClient implements ElectronAPI {
       error?: string;
     }> => {
       return this.get('/api/models/providers');
+    },
+    verifyAccess: async (
+      projectPath: string,
+      candidates: ModelAssignmentCandidate[]
+    ): Promise<{ results: ModelAccessVerificationResult[] }> => {
+      return this.post('/api/models/verify-access', { projectPath, candidates });
     },
   };
 
