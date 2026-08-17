@@ -19,8 +19,8 @@ import {
   ENHANCEMENT_MODE_LABELS,
   REWRITE_MODES,
   ADDITIVE_MODES,
-  isAdditiveMode,
 } from './enhancement-constants';
+import { composeEnhancedDescription } from './bulk-enhancement';
 import { useAppStore } from '@/store/app-store';
 
 const logger = createLogger('EnhanceWithAI');
@@ -87,10 +87,11 @@ export function EnhanceWithAI({
 
       if (result?.success && result.enhancedText) {
         const originalText = value;
-        // For additive modes, prepend the original description above the AI-generated content
-        const enhancedText = isAdditiveMode(enhancementMode)
-          ? `${originalText.trim()}\n\n${result.enhancedText.trim()}`
-          : result.enhancedText;
+        const enhancedText = composeEnhancedDescription(
+          originalText,
+          result.enhancedText,
+          enhancementMode
+        );
         onChange(enhancedText);
 
         // Track in history if callback provided (includes original for restoration)
