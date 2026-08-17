@@ -145,6 +145,8 @@ describe('execution-service.ts', () => {
   let mockRecordSuccessFn: RecordSuccessFn;
   let mockSaveExecutionStateFn: vi.Mock;
   let mockLoadContextFilesFn: vi.Mock;
+  let mockPersistWorktreeAssignmentFn: vi.Mock;
+  let mockEnsureFeatureWorktreeFn: vi.Mock;
 
   let service: ExecutionService;
 
@@ -155,6 +157,7 @@ describe('execution-service.ts', () => {
     category: 'test',
     description: 'Test description',
     status: 'backlog',
+    worktreeMode: 'shared',
     branchName: 'feature/test-1',
   };
 
@@ -188,6 +191,7 @@ describe('execution-service.ts', () => {
 
     mockWorktreeResolver = {
       findWorktreeForBranch: vi.fn().mockResolvedValue('/test/worktree'),
+      getCurrentBranch: vi.fn().mockResolvedValue('main'),
     } as unknown as WorktreeResolver;
 
     mockSettingsService = null;
@@ -209,6 +213,13 @@ describe('execution-service.ts', () => {
       formattedPrompt: 'test context',
       memoryFiles: [],
     });
+    mockPersistWorktreeAssignmentFn = vi
+      .fn()
+      .mockImplementation(async (_projectPath, _featureId, assignment) => ({
+        ...testFeature,
+        ...assignment,
+      }));
+    mockEnsureFeatureWorktreeFn = vi.fn().mockResolvedValue('/test/owned-worktree');
 
     // Default mocks for secureFs
     // Include tool usage markers to simulate meaningful agent output.
@@ -266,7 +277,12 @@ describe('execution-service.ts', () => {
       mockSignalPauseFn,
       mockRecordSuccessFn,
       mockSaveExecutionStateFn,
-      mockLoadContextFilesFn
+      mockLoadContextFilesFn,
+      undefined,
+      {
+        persistWorktreeAssignmentFn: mockPersistWorktreeAssignmentFn,
+        ensureFeatureWorktreeFn: mockEnsureFeatureWorktreeFn,
+      }
     );
   });
 
@@ -1322,6 +1338,82 @@ describe('execution-service.ts', () => {
   });
 
   describe('worktree resolution', () => {
+    it('serializes feature execution when explicit shared assignments resolve to one checkout', async () => {
+      let releaseFirstAgent!: () => void;
+      const firstAgentGate = new Promise<void>((resolve) => {
+        releaseFirstAgent = resolve;
+      });
+      mockLoadFeatureFn.mockImplementation(async (_projectPath, featureId) => ({
+        ...testFeature,
+        id: featureId,
+        worktreeMode: 'shared',
+        branchName: 'shared-work',
+      }));
+      mockRunAgentFn.mockImplementation(async (_workDir, featureId) => {
+        if (featureId === 'feature-one') await firstAgentGate;
+      });
+
+      const first = service.executeFeature('/test/project', 'feature-one', true);
+      await vi.waitFor(() => expect(mockRunAgentFn).toHaveBeenCalledTimes(1));
+      const second = service.executeFeature('/test/project', 'feature-two', true);
+      await Promise.resolve();
+      expect(mockRunAgentFn).toHaveBeenCalledTimes(1);
+
+      releaseFirstAgent();
+      await Promise.all([first, second]);
+      expect(mockRunAgentFn).toHaveBeenCalledTimes(2);
+    });
+
+    it('migrates legacy assignments and lazily provisions the owned worktree', async () => {
+      const legacyFeature: Feature = {
+        ...testFeature,
+        worktreeMode: undefined,
+        branchName: 'develop',
+      };
+      mockLoadFeatureFn.mockResolvedValue(legacyFeature);
+      mockPersistWorktreeAssignmentFn.mockImplementation(
+        async (_projectPath, _featureId, assignment) => ({ ...legacyFeature, ...assignment })
+      );
+
+      await service.executeFeature('/test/project', 'feature-1', true);
+
+      expect(mockPersistWorktreeAssignmentFn).toHaveBeenCalledWith(
+        '/test/project',
+        'feature-1',
+        expect.objectContaining({
+          worktreeMode: 'isolated',
+          branchName: expect.stringMatching(/^feature\/test-feature-[a-f0-9]{8}$/),
+          worktreeBaseBranch: 'develop',
+        })
+      );
+      expect(mockEnsureFeatureWorktreeFn).toHaveBeenCalledWith(
+        '/test/project',
+        expect.stringMatching(/^feature\/test-feature-[a-f0-9]{8}$/),
+        'develop'
+      );
+      expect(mockRunAgentFn.mock.calls[0][0]).toBe(normalizePath('/test/owned-worktree'));
+    });
+
+    it('recreates an isolated feature checkout instead of failing when it is missing', async () => {
+      const isolatedFeature: Feature = {
+        ...testFeature,
+        worktreeMode: 'isolated',
+        branchName: 'feature/stable-owned-12345678',
+        worktreeBaseBranch: 'main',
+      };
+      mockLoadFeatureFn.mockResolvedValue(isolatedFeature);
+      vi.mocked(mockWorktreeResolver.findWorktreeForBranch).mockResolvedValue(null);
+
+      await service.executeFeature('/test/project', 'feature-1', true);
+
+      expect(mockEnsureFeatureWorktreeFn).toHaveBeenCalledWith(
+        '/test/project',
+        'feature/stable-owned-12345678',
+        'main'
+      );
+      expect(mockRunAgentFn).toHaveBeenCalled();
+    });
+
     it('uses worktree when useWorktrees is true and branch exists', async () => {
       await service.executeFeature('/test/project', 'feature-1', true);
 

@@ -55,6 +55,7 @@ import { AgentExecutor } from '../agent-executor.js';
 import { TestRunnerService } from '../test-runner-service.js';
 import { ProviderFactory } from '../../providers/provider-factory.js';
 import { FeatureLoader } from '../feature-loader.js';
+import { ensureWorktree } from '../worktree-creation.js';
 import type { SettingsService } from '../settings-service.js';
 import type { EventEmitter } from '../../lib/events.js';
 import type {
@@ -561,7 +562,13 @@ export class AutoModeServiceFacade {
       },
       (_pPath) => getFacade().saveExecutionState(),
       loadContextFiles,
-      (context) => pipelineOrchestrator.attemptMerge(context)
+      (context) => pipelineOrchestrator.attemptMerge(context),
+      {
+        persistWorktreeAssignmentFn: (pPath, featureId, assignment) =>
+          featureLoader.update(pPath, featureId, assignment),
+        ensureFeatureWorktreeFn: async (pPath, branchName, baseBranch) =>
+          (await ensureWorktree(pPath, branchName, { baseBranch })).path,
+      }
     );
 
     // RecoveryService
