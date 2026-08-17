@@ -44,8 +44,8 @@ Set-Content -Path .env -Value "ANTHROPIC_API_KEY=your-api-key-here" -Encoding UT
 # 2. Build and run isolated container
 docker-compose up -d
 
-# 3. Access the UI at http://localhost:3007
-#    API at http://localhost:3008/api/health
+# 3. Access the UI at http://localhost:47821
+#    API at http://localhost:47820/api/health
 ```
 
 The container uses only Docker-managed volumes and has no access to your host filesystem. See [docker-isolation.md](docs/docker-isolation.md) for full documentation.

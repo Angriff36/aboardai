@@ -4,6 +4,23 @@ import { DiffView } from './diff-view';
 
 const pill = 'text-[10px] uppercase tracking-wide px-1.5 py-0.5 rounded font-medium';
 
+/**
+ * Defense-in-depth: NormalizedEvent.text should always be a string, but events
+ * persisted before the normalizer flattened array-shaped tool_result content may
+ * still carry an object/array. Rendering that directly throws React error #31, so
+ * coerce to a string at the render boundary.
+ */
+function asText(value: unknown): string {
+  if (value === undefined || value === null) return '';
+  if (typeof value === 'string') return value;
+  if (Array.isArray(value)) return value.map(asText).join('\n');
+  if (typeof value === 'object') {
+    const t = (value as { text?: unknown }).text;
+    return typeof t === 'string' ? t : JSON.stringify(value);
+  }
+  return String(value);
+}
+
 export function EventCard({ event }: { event: NormalizedEvent }) {
   const [open, setOpen] = useState(false);
 
@@ -20,7 +37,7 @@ export function EventCard({ event }: { event: NormalizedEvent }) {
           </button>
           {open && event.text && (
             <p className="mt-1 text-xs whitespace-pre-wrap text-muted-foreground">
-              {event.text}
+              {asText(event.text)}
               {event.thinkingTruncated && <span className="italic"> … truncated</span>}
             </p>
           )}
@@ -60,7 +77,7 @@ export function EventCard({ event }: { event: NormalizedEvent }) {
         <div className="rounded-md border border-border/60 bg-card/40 px-3 py-2 my-1 text-xs">
           <span className={`${pill} bg-emerald-500/20 text-emerald-600 mr-2`}>output</span>
           <pre className="mt-1 font-mono whitespace-pre-wrap text-muted-foreground">
-            {event.text}
+            {asText(event.text)}
             {event.textTruncated && <span className="italic"> … truncated</span>}
           </pre>
         </div>
@@ -86,7 +103,7 @@ export function EventCard({ event }: { event: NormalizedEvent }) {
           <span className={`${pill} bg-zinc-500/20 mr-2`}>
             {event.kind === 'error' ? 'error' : event.kind === 'summary' ? 'summary' : 'message'}
           </span>
-          {event.text}
+          {asText(event.text)}
         </div>
       );
 

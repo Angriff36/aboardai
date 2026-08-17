@@ -3,7 +3,7 @@ import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
-import { Wand2, GitBranch, ClipboardCheck, RefreshCw } from 'lucide-react';
+import { Wand2, GitBranch, ClipboardCheck, RefreshCw, FileInput } from 'lucide-react';
 import { UsagePopover } from '@/components/usage-popover';
 import { useAppStore } from '@/store/app-store';
 import { useSetupStore } from '@/store/setup-store';
@@ -27,6 +27,7 @@ interface BoardHeaderProps {
   isAutoModeRunning: boolean;
   onAutoModeToggle: (enabled: boolean) => void;
   onOpenPlanDialog: () => void;
+  onOpenImportDocument: () => void;
   hasPendingPlan?: boolean;
   onOpenPendingPlan?: () => void;
   isMounted: boolean;
@@ -55,6 +56,7 @@ export function BoardHeader({
   isAutoModeRunning,
   onAutoModeToggle,
   onOpenPlanDialog,
+  onOpenImportDocument,
   hasPendingPlan,
   onOpenPendingPlan,
   isMounted,
@@ -248,6 +250,20 @@ export function BoardHeader({
               runningAgentsCount={runningAgentsCount}
               onConcurrencyChange={onConcurrencyChange}
             />
+          </div>
+        )}
+
+        {/* Import Doc Button - break a document (plan, audit, PRD) into board tasks */}
+        {isMounted && !isTablet && (
+          <div className={controlContainerClass} data-testid="import-document-container">
+            <button
+              onClick={onOpenImportDocument}
+              className="flex items-center gap-1.5 hover:text-foreground transition-colors"
+              data-testid="import-document-button"
+            >
+              <FileInput className="w-4 h-4 text-muted-foreground" />
+              <span className="text-sm font-medium">Import Doc</span>
+            </button>
           </div>
         )}
 

@@ -11,7 +11,7 @@ AboardAI is an autonomous AI development studio built as an npm workspace monore
 ```bash
 # Development
 npm run dev                 # Interactive launcher (choose web or electron)
-npm run dev:web             # Web browser mode (localhost:3007)
+npm run dev:web             # Web browser mode (localhost:47821)
 npm run dev:electron        # Desktop app mode
 npm run dev:electron:debug  # Desktop with DevTools open
 
@@ -44,8 +44,8 @@ npm run format:check        # Prettier check
 ```
 aboardai/
 ├── apps/
-│   ├── ui/           # React + Vite + Electron frontend (port 3007)
-│   └── server/       # Express + WebSocket backend (port 3008)
+│   ├── ui/           # React + Vite + Electron frontend (port 47821)
+│   └── server/       # Express + WebSocket backend (port 47820)
 └── libs/             # Shared packages (@aboardai/*)
     ├── types/        # Core TypeScript definitions (no dependencies)
     ├── utils/        # Logging, errors, image processing, context loading
@@ -160,16 +160,17 @@ Project-specific rules are stored in `.aboardai/context/` and automatically load
 
 Use `resolveModelString()` from `@aboardai/model-resolver` to convert model aliases:
 
-- `haiku` → `claude-haiku-4-5`
-- `sonnet` → `claude-sonnet-4-20250514`
-- `opus` → `claude-opus-4-6`
+- `haiku` → `claude-haiku-4-5-20251001`
+- `sonnet` → `claude-sonnet-4-6`
+- `opus` → `claude-opus-4-8`
+- `fable` → `claude-fable-5` (selectable in the picker; never wired as a default — currently disabled/provisional capabilities pending GA)
 
 ## Environment Variables
 
 - `ANTHROPIC_API_KEY` - Anthropic API key (or use Claude Code CLI auth)
 - `HOST` - Host to bind server to (default: 0.0.0.0)
 - `HOSTNAME` - Hostname for user-facing URLs (default: localhost)
-- `PORT` - Server port (default: 3008)
+- `PORT` - Server port (default: 47820)
 - `DATA_DIR` - Data storage directory (default: ./data)
 - `ALLOWED_ROOT_DIRECTORY` - Restrict file operations to specific directory
 - `ABOARDAI_MOCK_AGENT=true` - Enable mock agent mode for CI testing

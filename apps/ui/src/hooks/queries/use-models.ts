@@ -92,6 +92,27 @@ export function useOpencodeModels(refresh = false) {
 }
 
 /**
+ * Fetch Cursor models from cursor-agent --list-models
+ */
+export function useCursorModels(refresh = false) {
+  return useQuery({
+    queryKey: queryKeys.models.cursor(),
+    queryFn: async (): Promise<ModelDefinition[]> => {
+      const api = getElectronAPI();
+      if (!api.setup?.getCursorModels) {
+        throw new Error('Cursor models API not available');
+      }
+      const result = await api.setup.getCursorModels(refresh);
+      if (!result.success) {
+        throw new Error(result.error || 'Failed to fetch Cursor models');
+      }
+      return (result.models ?? []) as ModelDefinition[];
+    },
+    staleTime: STALE_TIMES.MODELS,
+  });
+}
+
+/**
  * Fetch OpenCode providers
  *
  * @returns Query result with OpenCode providers

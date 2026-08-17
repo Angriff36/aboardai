@@ -490,6 +490,13 @@ export interface SpecRegenerationAPI {
     success: boolean;
     error?: string;
   }>;
+  importDocument: (
+    projectPath: string,
+    input: { documentText?: string; documentPath?: string; maxFeatures?: number }
+  ) => Promise<{
+    success: boolean;
+    error?: string;
+  }>;
   sync: (projectPath: string) => Promise<{
     success: boolean;
     error?: string;
@@ -1805,6 +1812,42 @@ interface SetupAPI {
     message?: string;
     error?: string;
   }>;
+  getCursorModels?: (refresh?: boolean) => Promise<{
+    success: boolean;
+    models?: Array<{
+      id: string;
+      name: string;
+      modelString: string;
+      provider: string;
+      description: string;
+      supportsTools: boolean;
+      supportsVision: boolean;
+      default?: boolean;
+    }>;
+    count?: number;
+    cached?: boolean;
+    error?: string;
+  }>;
+  refreshCursorModels?: () => Promise<{
+    success: boolean;
+    models?: Array<{
+      id: string;
+      name: string;
+      modelString: string;
+      provider: string;
+      description: string;
+      supportsTools: boolean;
+      supportsVision: boolean;
+      default?: boolean;
+    }>;
+    count?: number;
+    error?: string;
+  }>;
+  clearCursorCache?: () => Promise<{
+    success: boolean;
+    message?: string;
+    error?: string;
+  }>;
   // Gemini CLI methods
   getGeminiStatus?: () => Promise<{
     success: boolean;
@@ -2111,6 +2154,33 @@ function createMockSetupAPI(): SetupAPI {
 
     clearOpencodeCache: async () => {
       console.log('[Mock] Clearing OpenCode cache');
+      return {
+        success: true,
+        message: 'Cache cleared',
+      };
+    },
+
+    getCursorModels: async () => {
+      console.log('[Mock] Getting Cursor models');
+      return {
+        success: true,
+        models: [],
+        count: 0,
+        cached: false,
+      };
+    },
+
+    refreshCursorModels: async () => {
+      console.log('[Mock] Refreshing Cursor models');
+      return {
+        success: true,
+        models: [],
+        count: 0,
+      };
+    },
+
+    clearCursorCache: async () => {
+      console.log('[Mock] Clearing Cursor cache');
       return {
         success: true,
         message: 'Cache cleared',
@@ -3593,6 +3663,32 @@ function createMockSpecRegenerationAPI(): SpecRegenerationAPI {
       );
 
       // Simulate async feature generation
+      simulateFeatureGeneration(projectPath);
+
+      return { success: true };
+    },
+
+    importDocument: async (
+      projectPath: string,
+      input: { documentText?: string; documentPath?: string; maxFeatures?: number }
+    ) => {
+      if (mockSpecRegenerationRunning) {
+        return {
+          success: false,
+          error: 'Generation is already running',
+        };
+      }
+
+      if (!input.documentText?.trim() && !input.documentPath?.trim()) {
+        return { success: false, error: 'Provide either documentText or documentPath to import.' };
+      }
+
+      mockSpecRegenerationRunning = true;
+      console.log(
+        `[Mock] Importing document into tasks for: ${projectPath}, maxFeatures: ${input.maxFeatures}`
+      );
+
+      // Reuse the feature-generation simulation — same end-state (features on the board).
       simulateFeatureGeneration(projectPath);
 
       return { success: true };

@@ -37,9 +37,19 @@ import type { AutoModeEvent } from '@/types/electron';
 import type { BacklogPlanEvent, NormalizedEvent } from '@aboardai/types';
 import { TrajectoryView } from '../trajectory/trajectory-view';
 import { useTrajectoryStore } from '@/store/trajectory-store';
+import { PanelErrorBoundary } from '@/components/ui/panel-error-boundary';
 
 /** Stable empty array to avoid re-render churn when a feature has no trajectory events yet */
 const EMPTY_EVENTS: NormalizedEvent[] = [];
+
+/** Human labels per view mode, used by the panel error boundary's fallback copy. */
+const VIEW_LABELS: Record<string, string> = {
+  trajectory: 'Trajectory',
+  changes: 'Changes',
+  summary: 'Summary',
+  parsed: 'Logs',
+  raw: 'Output',
+};
 
 interface AgentOutputModalProps {
   open: boolean;
@@ -642,105 +652,110 @@ export function AgentOutputModal({
           />
         )}
 
-        {effectiveViewMode === 'trajectory' ? (
-          <div className="flex-1 min-h-0 overflow-y-auto p-3">
-            <TrajectoryView events={trajectoryEvents} />
-          </div>
-        ) : effectiveViewMode === 'changes' ? (
-          <div
-            className={`flex-1 min-h-0 ${MODAL_CONSTANTS.COMPONENT_HEIGHTS.SMALL_MIN} ${MODAL_CONSTANTS.COMPONENT_HEIGHTS.SMALL_MAX} overflow-y-auto scrollbar-visible`}
-          >
-            {resolvedProjectPath ? (
-              <GitDiffPanel
-                projectPath={resolvedProjectPath}
-                featureId={resolvedBranchName || featureId}
-                compact={false}
-                useWorktrees={useWorktrees}
-                className="border-0 rounded-lg"
-              />
-            ) : (
-              <div className="flex items-center justify-center h-full text-muted-foreground">
-                <Spinner size="lg" className="mr-2" />
-                Loading...
-              </div>
-            )}
-          </div>
-        ) : effectiveViewMode === 'summary' && summary ? (
-          <>
-            {/* Step navigator for multi-phase summaries */}
-            {hasMultiplePhases && (
-              <StepNavigator
-                phaseEntries={phaseEntries}
-                activeIndex={activePhaseIndex}
-                onIndexChange={setActivePhaseIndex}
-              />
-            )}
-
+        <PanelErrorBoundary
+          label={VIEW_LABELS[effectiveViewMode] ?? 'This view'}
+          resetKeys={[effectiveViewMode, featureId]}
+        >
+          {effectiveViewMode === 'trajectory' ? (
+            <div className="flex-1 min-h-0 overflow-y-auto p-3">
+              <TrajectoryView events={trajectoryEvents} />
+            </div>
+          ) : effectiveViewMode === 'changes' ? (
             <div
-              ref={summaryScrollRef}
-              onScroll={handleSummaryScroll}
-              className="flex-1 min-h-0 sm:min-h-[200px] sm:max-h-[60vh] overflow-y-auto scrollbar-visible space-y-4 p-1"
+              className={`flex-1 min-h-0 ${MODAL_CONSTANTS.COMPONENT_HEIGHTS.SMALL_MIN} ${MODAL_CONSTANTS.COMPONENT_HEIGHTS.SMALL_MAX} overflow-y-auto scrollbar-visible`}
             >
-              {hasMultiplePhases ? (
-                // Multi-phase: render individual phase cards
-                phaseEntries.map((entry, index) => (
-                  <div key={`phase-${index}-${entry.phaseName}`} data-phase-index={index}>
-                    <PhaseEntryCard
-                      entry={entry}
-                      index={index}
-                      totalPhases={phaseEntries.length}
-                      hasMultiplePhases={hasMultiplePhases}
-                      isActive={index === activePhaseIndex}
-                      onClick={() => setActivePhaseIndex(index)}
-                    />
-                  </div>
-                ))
+              {resolvedProjectPath ? (
+                <GitDiffPanel
+                  projectPath={resolvedProjectPath}
+                  featureId={resolvedBranchName || featureId}
+                  compact={false}
+                  useWorktrees={useWorktrees}
+                  className="border-0 rounded-lg"
+                />
               ) : (
-                // Single phase: render as markdown
-                <div className="bg-card border border-border/50 rounded-lg p-4">
-                  <Markdown>{summary}</Markdown>
-                </div>
-              )}
-            </div>
-
-            <div className="text-xs text-muted-foreground text-center shrink-0">
-              {summaryAutoScroll
-                ? 'Auto-scrolling enabled'
-                : 'Scroll to bottom to enable auto-scroll'}
-            </div>
-          </>
-        ) : (
-          <>
-            <div
-              ref={scrollRef}
-              onScroll={handleScroll}
-              className={`flex-1 min-h-0 ${MODAL_CONSTANTS.COMPONENT_HEIGHTS.SMALL_MIN} ${MODAL_CONSTANTS.COMPONENT_HEIGHTS.SMALL_MAX} overflow-y-auto bg-popover border border-border/50 rounded-lg p-4 font-mono text-xs scrollbar-visible`}
-            >
-              {isLoading && !output ? (
                 <div className="flex items-center justify-center h-full text-muted-foreground">
                   <Spinner size="lg" className="mr-2" />
-                  Loading output...
-                </div>
-              ) : !output ? (
-                <div className="flex items-center justify-center h-full text-muted-foreground">
-                  No output yet. The agent will stream output here as it works.
-                </div>
-              ) : effectiveViewMode === 'parsed' ? (
-                <LogViewer output={output} />
-              ) : (
-                <div className="whitespace-pre-wrap wrap-break-word text-foreground/80">
-                  {output}
+                  Loading...
                 </div>
               )}
             </div>
+          ) : effectiveViewMode === 'summary' && summary ? (
+            <>
+              {/* Step navigator for multi-phase summaries */}
+              {hasMultiplePhases && (
+                <StepNavigator
+                  phaseEntries={phaseEntries}
+                  activeIndex={activePhaseIndex}
+                  onIndexChange={setActivePhaseIndex}
+                />
+              )}
 
-            <div className="text-xs text-muted-foreground text-center shrink-0">
-              {autoScrollRef.current
-                ? 'Auto-scrolling enabled'
-                : 'Scroll to bottom to enable auto-scroll'}
-            </div>
-          </>
-        )}
+              <div
+                ref={summaryScrollRef}
+                onScroll={handleSummaryScroll}
+                className="flex-1 min-h-0 sm:min-h-[200px] sm:max-h-[60vh] overflow-y-auto scrollbar-visible space-y-4 p-1"
+              >
+                {hasMultiplePhases ? (
+                  // Multi-phase: render individual phase cards
+                  phaseEntries.map((entry, index) => (
+                    <div key={`phase-${index}-${entry.phaseName}`} data-phase-index={index}>
+                      <PhaseEntryCard
+                        entry={entry}
+                        index={index}
+                        totalPhases={phaseEntries.length}
+                        hasMultiplePhases={hasMultiplePhases}
+                        isActive={index === activePhaseIndex}
+                        onClick={() => setActivePhaseIndex(index)}
+                      />
+                    </div>
+                  ))
+                ) : (
+                  // Single phase: render as markdown
+                  <div className="bg-card border border-border/50 rounded-lg p-4">
+                    <Markdown>{summary}</Markdown>
+                  </div>
+                )}
+              </div>
+
+              <div className="text-xs text-muted-foreground text-center shrink-0">
+                {summaryAutoScroll
+                  ? 'Auto-scrolling enabled'
+                  : 'Scroll to bottom to enable auto-scroll'}
+              </div>
+            </>
+          ) : (
+            <>
+              <div
+                ref={scrollRef}
+                onScroll={handleScroll}
+                className={`flex-1 min-h-0 ${MODAL_CONSTANTS.COMPONENT_HEIGHTS.SMALL_MIN} ${MODAL_CONSTANTS.COMPONENT_HEIGHTS.SMALL_MAX} overflow-y-auto bg-popover border border-border/50 rounded-lg p-4 font-mono text-xs scrollbar-visible`}
+              >
+                {isLoading && !output ? (
+                  <div className="flex items-center justify-center h-full text-muted-foreground">
+                    <Spinner size="lg" className="mr-2" />
+                    Loading output...
+                  </div>
+                ) : !output ? (
+                  <div className="flex items-center justify-center h-full text-muted-foreground">
+                    No output yet. The agent will stream output here as it works.
+                  </div>
+                ) : effectiveViewMode === 'parsed' ? (
+                  <LogViewer output={output} />
+                ) : (
+                  <div className="whitespace-pre-wrap wrap-break-word text-foreground/80">
+                    {output}
+                  </div>
+                )}
+              </div>
+
+              <div className="text-xs text-muted-foreground text-center shrink-0">
+                {autoScrollRef.current
+                  ? 'Auto-scrolling enabled'
+                  : 'Scroll to bottom to enable auto-scroll'}
+              </div>
+            </>
+          )}
+        </PanelErrorBoundary>
       </DialogContent>
     </Dialog>
   );

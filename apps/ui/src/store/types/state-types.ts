@@ -199,6 +199,8 @@ export interface AppState {
   // Cursor CLI Settings (global)
   enabledCursorModels: CursorModelId[]; // Which Cursor models are available in feature modal
   cursorDefaultModel: CursorModelId; // Default Cursor model selection
+  dynamicCursorModels: ModelDefinition[]; // Dynamically discovered from cursor-agent --list-models
+  knownCursorModelIds: string[]; // Track seen Cursor models to avoid re-enabling deselected ones
 
   // Codex CLI Settings (global)
   enabledCodexModels: CodexModelId[]; // Which Codex models are available in feature modal
@@ -342,7 +344,7 @@ export interface AppState {
 
   // Codex Models (dynamically fetched)
   codexModels: Array<{
-    id: string;
+    id: CodexModelId;
     label: string;
     description: string;
     hasThinking: boolean;
@@ -611,6 +613,8 @@ export interface AppActions {
   setEnabledCursorModels: (models: CursorModelId[]) => void;
   setCursorDefaultModel: (model: CursorModelId) => void;
   toggleCursorModel: (model: CursorModelId, enabled: boolean) => void;
+  setDynamicCursorModels: (models: ModelDefinition[]) => void;
+  syncCursorModelsDiscovery: (models: ModelDefinition[]) => Promise<void>;
 
   // Codex CLI Settings actions
   setEnabledCodexModels: (models: CodexModelId[]) => void;
@@ -885,7 +889,7 @@ export interface AppActions {
   fetchCodexModels: (forceRefresh?: boolean) => Promise<void>;
   setCodexModels: (
     models: Array<{
-      id: string;
+      id: CodexModelId;
       label: string;
       description: string;
       hasThinking: boolean;

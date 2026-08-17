@@ -110,7 +110,7 @@ The server automatically detects the best shell:
 ### Terminal not connecting
 
 1. Ensure the server is running (`npm run dev:server`)
-2. Check that port 3008 is available
+2. Check that port 47820 is available
 3. Verify the terminal is unlocked
 
 ### Slow performance with heavy output

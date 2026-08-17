@@ -734,7 +734,7 @@ function NtfyEndpointDialog({
               id="endpoint-click"
               value={defaultClickUrl}
               onChange={(e) => setDefaultClickUrl(e.target.value)}
-              placeholder="http://localhost:3007"
+              placeholder="http://localhost:47821"
             />
             <p className="text-xs text-muted-foreground">
               URL to open when notification is clicked. Auto-linked to project/feature if available.

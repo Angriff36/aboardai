@@ -9,7 +9,7 @@ import type { GeminiModelId } from './gemini-models.js';
  * Canonical Claude model IDs with provider prefix
  * Used for internal storage and consistent provider routing.
  */
-export type ClaudeCanonicalId = 'claude-haiku' | 'claude-sonnet' | 'claude-opus';
+export type ClaudeCanonicalId = 'claude-haiku' | 'claude-sonnet' | 'claude-opus' | 'claude-fable';
 
 /**
  * Canonical Claude model map - maps prefixed IDs to full model strings
@@ -19,6 +19,7 @@ export const CLAUDE_CANONICAL_MAP: Record<ClaudeCanonicalId, string> = {
   'claude-haiku': 'claude-haiku-4-5-20251001',
   'claude-sonnet': 'claude-sonnet-4-6',
   'claude-opus': 'claude-opus-4-8',
+  'claude-fable': 'claude-fable-5',
 } as const;
 
 /**
@@ -30,6 +31,7 @@ export const CLAUDE_MODEL_MAP: Record<string, string> = {
   haiku: 'claude-haiku-4-5-20251001',
   sonnet: 'claude-sonnet-4-6',
   opus: 'claude-opus-4-8',
+  fable: 'claude-fable-5',
 } as const;
 
 /**
@@ -39,6 +41,7 @@ export const LEGACY_CLAUDE_ALIAS_MAP: Record<string, ClaudeCanonicalId> = {
   haiku: 'claude-haiku',
   sonnet: 'claude-sonnet',
   opus: 'claude-opus',
+  fable: 'claude-fable',
 } as const;
 
 /**
@@ -133,7 +136,7 @@ export const DEFAULT_MODELS = {
 } as const;
 
 export type ModelAlias = keyof typeof CLAUDE_MODEL_MAP;
-export type CodexModelId = (typeof CODEX_MODEL_MAP)[keyof typeof CODEX_MODEL_MAP];
+export type CodexModelId = `codex-${string}`;
 
 /**
  * AgentModel - Alias for ModelAlias for backward compatibility

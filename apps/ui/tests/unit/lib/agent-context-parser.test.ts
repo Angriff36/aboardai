@@ -13,8 +13,8 @@ import type { ClaudeCompatibleProvider, ProviderModel } from '@aboardai/types';
 
 describe('agent-context-parser.ts', () => {
   describe('DEFAULT_MODEL', () => {
-    it('should be claude-opus-4-6', () => {
-      expect(DEFAULT_MODEL).toBe('claude-opus-4-6');
+    it('should be claude-opus-4-8', () => {
+      expect(DEFAULT_MODEL).toBe('claude-opus-4-8');
     });
   });
 
@@ -215,12 +215,16 @@ describe('agent-context-parser.ts', () => {
     });
 
     describe('Claude model formatting (default)', () => {
-      it('should format claude-opus-4-6 as Opus 4.6', () => {
-        expect(formatModelName('claude-opus-4-6')).toBe('Opus 4.6');
+      it('should format claude-opus-4-8 as Opus 4.8', () => {
+        expect(formatModelName('claude-opus-4-8')).toBe('Opus 4.8');
       });
 
-      it('should format claude-opus as Opus 4.6', () => {
-        expect(formatModelName('claude-opus')).toBe('Opus 4.6');
+      it('should format claude-opus (canonical) as Opus 4.8', () => {
+        expect(formatModelName('claude-opus')).toBe('Opus 4.8');
+      });
+
+      it('should format claude-opus-4-6 as Opus 4.6', () => {
+        expect(formatModelName('claude-opus-4-6')).toBe('Opus 4.6');
       });
 
       it('should format other opus models as Opus 4.5', () => {
@@ -245,6 +249,11 @@ describe('agent-context-parser.ts', () => {
         expect(formatModelName('claude-haiku-4-5')).toBe('Haiku 4.5');
         expect(formatModelName('claude-3-haiku')).toBe('Haiku 4.5');
         expect(formatModelName('claude-haiku')).toBe('Haiku 4.5');
+      });
+
+      it('should format fable models as Fable 5', () => {
+        expect(formatModelName('claude-fable')).toBe('Fable 5');
+        expect(formatModelName('claude-fable-5')).toBe('Fable 5');
       });
     });
 

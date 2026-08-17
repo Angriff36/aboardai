@@ -7,7 +7,11 @@ import { createLogger } from '@aboardai/utils';
 const logger = createLogger('SpecRegeneration');
 
 // Types for running generation
-export type GenerationType = 'spec_regeneration' | 'feature_generation' | 'sync';
+export type GenerationType =
+  | 'spec_regeneration'
+  | 'feature_generation'
+  | 'document_import'
+  | 'sync';
 
 interface RunningGeneration {
   isRunning: boolean;

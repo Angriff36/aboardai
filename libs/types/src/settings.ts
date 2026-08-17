@@ -342,12 +342,18 @@ export function getThinkingTokenBudget(level: ThinkingLevel | undefined): number
  * levels from the UI.
  */
 export function isAdaptiveThinkingModel(model: string): boolean {
-  return model.includes('opus-4-8') || model.includes('opus-4-6') || model === 'claude-opus';
+  return (
+    model.includes('opus-4-8') ||
+    model.includes('opus-4-6') ||
+    model === 'claude-opus' ||
+    // Fable 5 uses adaptive thinking like the current flagship.
+    model.includes('fable')
+  );
 }
 
 /**
  * Get the available thinking levels for a given model.
- * - Opus 4.8 / Opus 4.6: Only 'none' and 'adaptive' (SDK handles token allocation)
+ * - Opus 4.8 / Opus 4.6 / Fable 5: Only 'none' and 'adaptive' (SDK handles token allocation)
  * - Others: Full range of manual thinking levels
  */
 export function getThinkingLevelsForModel(model: string): ThinkingLevel[] {
@@ -1359,6 +1365,8 @@ export interface GlobalSettings {
   enabledDynamicModelIds?: string[];
   /** All dynamic model IDs ever seen - used to distinguish new models from explicitly deselected ones */
   knownDynamicModelIds?: string[];
+  /** All Cursor CLI model IDs ever seen - used to distinguish new models from explicitly deselected ones */
+  knownCursorModelIds?: string[];
 
   // Gemini CLI Settings (global)
   /** Which Gemini models are available in feature modal (empty = all) */
@@ -1896,6 +1904,7 @@ export const DEFAULT_GLOBAL_SETTINGS: GlobalSettings = {
   opencodeDefaultModel: DEFAULT_OPENCODE_MODEL, // Already prefixed
   enabledDynamicModelIds: [],
   knownDynamicModelIds: [],
+  knownCursorModelIds: [],
   enabledGeminiModels: getAllGeminiModelIds(), // Returns prefixed IDs
   geminiDefaultModel: DEFAULT_GEMINI_MODEL, // Already prefixed
   enabledCopilotModels: getAllCopilotModelIds(), // Returns prefixed IDs

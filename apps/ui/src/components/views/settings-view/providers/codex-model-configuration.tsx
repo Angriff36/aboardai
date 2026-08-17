@@ -13,6 +13,7 @@ import { supportsReasoningEffort, type CodexModelId } from '@aboardai/types';
 import { OpenAIIcon } from '@/components/ui/provider-icon';
 
 interface CodexModelConfigurationProps {
+  availableModels: CodexModelInfo[];
   enabledCodexModels: CodexModelId[];
   codexDefaultModel: CodexModelId;
   isSaving: boolean;
@@ -24,6 +25,7 @@ interface CodexModelInfo {
   id: CodexModelId;
   label: string;
   description: string;
+  hasThinking?: boolean;
 }
 
 const CODEX_MODEL_INFO: Record<CodexModelId, CodexModelInfo> = {
@@ -85,13 +87,15 @@ const CODEX_MODEL_INFO: Record<CodexModelId, CodexModelInfo> = {
 };
 
 export function CodexModelConfiguration({
+  availableModels: discoveredModels,
   enabledCodexModels,
   codexDefaultModel,
   isSaving,
   onDefaultModelChange,
   onModelToggle,
 }: CodexModelConfigurationProps) {
-  const availableModels = Object.values(CODEX_MODEL_INFO);
+  const availableModels =
+    discoveredModels.length > 0 ? discoveredModels : Object.values(CODEX_MODEL_INFO);
 
   return (
     <div
@@ -131,7 +135,7 @@ export function CodexModelConfiguration({
                 <SelectItem key={model.id} value={model.id}>
                   <div className="flex items-center gap-2">
                     <span>{model.label}</span>
-                    {supportsReasoningEffort(model.id) && (
+                    {(model.hasThinking ?? supportsReasoningEffort(model.id)) && (
                       <Badge variant="outline" className="text-xs">
                         Thinking
                       </Badge>
@@ -164,7 +168,7 @@ export function CodexModelConfiguration({
                     <div>
                       <div className="flex items-center gap-2">
                         <span className="text-sm font-medium">{model.label}</span>
-                        {supportsReasoningEffort(model.id) && (
+                        {(model.hasThinking ?? supportsReasoningEffort(model.id)) && (
                           <Badge variant="outline" className="text-xs">
                             Thinking
                           </Badge>

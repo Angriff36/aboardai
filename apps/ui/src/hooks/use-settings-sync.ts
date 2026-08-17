@@ -89,6 +89,7 @@ const SETTINGS_FIELDS_TO_SYNC = [
   'copilotDefaultModel',
   'enabledDynamicModelIds',
   'knownDynamicModelIds',
+  'knownCursorModelIds',
   'disabledProviders',
   'autoLoadClaudeMd',
   'useClaudeCodeSystemPrompt',
@@ -648,17 +649,34 @@ export async function refreshSettingsFromServer(): Promise<boolean> {
     const serverSettings = result.settings as unknown as GlobalSettings;
     const currentAppState = useAppStore.getState();
 
-    // Cursor models - ALWAYS use ALL available models to ensure new models are visible
-    const allCursorModels = getAllCursorModelIds();
-    const validCursorModelIds = new Set(allCursorModels);
+    // Cursor models — persist user-enabled list; allow dynamic cursor-* IDs from CLI discovery
+    const allStaticCursorModels = getAllCursorModelIds();
+    const migratedCursorEnabled = migrateCursorModelIds(
+      serverSettings.enabledCursorModels ?? currentAppState.enabledCursorModels
+    );
+    const sanitizedEnabledCursorModels = migratedCursorEnabled.filter(
+      (id) => allStaticCursorModels.includes(id) || /^cursor-[a-zA-Z0-9._-]+$/.test(id)
+    );
 
-    // Migrate Cursor default model
     const migratedCursorDefault = migrateCursorModelIds([
       serverSettings.cursorDefaultModel ?? 'cursor-auto',
     ])[0];
-    const sanitizedCursorDefault = validCursorModelIds.has(migratedCursorDefault)
-      ? migratedCursorDefault
-      : ('cursor-auto' as CursorModelId);
+    const sanitizedCursorDefault =
+      sanitizedEnabledCursorModels.includes(migratedCursorDefault) ||
+      allStaticCursorModels.includes(migratedCursorDefault) ||
+      /^cursor-[a-zA-Z0-9._-]+$/.test(migratedCursorDefault)
+        ? migratedCursorDefault
+        : ('cursor-auto' as CursorModelId);
+
+    if (
+      sanitizedEnabledCursorModels.length > 0 &&
+      !sanitizedEnabledCursorModels.includes(sanitizedCursorDefault)
+    ) {
+      sanitizedEnabledCursorModels.push(sanitizedCursorDefault);
+    }
+
+    const sanitizedKnownCursorModelIds =
+      serverSettings.knownCursorModelIds ?? currentAppState.knownCursorModelIds;
 
     // Migrate OpenCode models to canonical format
     const migratedOpencodeModels = migrateOpencodeModelIds(
@@ -817,7 +835,10 @@ export async function refreshSettingsFromServer(): Promise<boolean> {
       },
       defaultThinkingLevel: serverSettings.defaultThinkingLevel ?? 'adaptive',
       defaultReasoningEffort: serverSettings.defaultReasoningEffort ?? 'none',
-      enabledCursorModels: allCursorModels, // Always use ALL cursor models
+      enabledCursorModels:
+        sanitizedEnabledCursorModels.length > 0
+          ? sanitizedEnabledCursorModels
+          : allStaticCursorModels,
       cursorDefaultModel: sanitizedCursorDefault,
       enabledOpencodeModels: sanitizedEnabledOpencodeModels,
       opencodeDefaultModel: sanitizedOpencodeDefaultModel,
@@ -827,6 +848,7 @@ export async function refreshSettingsFromServer(): Promise<boolean> {
       copilotDefaultModel: sanitizedCopilotDefaultModel,
       enabledDynamicModelIds: sanitizedDynamicModelIds,
       knownDynamicModelIds: sanitizedKnownDynamicModelIds,
+      knownCursorModelIds: sanitizedKnownCursorModelIds,
       disabledProviders: serverSettings.disabledProviders ?? [],
       autoLoadClaudeMd: serverSettings.autoLoadClaudeMd ?? true,
       useClaudeCodeSystemPrompt: serverSettings.useClaudeCodeSystemPrompt ?? true,

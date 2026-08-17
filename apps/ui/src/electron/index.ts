@@ -9,7 +9,12 @@ export * from './constants';
 export { state } from './state';
 
 // Utilities
-export { isPortAvailable, findAvailablePort } from './utils/port-manager';
+export {
+  isPortAvailable,
+  findAvailablePort,
+  reclaimPort,
+  getPidsOnPort,
+} from './utils/port-manager';
 export { getIconPath } from './utils/icon-manager';
 
 // Security

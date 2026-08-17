@@ -3,7 +3,7 @@ import { cn } from '@/lib/utils';
 import { useAppStore } from '@/store/app-store';
 import { useShallow } from 'zustand/react/shallow';
 import { useIsMobile } from '@/hooks/use-media-query';
-import { useOpencodeModels } from '@/hooks/queries';
+import { useOpencodeModels, useCursorModels } from '@/hooks/queries';
 import type {
   ModelAlias,
   CursorModelId,
@@ -27,10 +27,10 @@ import {
 } from '@aboardai/types';
 import {
   CLAUDE_MODELS,
-  CURSOR_MODELS,
   OPENCODE_MODELS,
   GEMINI_MODELS,
   COPILOT_MODELS,
+  getAvailableCursorModels,
   THINKING_LEVEL_LABELS,
   REASONING_EFFORT_LEVELS,
   REASONING_EFFORT_LABELS,
@@ -211,6 +211,7 @@ export function PhaseModelSelector({
   // (which also uses React Query) are immediately reflected here via the shared cache,
   // without requiring a page refresh.
   const { data: dynamicOpencodeModels = [] } = useOpencodeModels();
+  const { data: dynamicCursorModels = [] } = useCursorModels();
 
   // Detect mobile devices to use inline expansion instead of nested popovers
   const isMobile = useIsMobile();
@@ -342,11 +343,10 @@ export function PhaseModelSelector({
     }));
   }, [codexModels]);
 
-  // Filter Cursor models to only show enabled ones
-  // With canonical IDs, both CURSOR_MODELS and enabledCursorModels use prefixed format
-  const availableCursorModels = CURSOR_MODELS.filter((model) => {
-    return enabledCursorModels.includes(model.id as CursorModelId);
-  });
+  const availableCursorModels = useMemo(
+    () => getAvailableCursorModels(enabledCursorModels, dynamicCursorModels),
+    [enabledCursorModels, dynamicCursorModels]
+  );
 
   // Filter Gemini models to only show enabled ones
   const availableGeminiModels = GEMINI_MODELS.filter((model) => {
@@ -535,22 +535,19 @@ export function PhaseModelSelector({
   // Compute grouped vs standalone Cursor models
   const { groupedModels, standaloneCursorModels } = useMemo(() => {
     const grouped: GroupedModel[] = [];
-    const standalone: typeof CURSOR_MODELS = [];
+    const standalone: ModelOption[] = [];
     const seenGroups = new Set<string>();
 
     availableCursorModels.forEach((model) => {
       const cursorId = model.id as CursorModelId;
 
-      // Check if this model is standalone
       if (STANDALONE_CURSOR_MODELS.includes(cursorId)) {
         standalone.push(model);
         return;
       }
 
-      // Check if this model belongs to a group
       const group = getModelGroup(cursorId);
       if (group && !seenGroups.has(group.baseId)) {
-        // Filter variants to only include enabled models
         const enabledVariants = group.variants.filter((v) => enabledCursorModels.includes(v.id));
         if (enabledVariants.length > 0) {
           grouped.push({
@@ -559,7 +556,10 @@ export function PhaseModelSelector({
           });
           seenGroups.add(group.baseId);
         }
+        return;
       }
+
+      standalone.push(model);
     });
 
     return { groupedModels: grouped, standaloneCursorModels: standalone };
@@ -575,7 +575,9 @@ export function PhaseModelSelector({
     // Add dynamic models (convert ModelDefinition to ModelOption)
     // Only include dynamic models that are enabled by the user
     const dynamicModelOptions: ModelOption[] = dynamicOpencodeModels
-      .filter((model) => enabledDynamicModelIds.includes(model.id))
+      .filter(
+        (model) => enabledDynamicModelIds.length === 0 || enabledDynamicModelIds.includes(model.id)
+      )
       .map((model) => ({
         id: model.id,
         label: model.name,
@@ -609,7 +611,7 @@ export function PhaseModelSelector({
   const { favorites, claude, codex, gemini, copilot, opencode } = useMemo(() => {
     const favs: typeof CLAUDE_MODELS = [];
     const cModels: typeof CLAUDE_MODELS = [];
-    const curModels: typeof CURSOR_MODELS = [];
+    const curModels: ModelOption[] = [];
     const codModels: typeof transformedCodexModels = [];
     const gemModels: typeof GEMINI_MODELS = [];
     const copModels: typeof COPILOT_MODELS = [];
@@ -1629,7 +1631,7 @@ export function PhaseModelSelector({
   };
 
   // Render Cursor model item (no thinking level needed)
-  const renderCursorModelItem = (model: (typeof CURSOR_MODELS)[0]) => {
+  const renderCursorModelItem = (model: ModelOption) => {
     // With canonical IDs, store the full prefixed ID
     const isSelected = selectedModel === model.id;
     const isFavorite = favoriteModels.includes(model.id);

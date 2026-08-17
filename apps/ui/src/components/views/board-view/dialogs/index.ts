@@ -20,6 +20,7 @@ export { ViewCommitsDialog } from './view-commits-dialog';
 export { ViewWorktreeChangesDialog } from './view-worktree-changes-dialog';
 export { ExportFeaturesDialog } from './export-features-dialog';
 export { ImportFeaturesDialog } from './import-features-dialog';
+export { ImportDocumentDialog } from './import-document-dialog';
 export { StashChangesDialog } from './stash-changes-dialog';
 export { ViewStashesDialog } from './view-stashes-dialog';
 export { StashApplyConflictDialog } from './stash-apply-conflict-dialog';

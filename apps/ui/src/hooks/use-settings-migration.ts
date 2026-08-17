@@ -656,16 +656,30 @@ export function hydrateStoreFromSettings(settings: GlobalSettings): void {
   const current = useAppStore.getState();
 
   // Migrate Cursor models to canonical format
-  // IMPORTANT: Always use ALL available Cursor models to ensure new models are visible
-  // Users who had old settings with a subset of models should still see all available models
-  const allCursorModels = getAllCursorModelIds();
+  const allStaticCursorModels = getAllCursorModelIds();
   const migratedCursorDefault = migrateCursorModelIds([
     settings.cursorDefaultModel ?? current.cursorDefaultModel ?? 'cursor-auto',
   ])[0];
-  const validCursorModelIds = new Set(allCursorModels);
-  const sanitizedCursorDefaultModel = validCursorModelIds.has(migratedCursorDefault)
-    ? migratedCursorDefault
-    : ('cursor-auto' as CursorModelId);
+  const incomingEnabledCursorModels = settings.enabledCursorModels ?? current.enabledCursorModels;
+  const migratedCursorEnabled = migrateCursorModelIds(incomingEnabledCursorModels);
+  const sanitizedEnabledCursorModels = migratedCursorEnabled.filter(
+    (id) => allStaticCursorModels.includes(id) || /^cursor-[a-zA-Z0-9._-]+$/.test(id)
+  );
+  const sanitizedCursorDefaultModel =
+    sanitizedEnabledCursorModels.includes(migratedCursorDefault) ||
+    allStaticCursorModels.includes(migratedCursorDefault) ||
+    /^cursor-[a-zA-Z0-9._-]+$/.test(migratedCursorDefault)
+      ? migratedCursorDefault
+      : ('cursor-auto' as CursorModelId);
+
+  if (
+    sanitizedEnabledCursorModels.length > 0 &&
+    !sanitizedEnabledCursorModels.includes(sanitizedCursorDefaultModel)
+  ) {
+    sanitizedEnabledCursorModels.push(sanitizedCursorDefaultModel);
+  }
+
+  const sanitizedKnownCursorModelIds = settings.knownCursorModelIds ?? current.knownCursorModelIds;
 
   const validOpencodeModelIds = new Set(getAllOpencodeModelIds());
   const incomingEnabledOpencodeModels =
@@ -783,8 +797,12 @@ export function hydrateStoreFromSettings(settings: GlobalSettings): void {
     phaseModels: { ...DEFAULT_PHASE_MODELS, ...(settings.phaseModels ?? current.phaseModels) },
     defaultThinkingLevel: settings.defaultThinkingLevel ?? 'adaptive',
     defaultReasoningEffort: settings.defaultReasoningEffort ?? 'none',
-    enabledCursorModels: allCursorModels, // Always use ALL cursor models
+    enabledCursorModels:
+      sanitizedEnabledCursorModels.length > 0
+        ? sanitizedEnabledCursorModels
+        : allStaticCursorModels,
     cursorDefaultModel: sanitizedCursorDefaultModel,
+    knownCursorModelIds: sanitizedKnownCursorModelIds,
     enabledOpencodeModels: sanitizedEnabledOpencodeModels,
     opencodeDefaultModel: sanitizedOpencodeDefaultModel,
     enabledDynamicModelIds: sanitizedDynamicModelIds,

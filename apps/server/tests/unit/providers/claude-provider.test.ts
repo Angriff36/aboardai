@@ -788,9 +788,17 @@ describe('claude-provider.ts', () => {
   // ---------------------------------------------------------------------------
 
   describe('getAvailableModels', () => {
-    it('should return 5 Claude models', () => {
+    it('should return 6 Claude models', () => {
       const models = provider.getAvailableModels();
-      expect(models).toHaveLength(5);
+      expect(models).toHaveLength(6);
+    });
+
+    it('should include Claude Fable 5 but never as a default', () => {
+      const models = provider.getAvailableModels();
+      const fable = models.find((m) => m.id === 'claude-fable-5');
+      expect(fable).toBeDefined();
+      expect(fable?.name).toBe('Claude Fable 5');
+      expect(fable?.default).toBeFalsy();
     });
 
     it('should include Claude Opus 4.8 as the default', () => {

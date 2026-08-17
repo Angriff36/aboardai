@@ -27,6 +27,21 @@ export interface SubprocessResult {
 }
 
 /**
+ * Kills a child process and its entire process tree.
+ *
+ * On Windows, processes spawned with shell:true run under a cmd.exe wrapper;
+ * childProcess.kill() only kills the wrapper, orphaning the real CLI process
+ * and anything it spawned (e.g. MCP servers). taskkill /T kills the tree.
+ */
+function killProcessTree(childProcess: ChildProcess, signal: 'SIGTERM' | 'SIGKILL' = 'SIGTERM') {
+  if (process.platform === 'win32' && childProcess.pid) {
+    spawn('taskkill', ['/pid', String(childProcess.pid), '/T', '/F'], { stdio: 'ignore' });
+  } else {
+    childProcess.kill(signal);
+  }
+}
+
+/**
  * Spawns a subprocess and streams JSONL output line-by-line.
  *
  * Uses direct 'data' event handling with manual line buffering instead of
@@ -108,7 +123,7 @@ export async function* spawnJSONLProcess(options: SubprocessOptions): AsyncGener
       const elapsed = Date.now() - lastOutputTime;
       if (elapsed >= timeout) {
         console.error(`[SubprocessManager] Process timeout: no output for ${timeout}ms`);
-        childProcess.kill('SIGTERM');
+        killProcessTree(childProcess);
       }
     }, timeout);
   };
@@ -123,7 +138,7 @@ export async function* spawnJSONLProcess(options: SubprocessOptions): AsyncGener
       if (timeoutHandle) {
         clearTimeout(timeoutHandle);
       }
-      childProcess.kill('SIGTERM');
+      killProcessTree(childProcess);
 
       // Force stream consumer to exit immediately instead of waiting for
       // the process to close stdout. CLI tools (especially Gemini CLI) may
@@ -140,7 +155,7 @@ export async function* spawnJSONLProcess(options: SubprocessOptions): AsyncGener
         if (!processExited) {
           console.log('[SubprocessManager] Escalated to SIGKILL after SIGTERM timeout');
           try {
-            childProcess.kill('SIGKILL');
+            killProcessTree(childProcess, 'SIGKILL');
           } catch {
             // Process may have already exited between the check and kill
           }
@@ -362,12 +377,12 @@ export async function spawnProcess(options: SubprocessOptions): Promise<Subproce
     if (abortController) {
       abortHandler = () => {
         cleanupAbortListener();
-        childProcess.kill('SIGTERM');
+        killProcessTree(childProcess);
 
         // Escalate to SIGKILL after 3 seconds if process hasn't exited
         const killTimer = setTimeout(() => {
           try {
-            childProcess.kill('SIGKILL');
+            killProcessTree(childProcess, 'SIGKILL');
           } catch {
             // Process may have already exited
           }

@@ -13,6 +13,7 @@ import cookieParser from 'cookie-parser';
 import cookie from 'cookie';
 import { WebSocketServer, WebSocket } from 'ws';
 import { createServer } from 'http';
+import { execSync } from 'child_process';
 import dotenv from 'dotenv';
 
 import { createEventEmitter, type EventEmitter } from './lib/events.js';
@@ -94,7 +95,7 @@ import { createGroupRoutes } from './routes/groups/index.js';
 // Load environment variables
 dotenv.config();
 
-const PORT = parseInt(process.env.PORT || '3008', 10);
+const PORT = parseInt(process.env.PORT || '47820', 10);
 const HOST = process.env.HOST || '0.0.0.0';
 const HOSTNAME = process.env.HOSTNAME || 'localhost';
 const DATA_DIR = process.env.DATA_DIR || './data';
@@ -547,6 +548,14 @@ app.use(
 // Create HTTP server
 const server = createServer(app);
 
+// Keep idle TCP connections alive long enough to be reused across the UI's polling
+// intervals. Node's default keepAliveTimeout is 5s — shorter than most of our client
+// poll intervals — so each poll opened a fresh connection that the server then closed,
+// flooding the OS with TIME_WAIT sockets. Raising this lets the browser/Vite proxy reuse
+// a single connection. headersTimeout must exceed keepAliveTimeout (Node requirement).
+server.keepAliveTimeout = 75_000;
+server.headersTimeout = 80_000;
+
 // WebSocket servers using noServer mode for proper multi-path support
 const wss = new WebSocketServer({ noServer: true });
 const terminalWss = new WebSocketServer({ noServer: true });
@@ -859,31 +868,74 @@ terminalWss.on('connection', (ws: WebSocket, req: import('http').IncomingMessage
   });
 });
 
-// Start server with error handling for port conflicts
-const startServer = (port: number, host: string) => {
-  server.listen(port, host, () => {
-    const terminalStatus = isTerminalEnabled()
-      ? isTerminalPasswordRequired()
-        ? 'enabled (password protected)'
-        : 'enabled'
-      : 'disabled';
+// Reclaim a stale listener squatting on our reserved port (dev only). Kills the holder so a
+// leftover/orphaned AboardAI server — common after an unclean Windows shutdown, where the
+// `tsx watch` server child is orphaned and keeps the port — doesn't dead-end startup.
+// Returns the number of processes killed. Never targets our own PID.
+const reclaimStalePort = (targetPort: number): number => {
+  try {
+    if (process.platform === 'win32') {
+      const out = execSync('netstat -ano -p tcp', { encoding: 'utf-8' });
+      const pids = new Set<number>();
+      for (const line of out.split('\n')) {
+        if (!/LISTENING/i.test(line)) continue;
+        const cols = line.trim().split(/\s+/);
+        if ((cols[1] ?? '').endsWith(`:${targetPort}`)) {
+          const pid = Number(cols[cols.length - 1]);
+          if (Number.isInteger(pid) && pid > 0 && pid !== process.pid) pids.add(pid);
+        }
+      }
+      for (const pid of pids) {
+        try {
+          execSync(`taskkill /F /T /PID ${pid}`, { stdio: 'ignore' });
+        } catch {
+          /* already gone */
+        }
+      }
+      return pids.size;
+    }
+    const out = execSync(`lsof -nP -iTCP:${targetPort} -sTCP:LISTEN -t`, { encoding: 'utf-8' });
+    const pids = out
+      .split('\n')
+      .map((s) => Number(s.trim()))
+      .filter((n) => Number.isInteger(n) && n > 0 && n !== process.pid);
+    for (const pid of pids) {
+      try {
+        process.kill(pid, 'SIGKILL');
+      } catch {
+        /* already gone */
+      }
+    }
+    return pids.length;
+  } catch {
+    return 0;
+  }
+};
 
-    // Build URLs for display
-    const listenAddr = `${host}:${port}`;
-    const httpUrl = `http://${HOSTNAME}:${port}`;
-    const wsEventsUrl = `ws://${HOSTNAME}:${port}/api/events`;
-    const wsTerminalUrl = `ws://${HOSTNAME}:${port}/api/terminal/ws`;
-    const healthUrl = `http://${HOSTNAME}:${port}/api/health`;
+// Print the success banner once the server is listening.
+const logServerReady = (host: string, port: number): void => {
+  const terminalStatus = isTerminalEnabled()
+    ? isTerminalPasswordRequired()
+      ? 'enabled (password protected)'
+      : 'enabled'
+    : 'disabled';
 
-    const sHeader = '🚀 AboardAI Backend Server'.padEnd(BOX_CONTENT_WIDTH);
-    const s1 = `Listening:    ${listenAddr}`.padEnd(BOX_CONTENT_WIDTH);
-    const s2 = `HTTP API:     ${httpUrl}`.padEnd(BOX_CONTENT_WIDTH);
-    const s3 = `WebSocket:    ${wsEventsUrl}`.padEnd(BOX_CONTENT_WIDTH);
-    const s4 = `Terminal WS:  ${wsTerminalUrl}`.padEnd(BOX_CONTENT_WIDTH);
-    const s5 = `Health:       ${healthUrl}`.padEnd(BOX_CONTENT_WIDTH);
-    const s6 = `Terminal:     ${terminalStatus}`.padEnd(BOX_CONTENT_WIDTH);
+  // Build URLs for display
+  const listenAddr = `${host}:${port}`;
+  const httpUrl = `http://${HOSTNAME}:${port}`;
+  const wsEventsUrl = `ws://${HOSTNAME}:${port}/api/events`;
+  const wsTerminalUrl = `ws://${HOSTNAME}:${port}/api/terminal/ws`;
+  const healthUrl = `http://${HOSTNAME}:${port}/api/health`;
 
-    logger.info(`
+  const sHeader = '🚀 AboardAI Backend Server'.padEnd(BOX_CONTENT_WIDTH);
+  const s1 = `Listening:    ${listenAddr}`.padEnd(BOX_CONTENT_WIDTH);
+  const s2 = `HTTP API:     ${httpUrl}`.padEnd(BOX_CONTENT_WIDTH);
+  const s3 = `WebSocket:    ${wsEventsUrl}`.padEnd(BOX_CONTENT_WIDTH);
+  const s4 = `Terminal WS:  ${wsTerminalUrl}`.padEnd(BOX_CONTENT_WIDTH);
+  const s5 = `Health:       ${healthUrl}`.padEnd(BOX_CONTENT_WIDTH);
+  const s6 = `Terminal:     ${terminalStatus}`.padEnd(BOX_CONTENT_WIDTH);
+
+  logger.info(`
 ╔═════════════════════════════════════════════════════════════════════╗
 ║  ${sHeader}║
 ╠═════════════════════════════════════════════════════════════════════╣
@@ -897,26 +949,49 @@ const startServer = (port: number, host: string) => {
 ║                                                                     ║
 ╚═════════════════════════════════════════════════════════════════════╝
 `);
-  });
+};
 
-  server.on('error', (error: NodeJS.ErrnoException) => {
-    if (error.code === 'EADDRINUSE') {
-      const portStr = port.toString();
-      const nextPortStr = (port + 1).toString();
-      const killCmd = `lsof -ti:${portStr} | xargs kill -9`;
-      const altCmd = `PORT=${nextPortStr} npm run dev:server`;
+// Bounded retry: reclaim-and-rebind this many times before giving up.
+const MAX_BIND_ATTEMPTS = 3;
+let bindAttempts = 0;
 
-      const eHeader = `❌ ERROR: Port ${portStr} is already in use`.padEnd(BOX_CONTENT_WIDTH);
-      const e1 = 'Another process is using this port.'.padEnd(BOX_CONTENT_WIDTH);
-      const e2 = 'To fix this, try one of:'.padEnd(BOX_CONTENT_WIDTH);
-      const e3 = '1. Kill the process using the port:'.padEnd(BOX_CONTENT_WIDTH);
-      const e4 = `   ${killCmd}`.padEnd(BOX_CONTENT_WIDTH);
-      const e5 = '2. Use a different port:'.padEnd(BOX_CONTENT_WIDTH);
-      const e6 = `   ${altCmd}`.padEnd(BOX_CONTENT_WIDTH);
-      const e7 = '3. Use the init.sh script which handles this:'.padEnd(BOX_CONTENT_WIDTH);
-      const e8 = '   ./init.sh'.padEnd(BOX_CONTENT_WIDTH);
+// Start the server. The error handler (registered once below) self-heals port conflicts.
+const startServer = (port: number, host: string): void => {
+  server.listen(port, host, () => logServerReady(host, port));
+};
 
-      logger.error(`
+server.on('error', (error: NodeJS.ErrnoException) => {
+  if (error.code === 'EADDRINUSE') {
+    // In development a collision on our reserved port is almost always our own stale/orphaned
+    // process (e.g. an orphaned `tsx watch` child after an unclean shutdown). Kill it and retry
+    // instead of dead-ending. Production keeps the original fail-fast behavior.
+    if (process.env.NODE_ENV !== 'production' && bindAttempts < MAX_BIND_ATTEMPTS) {
+      bindAttempts++;
+      const killed = reclaimStalePort(PORT);
+      logger.warn(
+        `Port ${PORT} in use — reclaimed ${killed} stale listener(s); retrying bind ` +
+          `(attempt ${bindAttempts}/${MAX_BIND_ATTEMPTS})`
+      );
+      setTimeout(() => startServer(PORT, HOST), 700);
+      return;
+    }
+
+    const portStr = PORT.toString();
+    const nextPortStr = (PORT + 1).toString();
+    const killCmd = `lsof -ti:${portStr} | xargs kill -9`;
+    const altCmd = `PORT=${nextPortStr} npm run dev:server`;
+
+    const eHeader = `❌ ERROR: Port ${portStr} is already in use`.padEnd(BOX_CONTENT_WIDTH);
+    const e1 = 'Another process is using this port.'.padEnd(BOX_CONTENT_WIDTH);
+    const e2 = 'To fix this, try one of:'.padEnd(BOX_CONTENT_WIDTH);
+    const e3 = '1. Kill the process using the port:'.padEnd(BOX_CONTENT_WIDTH);
+    const e4 = `   ${killCmd}`.padEnd(BOX_CONTENT_WIDTH);
+    const e5 = '2. Use a different port:'.padEnd(BOX_CONTENT_WIDTH);
+    const e6 = `   ${altCmd}`.padEnd(BOX_CONTENT_WIDTH);
+    const e7 = '3. Use the init.sh script which handles this:'.padEnd(BOX_CONTENT_WIDTH);
+    const e8 = '   ./init.sh'.padEnd(BOX_CONTENT_WIDTH);
+
+    logger.error(`
 ╔═════════════════════════════════════════════════════════════════════╗
 ║  ${eHeader}║
 ╠═════════════════════════════════════════════════════════════════════╣
@@ -936,13 +1011,12 @@ const startServer = (port: number, host: string) => {
 ║                                                                     ║
 ╚═════════════════════════════════════════════════════════════════════╝
 `);
-      process.exit(1);
-    } else {
-      logger.error('Error starting server:', error);
-      process.exit(1);
-    }
-  });
-};
+    process.exit(1);
+  } else {
+    logger.error('Error starting server:', error);
+    process.exit(1);
+  }
+});
 
 startServer(PORT, HOST);
 

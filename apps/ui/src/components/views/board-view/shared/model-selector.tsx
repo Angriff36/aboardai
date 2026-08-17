@@ -6,11 +6,16 @@ import { cn } from '@/lib/utils';
 import { useAppStore } from '@/store/app-store';
 import { useSetupStore } from '@/store/setup-store';
 import { getModelProvider } from '@aboardai/types';
-import type { ModelProvider, CursorModelId } from '@aboardai/types';
-import { CLAUDE_MODELS, CURSOR_MODELS, OPENCODE_MODELS, ModelOption } from './model-constants';
-import { useEffect, useRef } from 'react';
+import type { ModelProvider } from '@aboardai/types';
+import {
+  CLAUDE_MODELS,
+  OPENCODE_MODELS,
+  ModelOption,
+  getAvailableCursorModels,
+} from './model-constants';
+import { useEffect, useRef, useMemo } from 'react';
 import { Spinner } from '@/components/ui/spinner';
-import { useOpencodeModels } from '@/hooks/queries';
+import { useOpencodeModels, useCursorModels } from '@/hooks/queries';
 
 interface ModelSelectorProps {
   selectedModel: string; // Can be ModelAlias or "cursor-{id}"
@@ -46,6 +51,8 @@ export function ModelSelector({
     error: dynamicOpencodeError,
     refetch: refetchOpencodeModels,
   } = useOpencodeModels();
+
+  const { data: dynamicCursorModelsList = [] } = useCursorModels();
 
   const selectedProvider = getModelProvider(selectedModel);
 
@@ -112,7 +119,9 @@ export function ModelSelector({
 
   // Filter dynamic OpenCode models based on enabled dynamic model IDs
   const filteredDynamicOpencodeModels: ModelOption[] = dynamicOpencodeModelsList
-    .filter((model) => enabledDynamicModelIds.includes(model.id))
+    .filter(
+      (model) => enabledDynamicModelIds.length === 0 || enabledDynamicModelIds.includes(model.id)
+    )
     .map((model) => ({
       id: model.id,
       label: model.name,
@@ -135,18 +144,10 @@ export function ModelSelector({
   );
   const allOpencodeModels = [...filteredStaticOpencodeModels, ...uniqueDynamicModels];
 
-  // Filter Cursor models based on enabled models from global settings
-  const filteredCursorModels = CURSOR_MODELS.filter((model) => {
-    // enabledCursorModels stores CursorModelIds which may or may not have "cursor-" prefix
-    // (e.g., 'auto', 'sonnet-4.5' without prefix, but 'cursor-gpt-5.2' with prefix)
-    // CURSOR_MODELS always has the "cursor-" prefix added in model-constants.ts
-    // Check both the full ID (for GPT models) and the unprefixed version (for non-GPT models)
-    const unprefixedId = model.id.startsWith('cursor-') ? model.id.slice(7) : model.id;
-    return (
-      enabledCursorModels.includes(model.id as CursorModelId) ||
-      enabledCursorModels.includes(unprefixedId as CursorModelId)
-    );
-  });
+  const filteredCursorModels = useMemo(
+    () => getAvailableCursorModels(enabledCursorModels, dynamicCursorModelsList),
+    [enabledCursorModels, dynamicCursorModelsList]
+  );
 
   const handleProviderChange = (provider: ModelProvider) => {
     if (provider === 'cursor' && selectedProvider !== 'cursor') {

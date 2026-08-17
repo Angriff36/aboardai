@@ -760,6 +760,75 @@ CRITICAL RULES:
 IMPORTANT: Do not ask for clarification. The specification is provided above. Generate the JSON immediately.`;
 
 /**
+ * Prompt for importing an EXISTING document (audit register, implementation plan,
+ * PRD, checklist, design doc, roadmap) and breaking it into board tasks.
+ *
+ * Unlike DEFAULT_GENERATE_FEATURES_FROM_SPEC_PROMPT — which invents NEW features from a
+ * spec — this prompt EXTRACTS the work items the document already describes and
+ * normalizes any ordering signals (phases, numbered steps, "depends on", "blocked by",
+ * cross-references like "D9 unblocks D11") into the `dependencies` array so auto-mode
+ * runs them in the right order. It is intentionally format-agnostic: the model parses
+ * whatever structure the document uses.
+ */
+export const DEFAULT_IMPORT_FROM_DOCUMENT_PROMPT = `You are converting an EXISTING document into a list of implementable tasks.
+
+The document above may be an audit/divergence register, an implementation plan, a PRD,
+a roadmap, a checklist, design notes, or any other structured text. Your job is to
+EXTRACT the concrete, actionable work items the document already describes — do NOT
+invent new scope, and do NOT editorialize. One task per discrete unit of work.
+
+For each task provide:
+1. **id**: A unique lowercase-hyphenated identifier. If the document gives each item its
+   own identifier (e.g. "D9", "U6", "Phase 2.1", "step 3"), incorporate it for
+   traceability (e.g. "d9-runtime-merge-drops-sagas").
+2. **category**: The document's own grouping/theme if present (e.g. the section heading),
+   otherwise a sensible functional category.
+3. **title**: Short, specific title of the work item.
+4. **description**: What needs to be done and the intended end-state, in 2-4 sentences.
+   Preserve concrete details from the document (file paths, target APIs, acceptance
+   criteria, "blast radius") so the implementing agent has what it needs. Do not lose
+   information that constrains the work.
+5. **priority**: 1 (highest) to 5 (lowest). Derive from the document's own signals when
+   present — severity (HIGH=1, MEDIUM=2/3, LOW=4), explicit priority, or "do this first"
+   / keystone / blocker language.
+6. **complexity**: "simple", "moderate", or "complex", estimated from the scope/blast
+   radius described.
+7. **dependencies**: Array of the OTHER task ids (from this same extraction) that must be
+   done first. Translate EVERY ordering signal in the document into this array:
+   - phases / numbered steps -> later items depend on earlier ones
+   - explicit "depends on" / "blocked by" / "requires X first" / "prerequisite"
+   - cross-references ("D9 unblocks D11/D12" means D11 and D12 depend on D9)
+   - "upstream" / "needs a change in another system first" -> depend on that item if it
+     is also in the document; otherwise note the external prerequisite in the description.
+   Use [] when an item has no prerequisites.
+
+Format as JSON:
+{
+  "features": [
+    {
+      "id": "task-id",
+      "category": "Theme/Section",
+      "title": "Task Title",
+      "description": "What to do and the target end-state, with concrete details.",
+      "priority": 2,
+      "complexity": "moderate",
+      "dependencies": ["other-task-id"]
+    }
+  ]
+}
+
+CRITICAL RULES:
+- Extract what the document ACTUALLY says — do not add tasks it does not describe.
+- If an "EXISTING FEATURES" section is provided above, do NOT emit tasks that duplicate
+  or overlap those; only emit items not already on the board. Generate unique ids that do
+  not collide with the listed existing ids.
+- Items the document marks as already done / resolved / "not a divergence" should be
+  skipped, not emitted as tasks.
+- ids referenced in any "dependencies" array MUST match an id you emit in this same list.
+
+IMPORTANT: Do not ask for clarification. The document is provided above. Return the JSON immediately.`;
+
+/**
  * Default App Spec prompts (for project specification generation)
  */
 export const DEFAULT_APP_SPEC_PROMPTS: ResolvedAppSpecPrompts = {

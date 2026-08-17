@@ -79,7 +79,7 @@ const MODEL_CACHE_DURATION_MS = 5 * 60 * 1000;
 const OPENCODE_MODEL_ID_SEPARATOR = '/';
 const OPENCODE_MODEL_ID_PATTERN = /^[a-z0-9.-]+\/\S+$/;
 const OPENCODE_PROVIDER_PATTERN = /^[a-z0-9.-]+$/;
-const OPENCODE_MODEL_NAME_PATTERN = /^[a-zA-Z0-9._:/-]+$/;
+const OPENCODE_MODEL_NAME_PATTERN = /^[a-zA-Z0-9._:/~+-]+$/;
 
 // =============================================================================
 // OpenCode Stream Event Types

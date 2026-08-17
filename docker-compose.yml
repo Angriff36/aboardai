@@ -4,7 +4,7 @@
 #
 # Usage:
 #   docker-compose up -d
-#   Then open http://localhost:3007
+#   Then open http://localhost:47821
 #
 # See docs/docker-isolation.md for full documentation.
 
@@ -18,7 +18,7 @@ services:
     container_name: aboardai-ui
     restart: unless-stopped
     ports:
-      - '3007:80'
+      - '47821:80'
     depends_on:
       - server
 
@@ -36,7 +36,7 @@ services:
     container_name: aboardai-server
     restart: unless-stopped
     ports:
-      - '3008:3008'
+      - '47820:47820'
     environment:
       # Optional - Anthropic API key
       - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}

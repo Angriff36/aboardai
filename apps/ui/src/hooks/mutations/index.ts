@@ -75,8 +75,10 @@ export {
   useCreateSpec,
   useRegenerateSpec,
   useGenerateFeatures,
+  useImportDocument,
   useSaveSpec,
 } from './use-spec-mutations';
+export type { ImportDocumentInput } from './use-spec-mutations';
 
 // Cursor Permissions mutations
 export { useApplyCursorProfile, useCopyCursorConfig } from './use-cursor-permissions-mutations';

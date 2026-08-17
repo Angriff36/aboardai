@@ -33,13 +33,17 @@ import { validateBareModelId } from '@aboardai/types';
 import { validateApiKey } from '../lib/auth-utils.js';
 import { getEffectivePermissions, detectProfile } from '../services/cursor-config-service.js';
 import {
+  CURSOR_MODEL_CACHE_DURATION_MS,
+  fetchCursorModelsFromCli,
+  getStaticCursorModelDefinitions,
+} from './cursor-model-discovery.js';
+import {
   type CursorStreamEvent,
   type CursorSystemEvent,
   type CursorAssistantEvent,
   type CursorToolCallEvent,
   type CursorResultEvent,
   type CursorAuthStatus,
-  CURSOR_MODEL_MAP,
 } from '@aboardai/types';
 import { createLogger, isAbortError } from '@aboardai/utils';
 import { spawnJSONLProcess, execInWsl } from '@aboardai/platform';
@@ -267,6 +271,18 @@ export class CursorProvider extends CliProvider {
    *   ~/.local/share/cursor-agent/versions/2025.12.17-996666f/cursor-agent
    */
   private static VERSIONS_DIR = path.join(os.homedir(), '.local/share/cursor-agent/versions');
+
+  /** Cached model definitions from --list-models */
+  private cachedModels: ModelDefinition[] | null = null;
+
+  /** Timestamp when cache expires */
+  private modelsCacheExpiry = 0;
+
+  /** Whether model refresh is in progress */
+  private isRefreshing = false;
+
+  /** Promise that resolves when current refresh completes */
+  private refreshPromise: Promise<ModelDefinition[]> | null = null;
 
   constructor(config: ProviderConfig = {}) {
     super(config);
@@ -1234,18 +1250,85 @@ export class CursorProvider extends CliProvider {
   }
 
   /**
-   * Get available Cursor models
+   * Get available Cursor models (dynamic CLI discovery with static fallback).
    */
   getAvailableModels(): ModelDefinition[] {
-    return Object.entries(CURSOR_MODEL_MAP).map(([id, config]) => ({
-      id: `cursor-${id}`,
-      name: config.label,
-      modelString: id,
-      provider: 'cursor',
-      description: config.description,
-      supportsTools: true,
-      supportsVision: config.supportsVision,
-    }));
+    if (this.cachedModels && Date.now() < this.modelsCacheExpiry) {
+      return this.cachedModels;
+    }
+
+    if (this.cachedModels) {
+      this.refreshModels().catch((err) => {
+        logger.debug(`Background Cursor model refresh failed: ${err}`);
+      });
+      return this.cachedModels;
+    }
+
+    return getStaticCursorModelDefinitions();
+  }
+
+  /**
+   * Whether runtime models have been cached from the CLI.
+   */
+  hasCachedModels(): boolean {
+    return this.cachedModels !== null && this.cachedModels.length > 0;
+  }
+
+  /**
+   * Clear cached model list.
+   */
+  clearModelCache(): void {
+    this.cachedModels = null;
+    this.modelsCacheExpiry = 0;
+    logger.debug('Cleared Cursor model cache');
+  }
+
+  /**
+   * Refresh models from cursor-agent --list-models.
+   */
+  async refreshModels(): Promise<ModelDefinition[]> {
+    if (this.isRefreshing && this.refreshPromise) {
+      return this.refreshPromise;
+    }
+
+    this.isRefreshing = true;
+    this.refreshPromise = this.doRefreshModels();
+    try {
+      return await this.refreshPromise;
+    } finally {
+      this.refreshPromise = null;
+      this.isRefreshing = false;
+    }
+  }
+
+  private async doRefreshModels(): Promise<ModelDefinition[]> {
+    this.ensureCliDetected();
+
+    if (!this.cliPath) {
+      logger.debug('Cursor CLI not available for model fetch');
+      return this.cachedModels ?? getStaticCursorModelDefinitions();
+    }
+
+    try {
+      const models = await fetchCursorModelsFromCli({
+        cliPath: this.cliPath,
+        useWsl: this.useWsl,
+        wslCliPath: this.wslCliPath,
+        wslDistribution: this.wslDistribution,
+      });
+
+      if (models.length > 0) {
+        this.cachedModels = models;
+        this.modelsCacheExpiry = Date.now() + CURSOR_MODEL_CACHE_DURATION_MS;
+        logger.debug(`Cached ${models.length} models from Cursor CLI`);
+      } else {
+        logger.debug('No models returned from Cursor CLI, keeping existing cache');
+      }
+    } catch (error) {
+      logger.debug(`Cursor model refresh failed: ${error}`);
+    }
+
+    return this.cachedModels ?? getStaticCursorModelDefinitions();
   }
 
   /**

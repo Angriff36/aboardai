@@ -17,15 +17,11 @@
 
 import path from 'path';
 import { app, BrowserWindow, dialog } from 'electron';
-import {
-  setElectronUserDataPath,
-  setElectronAppPaths,
-  initAllowedPaths,
-} from '@aboardai/platform';
+import { setElectronUserDataPath, setElectronAppPaths, initAllowedPaths } from '@aboardai/platform';
 import { createLogger } from '@aboardai/utils/logger';
 import { DEFAULT_SERVER_PORT, DEFAULT_STATIC_PORT } from './electron/constants';
 import { state } from './electron/state';
-import { findAvailablePort } from './electron/utils/port-manager';
+import { reclaimPort } from './electron/utils/port-manager';
 import { getIconPath } from './electron/utils/icon-manager';
 import { ensureApiKey } from './electron/security/api-key-manager';
 import { createWindow } from './electron/windows/main-window';
@@ -151,7 +147,7 @@ async function handleAppReady(): Promise<void> {
     state.isExternalServerMode = skipEmbeddedServer;
 
     if (skipEmbeddedServer) {
-      // Use the default server port (Docker container runs on 3008)
+      // Use the default server port (Docker container runs on 47820)
       state.serverPort = DEFAULT_SERVER_PORT;
       logger.info('SKIP_EMBEDDED_SERVER=true, using external server at port', state.serverPort);
 
@@ -169,24 +165,27 @@ async function handleAppReady(): Promise<void> {
       // Generate or load API key for CSRF protection (before starting server)
       ensureApiKey();
 
-      // Find available ports (prevents conflicts with other apps using same ports)
-      state.serverPort = await findAvailablePort(DEFAULT_SERVER_PORT);
+      // Claim our reserved server port. These ports belong exclusively to AboardAI,
+      // so anything still holding the port is a leftover from a previous/crashed run —
+      // reclaimPort kills it and reuses the canonical port instead of silently shifting
+      // to port+1 (which produced the confusing "something on <port>, now using +1").
+      state.serverPort = await reclaimPort(DEFAULT_SERVER_PORT);
       if (state.serverPort !== DEFAULT_SERVER_PORT) {
         logger.info(
           'Default server port',
           DEFAULT_SERVER_PORT,
-          'in use, using port',
+          'could not be reclaimed, using port',
           state.serverPort
         );
       }
     }
 
-    state.staticPort = await findAvailablePort(DEFAULT_STATIC_PORT);
+    state.staticPort = await reclaimPort(DEFAULT_STATIC_PORT);
     if (state.staticPort !== DEFAULT_STATIC_PORT) {
       logger.info(
         'Default static port',
         DEFAULT_STATIC_PORT,
-        'in use, using port',
+        'could not be reclaimed, using port',
         state.staticPort
       );
     }

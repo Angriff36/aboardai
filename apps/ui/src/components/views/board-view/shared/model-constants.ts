@@ -1,4 +1,9 @@
-import type { ModelProvider, ThinkingLevel, ReasoningEffort } from '@aboardai/types';
+import type {
+  ModelDefinition,
+  ModelProvider,
+  ThinkingLevel,
+  ReasoningEffort,
+} from '@aboardai/types';
 import {
   CURSOR_MODEL_MAP,
   CODEX_MODEL_MAP,
@@ -51,6 +56,13 @@ export const CLAUDE_MODELS: ModelOption[] = [
     badge: 'Premium',
     provider: 'claude',
   },
+  {
+    id: 'claude-fable', // Canonical prefixed ID → claude-fable-5
+    label: 'Claude Fable 5',
+    description: 'Next-generation Claude model.',
+    badge: 'New',
+    provider: 'claude',
+  },
 ];
 
 /**
@@ -66,6 +78,34 @@ export const CURSOR_MODELS: ModelOption[] = Object.entries(CURSOR_MODEL_MAP).map
     hasThinking: config.hasThinking,
   })
 );
+
+/** Merge static Cursor models with CLI-discovered models, filtered by enabled list. */
+export function getAvailableCursorModels(
+  enabledCursorModels: string[],
+  dynamicModels: ModelDefinition[] = []
+): ModelOption[] {
+  const staticIds = new Set(CURSOR_MODELS.map((model) => model.id));
+  const dynamicOptions: ModelOption[] = dynamicModels
+    .filter((model) => !staticIds.has(model.id))
+    .map((model) => ({
+      id: model.id,
+      label: model.name,
+      description: model.description,
+      provider: 'cursor' as ModelProvider,
+      hasThinking: model.id.includes('-thinking') || model.id.endsWith('-high'),
+    }));
+
+  const allModels = [...CURSOR_MODELS, ...dynamicOptions];
+
+  if (enabledCursorModels.length === 0) {
+    return allModels;
+  }
+
+  return allModels.filter((model) => {
+    const unprefixedId = model.id.startsWith('cursor-') ? model.id.slice(7) : model.id;
+    return enabledCursorModels.includes(model.id) || enabledCursorModels.includes(unprefixedId);
+  });
+}
 
 /**
  * Codex/OpenAI models

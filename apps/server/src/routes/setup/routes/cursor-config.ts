@@ -36,6 +36,7 @@ import {
   getAvailableProfiles,
   generateExampleConfig,
 } from '../../../services/cursor-config-service.js';
+import { CursorProvider } from '../../../providers/cursor-provider.js';
 import { getErrorMessage, logError } from '../common.js';
 
 /**
@@ -59,6 +60,20 @@ function validateProjectPath(projectPath: string): void {
   }
 }
 
+function isValidCursorModelId(model: string): boolean {
+  if (model in CURSOR_MODEL_MAP) return true;
+  return /^cursor-[a-zA-Z0-9._-]+$/.test(model);
+}
+
+let cursorProviderInstance: CursorProvider | null = null;
+
+function getCursorProvider(): CursorProvider {
+  if (!cursorProviderInstance) {
+    cursorProviderInstance = new CursorProvider();
+  }
+  return cursorProviderInstance;
+}
+
 /**
  * Creates handler for GET /api/setup/cursor-config
  * Returns current Cursor configuration and available models
@@ -80,11 +95,13 @@ export function createGetCursorConfigHandler() {
       validateProjectPath(projectPath);
 
       const configManager = new CursorConfigManager(projectPath);
+      const provider = getCursorProvider();
+      const availableModels = provider.getAvailableModels();
 
       res.json({
         success: true,
         config: configManager.getConfig(),
-        availableModels: Object.values(CURSOR_MODEL_MAP),
+        availableModels,
       });
     } catch (error) {
       logError(error, 'Get Cursor config failed');
@@ -116,10 +133,10 @@ export function createSetCursorDefaultModelHandler() {
       // Validate path to prevent traversal attacks
       validateProjectPath(projectPath);
 
-      if (!model || !(model in CURSOR_MODEL_MAP)) {
+      if (!model || !isValidCursorModelId(model)) {
         res.status(400).json({
           success: false,
-          error: `Invalid model ID. Valid models: ${Object.keys(CURSOR_MODEL_MAP).join(', ')}`,
+          error: `Invalid model ID. Must be a cursor-* model slug.`,
         });
         return;
       }
@@ -167,7 +184,7 @@ export function createSetCursorModelsHandler() {
       }
 
       // Filter to valid models only
-      const validModels = models.filter((m): m is CursorModelId => m in CURSOR_MODEL_MAP);
+      const validModels = models.filter((m): m is CursorModelId => isValidCursorModelId(m));
 
       if (validModels.length === 0) {
         res.status(400).json({

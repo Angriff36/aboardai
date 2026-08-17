@@ -5,18 +5,7 @@
  *
  * IMPORTANT: All Codex models use 'codex-' prefix to distinguish from Cursor CLI models
  */
-export type CodexModelId =
-  | 'codex-gpt-5.3-codex'
-  | 'codex-gpt-5.3-codex-spark'
-  | 'codex-gpt-5.2-codex'
-  | 'codex-gpt-5.1-codex-max'
-  | 'codex-gpt-5.1-codex-mini'
-  | 'codex-gpt-5.1-codex'
-  | 'codex-gpt-5-codex'
-  | 'codex-gpt-5-codex-mini'
-  | 'codex-gpt-5.2'
-  | 'codex-gpt-5.1'
-  | 'codex-gpt-5';
+export type CodexModelId = `codex-${string}`;
 
 /**
  * Codex model metadata

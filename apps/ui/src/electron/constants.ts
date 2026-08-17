@@ -25,8 +25,8 @@ export const DEFAULT_HEIGHT = 950;
 // Guard against NaN from non-numeric environment variables
 const parsedServerPort = Number.parseInt(process.env.SERVER_PORT ?? '', 10);
 const parsedStaticPort = Number.parseInt(process.env.PORT ?? '', 10);
-export const DEFAULT_SERVER_PORT = Number.isFinite(parsedServerPort) ? parsedServerPort : 3008;
-export const DEFAULT_STATIC_PORT = Number.isFinite(parsedStaticPort) ? parsedStaticPort : 3007;
+export const DEFAULT_SERVER_PORT = Number.isFinite(parsedServerPort) ? parsedServerPort : 47820;
+export const DEFAULT_STATIC_PORT = Number.isFinite(parsedStaticPort) ? parsedStaticPort : 47821;
 
 // ============================================
 // File names for userData storage

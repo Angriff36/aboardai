@@ -194,9 +194,17 @@ export async function startServer(): Promise<void> {
 }
 
 /**
- * Wait for server to be available
+ * Wait for server to be available.
+ *
+ * Default budget is intentionally generous (120 attempts × ~500ms ≈ up to 60s of polling).
+ * The backend's cold start can take well over 15s on a first `tsx` run because it reconciles
+ * feature state across every open project, checks Claude CLI auth, and resumes interrupted
+ * task groups before it binds. A short timeout here caused the boot to abort (and the renderer
+ * to show "Server Unavailable") even though the server was still legitimately starting.
+ * Failed polls reject almost instantly (ECONNREFUSED) until the server is up, so this does not
+ * add latency on a fast start — it only extends patience for a slow one.
  */
-export async function waitForServer(maxAttempts = 30): Promise<void> {
+export async function waitForServer(maxAttempts = 120): Promise<void> {
   for (let i = 0; i < maxAttempts; i++) {
     try {
       await new Promise<void>((resolve, reject) => {

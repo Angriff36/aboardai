@@ -79,13 +79,13 @@ COPY docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
 RUN chmod +x /usr/local/bin/docker-entrypoint.sh
 
 # Environment variables
-ENV PORT=3008
+ENV PORT=47820
 ENV DATA_DIR=/data
 ENV HOME=/home/aboardai
 ENV PATH="/home/aboardai/.local/bin:${PATH}"
 
 # Expose both dev ports
-EXPOSE 3007 3008
+EXPOSE 47821 47820
 
 # Use entrypoint for permission handling
 ENTRYPOINT ["/usr/local/bin/docker-entrypoint.sh"]

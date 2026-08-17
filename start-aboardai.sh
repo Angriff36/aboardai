@@ -52,8 +52,8 @@ if [ -n "$ABOARDAI_SERVER_PORT" ]; then
     fi
 fi
 
-DEFAULT_WEB_PORT=${ABOARDAI_WEB_PORT:-3007}
-DEFAULT_SERVER_PORT=${ABOARDAI_SERVER_PORT:-3008}
+DEFAULT_WEB_PORT=${ABOARDAI_WEB_PORT:-47821}
+DEFAULT_SERVER_PORT=${ABOARDAI_SERVER_PORT:-47820}
 PORT_SEARCH_MAX_ATTEMPTS=100
 WEB_PORT=$DEFAULT_WEB_PORT
 SERVER_PORT=$DEFAULT_SERVER_PORT
@@ -132,7 +132,7 @@ USAGE:
   start-aboardai.sh [MODE] [OPTIONS]
 
 MODES:
-  web              Launch in web browser (localhost:3007)
+  web              Launch in web browser (localhost:47821)
   electron         Launch as desktop app (Electron)
   docker           Launch in Docker container (dev with live reload)
   docker-electron  Launch Electron with Docker API backend
@@ -168,8 +168,8 @@ HISTORY:
   Use --no-history to disable this feature
 
 ENVIRONMENT VARIABLES:
-  ABOARDAI_WEB_PORT     Override default web/UI port (default: 3007)
-  ABOARDAI_SERVER_PORT  Override default API server port (default: 3008)
+  ABOARDAI_WEB_PORT     Override default web/UI port (default: 47821)
+  ABOARDAI_SERVER_PORT  Override default API server port (default: 47820)
 
 PLATFORMS:
   Linux, macOS, Windows (Git Bash, WSL, MSYS2, Cygwin)

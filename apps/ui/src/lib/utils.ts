@@ -101,7 +101,7 @@ export function getProviderFromModel(model?: string): ModelProvider {
 
 /**
  * Get display name for a model
- * Handles both aliases (e.g., "sonnet") and full model IDs (e.g., "claude-sonnet-4-20250514")
+ * Handles both aliases (e.g., "sonnet") and full model IDs (e.g., "claude-sonnet-4-6")
  */
 export function getModelDisplayName(model: ModelAlias | string): string {
   const displayNames: Record<string, string> = {
@@ -109,11 +109,18 @@ export function getModelDisplayName(model: ModelAlias | string): string {
     haiku: 'Claude Haiku',
     sonnet: 'Claude Sonnet',
     opus: 'Claude Opus',
+    fable: 'Claude Fable 5',
     // Claude canonical IDs (without version suffix)
     'claude-haiku': 'Claude Haiku',
     'claude-sonnet': 'Claude Sonnet',
     'claude-opus': 'Claude Opus',
-    // Claude full model IDs (returned by server)
+    'claude-fable': 'Claude Fable 5',
+    // Claude full model IDs (returned by server) — current
+    'claude-haiku-4-5-20251001': 'Claude Haiku',
+    'claude-sonnet-4-6': 'Claude Sonnet',
+    'claude-opus-4-8': 'Claude Opus',
+    'claude-fable-5': 'Claude Fable 5',
+    // Claude full model IDs — previous versions (kept for back-compat)
     'claude-haiku-4-5': 'Claude Haiku',
     'claude-sonnet-4-20250514': 'Claude Sonnet',
     'claude-opus-4-6': 'Claude Opus',

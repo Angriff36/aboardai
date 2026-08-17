@@ -316,11 +316,11 @@ export default defineConfig(({ command }) => {
     },
     server: {
       host: process.env.HOST || '0.0.0.0',
-      port: parseInt(process.env.ABOARDAI_WEB_PORT || '3007', 10),
+      port: parseInt(process.env.ABOARDAI_WEB_PORT || '47821', 10),
       allowedHosts: true,
       proxy: {
         '/api': {
-          target: 'http://localhost:' + (process.env.ABOARDAI_SERVER_PORT ?? '3008'),
+          target: 'http://localhost:' + (process.env.ABOARDAI_SERVER_PORT ?? '47820'),
           changeOrigin: true,
           ws: true,
         },

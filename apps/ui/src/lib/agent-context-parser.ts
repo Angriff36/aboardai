@@ -27,9 +27,10 @@ export interface AgentTaskInfo {
 }
 
 /**
- * Default model used by the feature executor
+ * Default model used by the feature executor.
+ * Mirrors DEFAULT_MODELS.claude in @aboardai/types (currently Opus 4.8).
  */
-export const DEFAULT_MODEL = 'claude-opus-4-6';
+export const DEFAULT_MODEL = 'claude-opus-4-8';
 
 /**
  * Options for formatting model names
@@ -65,8 +66,12 @@ export function formatModelName(model: string, options?: FormatModelNameOptions)
     }
   }
 
-  // Claude models
-  if (model.includes('opus-4-6') || model === 'claude-opus') return 'Opus 4.6';
+  // Claude models — list newest versions first so a specific match wins over the
+  // generic fallback. `claude-opus`/`claude-sonnet` are canonical IDs that always
+  // track the current flagship (Opus 4.8 / Sonnet 4.6), so they map to the latest label.
+  if (model.includes('fable')) return 'Fable 5';
+  if (model.includes('opus-4-8') || model === 'claude-opus') return 'Opus 4.8';
+  if (model.includes('opus-4-6')) return 'Opus 4.6';
   if (model.includes('opus')) return 'Opus 4.5';
   if (model.includes('sonnet-4-6') || model === 'claude-sonnet') return 'Sonnet 4.6';
   if (model.includes('sonnet')) return 'Sonnet 4.5';

@@ -73,7 +73,7 @@ npm install
 # 3. Start AboardAI
 npm run dev
 # Choose between:
-#   1. Web Application (browser at localhost:3007)
+#   1. Web Application (browser at localhost:47821)
 #   2. Desktop Application (Electron - recommended)
 ```
 
@@ -112,7 +112,7 @@ npm run dev:electron:wsl:gpu
 #### Web Browser Mode
 
 ```bash
-# Run in web browser (http://localhost:3007)
+# Run in web browser (http://localhost:47821)
 npm run dev:web
 ```
 
@@ -200,8 +200,8 @@ Docker provides the most secure way to run AboardAI by isolating it from your ho
 # Build and run with Docker Compose
 docker-compose up -d
 
-# Access UI at http://localhost:3007
-# API at http://localhost:3008
+# Access UI at http://localhost:47821
+# API at http://localhost:47820
 
 # View logs
 docker-compose logs -f
@@ -373,7 +373,7 @@ npm run test:all                 # Packages + server tests
 
 #### Test Configuration
 
-- E2E tests run on ports 3007 (UI) and 3008 (server)
+- E2E tests run on ports 3107 (UI) and 3108 (server)
 - Automatically starts test servers before running
 - Uses Chromium browser via Playwright
 - Mock agent mode available in CI with `ABOARDAI_MOCK_AGENT=true`
@@ -389,7 +389,7 @@ npm run lint
 
 #### Optional - Server
 
-- `PORT` - Server port (default: 3008)
+- `PORT` - Server port (default: 47820)
 - `DATA_DIR` - Data storage directory (default: ./data)
 - `ENABLE_REQUEST_LOGGING` - HTTP request logging (default: true)
 

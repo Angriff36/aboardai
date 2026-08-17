@@ -3,7 +3,7 @@
 #
 # Usage:
 #   docker compose -f docker-compose.dev-server.yml up
-#   Then run Electron locally which connects to http://localhost:3008
+#   Then run Electron locally which connects to http://localhost:47820
 #
 # This mode:
 #   - Runs only the backend server in a container
@@ -25,7 +25,7 @@ services:
     container_name: aboardai-dev-server-only
     restart: unless-stopped
     ports:
-      - '3008:3008'
+      - '47820:47820'
     environment:
       # Optional - Anthropic API key
       - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
@@ -41,8 +41,8 @@ services:
 
       # Development settings
       - NODE_ENV=development
-      - PORT=3008
-      - CORS_ORIGIN=http://localhost:3007
+      - PORT=47820
+      - CORS_ORIGIN=http://localhost:47821
       - HUSKY=0
 
       # Optional - restrict to specific directory within container
@@ -88,7 +88,7 @@ services:
         echo 'Starting server in development mode...' &&
         exec gosu aboardai npm run _dev:server
     healthcheck:
-      test: ['CMD', 'curl', '-f', 'http://localhost:3008/api/health']
+      test: ['CMD', 'curl', '-f', 'http://localhost:47820/api/health']
       interval: 10s
       timeout: 5s
       retries: 5

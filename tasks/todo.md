@@ -158,6 +158,98 @@ in the live proof). The UI gained a create-group dialog and groups panel with li
 WebSocket updates. Gate fix: dependency-satisfaction broadened to `SUCCESS_STATUSES` so
 `waiting_approval` completions (mock agent) unblock dependents.
 
+---
+
+# Port Renumber (out of 3000 block) + TIME_WAIT / stale-process root-cause fix
+
+Trigger: Electron app kept reporting "something on 3008" and TCPView showed a wall of
+TIME_WAIT sockets. Diagnosis: TIME_WAIT = harmless TCP teardown (server closing idle
+keep-alive conns after Node's 5s default); the real "in use" was a lingering prior server
+making `findAvailablePort` bump 3008→3009. Decision: move to 47820 (server) / 47821 (UI),
+reclaim our reserved port instead of bumping, and raise server keepAliveTimeout.
+
+New ports: SERVER_PORT 3008 → **47820**, STATIC_PORT 3007 → **47821**. Test ports
+(3107/3108) left untouched.
+
+- [x] Renumber source-of-truth + runtime defaults
+  - [x] `libs/types/src/ports.ts` (STATIC_PORT 47821 / SERVER_PORT 47820)
+  - [x] `apps/ui/src/electron/constants.ts` (literal fallbacks — effective Electron default)
+  - [x] `apps/server/src/index.ts` (`PORT || '47820'`)
+  - [x] `apps/ui/vite.config.mts` (web port + /api proxy target)
+  - [x] `apps/ui/src/lib/http-api-client.ts` (web/electron server URL default)
+  - [x] `start-aboardai.sh` (DEFAULT_WEB_PORT / DEFAULT_SERVER_PORT + help text)
+  - [x] `apps/server/.env.example` (PORT + CORS_ORIGIN)
+  - [x] `apps/ui/.../event-hooks/event-hooks-section.tsx` (placeholder)
+- [x] Docker/nginx consistency: Dockerfile, Dockerfile.dev, docker-compose{,.dev,.dev-server}.yml, nginx.conf
+- [x] Docs accuracy: README.md, CLAUDE.md, CONTRIBUTING.md, DISCLAIMER.md, docs/terminal.md
+      (also corrected stale E2E test-port docs to the real 3107/3108)
+- [x] Root-cause A — kill stale server on startup: added `reclaimPort()`/`getPidsOnPort()` to
+      `apps/ui/src/electron/utils/port-manager.ts`; `apps/ui/src/main.ts` now reclaims
+      server + static ports instead of silent `findAvailablePort` bump.
+- [x] Root-cause B — HTTP keep-alive: `server.keepAliveTimeout=75s`/`headersTimeout=80s`
+      in `apps/server/src/index.ts` so UI polling reuses one connection (kills TIME_WAIT churn).
+- [x] Verify: build:packages PASS · `npm run typecheck` (UI) PASS · server units 2689 pass / 0 fail ·
+      runtime smoke `PORT=47820` → `/api/health` 200 (port binds, listener confirmed, then freed).
+
+## Review
+
+Ports moved 3007/3008 → **47821 (UI) / 47820 (server)** across the single source of truth and
+every runtime default (Electron constants, server, Vite + /api proxy, web client URL, bash
+launcher, Docker/nginx, .env.example) plus docs. Test ports (3107/3108) intentionally untouched.
+
+Two root causes addressed beyond the renumber:
+
+1. **"Something on <port>" → stop bumping.** `reclaimPort()` kills a leftover AboardAI
+   listener on our _reserved_ port and reuses the canonical port (falls back to
+   findAvailablePort only if the holder is unkillable). This is safe precisely because the
+   47820/47821 range is reserved for AboardAI — anything there is our own stale process.
+2. **TIME_WAIT wall → keep-alive.** Node's default 5s `keepAliveTimeout` was shorter than the
+   UI's poll intervals, so the server actively closed each idle connection → TIME_WAIT flood.
+   Raised to 75s so the browser/Vite proxy reuses one socket.
+
+Note: TCPView will still show _some_ TIME_WAIT during teardown — that's normal TCP and never
+blocked binding; the keep-alive change just shrinks the volume dramatically.
+
+### Follow-up: server self-heal on EADDRINUSE (root cause of recurring "Port already in use")
+
+Real-world failure after the renumber: repeated launches on Windows left a **pile of orphaned
+`npm run dev --workspace=apps/server` + `tsx watch src/index.ts` processes** (19 found at once),
+each respawning a server fighting over 47820. `tsx watch` re-spawns its child, so killing one
+just made the supervisor spawn another. The losing process printed the hard "Port already in
+use" box and exited — that's what the user kept hitting.
+
+Fix in `apps/server/src/index.ts`: the `server.on('error')` EADDRINUSE handler now, **in dev only**
+(`NODE_ENV !== 'production'`), calls `reclaimStalePort(PORT)` (netstat/lsof → taskkill/kill the
+holder, never its own PID) and retries the bind up to `MAX_BIND_ATTEMPTS` (3) before falling
+back to the original fail-fast box. Production keeps fail-fast. The success banner was extracted
+to `logServerReady()` so retried binds still print it.
+
+Verified: `tsc --noEmit` PASS · server ESLint `--quiet` PASS · live self-heal test — squatted on
+47820, started server, log showed `WARN Port 47820 in use — reclaimed 1 stale listener(s);
+retrying bind (attempt 1/3)` then bound + served `/api/health` 200. Cleaned up 19 orphaned
+processes; 47820 left free.
+
+Takeaway: the Electron path already self-heals via `reclaimPort` in main.ts; this gives the
+standalone server (`dev:web`/`dev:server`/`tsx watch`) the same resilience so neither path
+dead-ends on a stale/orphaned port.
+
+### Follow-up 2: "Server Unavailable" on Electron launch = cold-start timeout too short
+
+After a clean launch the desktop app showed "Server Unavailable". Diagnosis: the backend is NOT
+broken — run standalone it cold-starts to `/api/health` 200 with full banner — but its first
+`tsx` boot takes >15s because it reconciles feature state across every open project (aboardai +
+Demographics + capsule-pro), checks Claude CLI auth, and resumes task groups before binding.
+Electron's `waitForServer()` only allowed 30×500ms = **15s**, so the boot aborted while the
+server was still legitimately starting. (Compounded today by my repeated diagnostic kills racing
+the user's relaunches, which left zombie `tsx watch` supervisors with no child.)
+
+Fix in `apps/ui/src/electron/server/backend-server.ts`: `waitForServer` default 30 → **120**
+attempts (~60s). Failed polls reject instantly (ECONNREFUSED) so a fast start is unaffected;
+only slow cold starts get more patience. Verified `npm run typecheck` PASS.
+
+Final state left clean: all AboardAI processes killed, 47820/47821 free, ready for one clean
+`npm run dev:electron`.
+
 ### Phase 4 Final Gate Numbers
 
 | Gate                                        | Result                                                                                      |
@@ -216,3 +308,45 @@ AboardAI v1 achieved all 6 spec goals (see `docs/superpowers/plans/phase5-result
 - **Phase 5** — Polish: 0 deterministic E2E failures, agent board tool, stale docs cleaned
 
 v1 main HEAD: see `git log --oneline -3`
+
+---
+
+## Post-v1 fix: "new models don't show anywhere" (2026-06-13)
+
+**Symptom:** UI showed old Claude versions everywhere; Opus 4.8 never appeared.
+
+**Root cause:** Model _resolution_ was correct (`claude-opus` → `claude-opus-4-8`), but the
+display layer hardcoded old version labels. Chiefly `formatModelName` (kanban cards) mapped
+`claude-opus` → "Opus 4.6" and any other opus → "Opus 4.5", so "Opus 4.8" existed nowhere in
+the UI. Secondary stale maps in `utils.getModelDisplayName` and `@aboardai/types` model-display.
+
+**Fix:**
+
+- `apps/ui/src/lib/agent-context-parser.ts` — `formatModelName` now maps `claude-opus`/`-4-8`
+  → "Opus 4.8" (newest-first ordering); `DEFAULT_MODEL` → `claude-opus-4-8`.
+- `apps/ui/src/lib/utils.ts` — `getModelDisplayName` adds current full IDs
+  (`claude-opus-4-8`, `claude-sonnet-4-6`, `claude-haiku-4-5-20251001`).
+- `libs/types/src/model-display.ts` — adds versioned labels for the current full IDs.
+- Updated tests (agent-context-parser) + stale model IDs in `CLAUDE.md` and `docs/*`.
+
+**Verify:** `npm run build -w @aboardai/types`; `npm run test:packages` → 1060 passed, 0 fail.
+
+**Note:** Running dev server / browser service-worker cache served the pre-fix bundle —
+hard-reload (Ctrl+Shift+R) or restart the Vite dev server to pick up the change.
+
+## Post-v1 feature: add Fable 5 (`claude-fable-5`) as a selectable model (2026-06-13)
+
+User request: add Fable 5, **selectable now but never a default** (currently disabled/GA-pending).
+
+- `libs/types/src/model.ts` — `claude-fable` canonical → `claude-fable-5`; legacy `fable` alias wired
+  (CANONICAL_MAP, MODEL_MAP, LEGACY_ALIAS_MAP). `DEFAULT_MODELS` unchanged (still Opus 4.8).
+- `apps/ui/.../board-view/shared/model-constants.ts` + `libs/types/src/model-display.ts` — added to
+  both `CLAUDE_MODELS` picker arrays (badge "New").
+- `apps/server/.../claude-provider.ts` — `MODEL_CAPABILITIES` entry (provisional, modeled on Opus 4.8,
+  no `default` flag).
+- `libs/types/src/settings.ts` — `isAdaptiveThinkingModel` recognizes fable (adaptive thinking).
+- Display: `formatModelName` → "Fable 5"; both `getModelDisplayName` → "Claude Fable 5".
+- Tests: resolver (`fable`/`claude-fable` → `claude-fable-5`), formatter, provider catalog (6 models,
+  Fable present & non-default; "exactly one default" guard still passes).
+
+**Verify:** `npm run build:packages` (clean); `test:packages` 1063 pass; `test:server` 2689 pass; 0 fail.

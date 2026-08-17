@@ -54,6 +54,7 @@ export {
   useAvailableModels,
   useCodexModels,
   useOpencodeModels,
+  useCursorModels,
   useOpencodeProviders,
   useModelProviders,
 } from './use-models';

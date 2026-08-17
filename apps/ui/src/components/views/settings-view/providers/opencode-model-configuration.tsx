@@ -30,7 +30,7 @@ import {
   GrokIcon,
   getProviderIconForModel,
 } from '@/components/ui/provider-icon';
-import { useEffect, useMemo, useRef, useState, type ComponentType } from 'react';
+import { useEffect, useMemo, useState, type ComponentType } from 'react';
 
 interface OpencodeModelConfigurationProps {
   enabledOpencodeModels: OpencodeModelId[];
@@ -84,6 +84,9 @@ const DYNAMIC_PROVIDER_CONFIG: Record<
   'amazon-bedrock': { label: 'AWS Bedrock', icon: Cloud },
   xai: { label: 'xAI', icon: GrokIcon },
   deepseek: { label: 'DeepSeek', icon: Brain },
+  'opencode-go': { label: 'OpenCode Go', icon: OpenCodeIcon },
+  'minimax-coding-plan': { label: 'MiniMax Coding Plan', icon: Brain },
+  'z.ai-coding-plan': { label: 'Z.AI Coding Plan', icon: Brain },
 };
 
 function getDynamicProviderConfig(providerId: string) {
@@ -248,7 +251,6 @@ export function OpencodeModelConfiguration({
   const dynamicModelsByProvider = groupDynamicModelsByProvider(dynamicModels);
   const authenticatedProviders = (providers || []).filter((provider) => provider.authenticated);
   const [dynamicProviderFilter, setDynamicProviderFilter] = useState<string | null>(null);
-  const hasInitializedDynamicProviderFilter = useRef(false);
   const [dynamicProviderSearch, setDynamicProviderSearch] = useState('');
   const normalizedDynamicSearch = dynamicProviderSearch.trim().toLowerCase();
   const hasDynamicSearch = normalizedDynamicSearch.length > 0;
@@ -305,17 +307,7 @@ export function OpencodeModelConfiguration({
       sortedDynamicProviders.length > 0 &&
       !sortedDynamicProviders.includes(dynamicProviderFilter)
     ) {
-      setDynamicProviderFilter(sortedDynamicProviders[0]);
-      return;
-    }
-
-    if (
-      !hasInitializedDynamicProviderFilter.current &&
-      !dynamicProviderFilter &&
-      sortedDynamicProviders.length > 0
-    ) {
-      hasInitializedDynamicProviderFilter.current = true;
-      setDynamicProviderFilter(sortedDynamicProviders[0]);
+      setDynamicProviderFilter(null);
     }
   }, [dynamicProviderFilter, sortedDynamicProviders]);
 
@@ -342,8 +334,8 @@ export function OpencodeModelConfiguration({
   const showDynamicProviderFilters = sortedDynamicProviders.length > 1;
   const hasFilteredDynamicProviders = filteredDynamicProviders.length > 0;
 
-  const toggleDynamicProviderFilter = (providerId: string) => {
-    setDynamicProviderFilter((current) => (current === providerId ? current : providerId));
+  const toggleDynamicProviderFilter = (providerId: string | null) => {
+    setDynamicProviderFilter(providerId);
   };
 
   const toggleAllStaticModels = (checked: boolean) => {
@@ -542,6 +534,18 @@ export function OpencodeModelConfiguration({
               {showDynamicProviderFilters && (
                 <div className="space-y-2">
                   <div className="flex flex-wrap gap-2 rounded-xl border border-border/60 bg-card/40 p-2">
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      onClick={() => toggleDynamicProviderFilter(null)}
+                      className={cn(
+                        'text-xs',
+                        dynamicProviderFilter === null && 'bg-accent text-accent-foreground'
+                      )}
+                    >
+                      All providers
+                    </Button>
                     {sortedDynamicProviders.map((providerId) => {
                       const providerInfo = authenticatedProviders.find(
                         (provider) => provider.id === providerId
@@ -670,7 +674,9 @@ export function OpencodeModelConfiguration({
                         </div>
                       ) : (
                         filteredModels.map((model) => {
-                          const isEnabled = enabledDynamicModelIds.includes(model.id);
+                          const isEnabled =
+                            enabledDynamicModelIds.length === 0 ||
+                            enabledDynamicModelIds.includes(model.id);
 
                           return (
                             <div

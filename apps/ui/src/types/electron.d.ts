@@ -450,6 +450,14 @@ export interface SpecRegenerationAPI {
     error?: string;
   }>;
 
+  importDocument: (
+    projectPath: string,
+    input: { documentText?: string; documentPath?: string; maxFeatures?: number }
+  ) => Promise<{
+    success: boolean;
+    error?: string;
+  }>;
+
   sync: (projectPath: string) => Promise<{
     success: boolean;
     error?: string;

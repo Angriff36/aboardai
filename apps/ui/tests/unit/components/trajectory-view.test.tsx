@@ -69,6 +69,25 @@ describe('EventCard', () => {
     expect(screen.getByText('summary')).toBeTruthy();
   });
 
+  // Regression: events persisted before the normalizer flattened array-shaped
+  // tool_result content carry an object/array in `text`. Rendering that directly
+  // throws React error #31. EventCard's asText() guard must coerce it to a string.
+  it('renders tool_result whose text is an array of content blocks without crashing', () => {
+    const text = [
+      { type: 'text', text: 'first' },
+      { type: 'text', text: 'second' },
+    ] as unknown as string;
+    render(<EventCard event={ev('tool_result', { text })} />);
+    expect(screen.getByText('output')).toBeTruthy();
+    expect(screen.getByText(/first[\s\S]*second/)).toBeTruthy();
+  });
+
+  it('renders agent_message whose text is a single content-block object without crashing', () => {
+    const text = { type: 'text', text: 'hello world' } as unknown as string;
+    render(<EventCard event={ev('agent_message', { text })} />);
+    expect(screen.getByText('hello world')).toBeTruthy();
+  });
+
   it('file_edit diff is collapsed by default and expands on click', () => {
     render(
       <EventCard

@@ -17,6 +17,7 @@ const __dirname = dirname(__filename);
 const APP_DIR = join(__dirname, '..');
 const SERVER_DIR = join(APP_DIR, '..', 'server');
 const LIBS_DIR = join(APP_DIR, '..', '..', 'libs');
+const ROOT_DIR = join(APP_DIR, '..', '..');
 const BUNDLE_DIR = join(APP_DIR, 'server-bundle');
 
 // Local workspace packages that need to be bundled
@@ -31,6 +32,23 @@ const LOCAL_PACKAGES = [
 ];
 
 console.log('🔧 Preparing server for Electron bundling...\n');
+
+// NOTE: @angriff36/manifest used to be a private GitHub Packages dependency that
+// required NODE_AUTH_TOKEN here. It is now published publicly on registry.npmjs.org
+// (2.18.0+), so the bundle install needs no auth and no custom .npmrc.
+
+// Step 0: Ensure a root .env exists. electron-builder bundles ../../.env as an
+// extraResource (see apps/ui/package.json "build"). A missing non-glob source aborts
+// packaging, so seed a minimal, secret-free file from .env.example when absent.
+const rootEnvPath = join(ROOT_DIR, '.env');
+if (!existsSync(rootEnvPath)) {
+  const examplePath = join(SERVER_DIR, '.env.example');
+  const seed = existsSync(examplePath)
+    ? readFileSync(examplePath, 'utf-8')
+    : '# Seeded by prepare-server.mjs — fill in as needed.\n';
+  writeFileSync(rootEnvPath, seed);
+  console.log('📝 Seeded missing root .env (from .env.example) so packaging does not fail.');
+}
 
 // Step 1: Clean up previous bundle
 if (existsSync(BUNDLE_DIR)) {
@@ -135,20 +153,9 @@ for (const pkgName of LOCAL_PACKAGES) {
   }
 }
 
-// Step 7: Rebuild native modules for current architecture
-// This is critical for modules like node-pty that have native bindings
-console.log('🔨 Rebuilding native modules for current architecture...');
-try {
-  execSync('npm rebuild', {
-    cwd: BUNDLE_DIR,
-    stdio: 'inherit',
-  });
-  console.log('✅ Native modules rebuilt successfully');
-} catch (error) {
-  console.warn(
-    '⚠️  Warning: Failed to rebuild native modules. Terminal functionality may not work.'
-  );
-  console.warn('   Error:', error.message);
-}
+// Note: native modules (e.g. node-pty) are intentionally NOT rebuilt here. A rebuild
+// against the system Node ABI would be wrong for Electron and only masks problems. The
+// electron-builder afterPack hook (scripts/rebuild-server-natives.cjs) rebuilds them
+// against the target Electron ABI — that is the rebuild that matters.
 
 console.log('\n✅ Server prepared for bundling at:', BUNDLE_DIR);

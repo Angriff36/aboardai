@@ -271,7 +271,13 @@ export interface ContentBlock {
   name?: string;
   input?: unknown;
   tool_use_id?: string;
-  content?: string;
+  /**
+   * tool_result content. Per the Anthropic/Claude SDK format this is either a plain
+   * string OR an array of nested content blocks (e.g. [{type:'text', text:'...'}]).
+   * Consumers must coerce the array form to a string before rendering.
+   */
+  content?: string | ContentBlock[];
+  source?: unknown;
 }
 
 /**

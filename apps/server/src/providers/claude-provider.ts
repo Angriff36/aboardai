@@ -128,6 +128,19 @@ const MODEL_CAPABILITIES: readonly ModelCapability[] = [
     supportsEffort: false,
   },
   {
+    // Fable 5 — added as a selectable model. Currently disabled (not GA), so it is
+    // never wired as a default. Capabilities are provisional pending GA specs;
+    // modeled on the current flagship (Opus 4.8).
+    id: 'claude-fable-5',
+    name: 'Claude Fable 5',
+    contextWindow: 1_000_000,
+    maxOutputTokens: 128_000,
+    tier: 'premium',
+    description: 'Next-generation Claude model. Provisional capabilities pending GA.',
+    adaptiveThinking: true,
+    supportsEffort: true,
+  },
+  {
     id: 'claude-opus-4-6',
     name: 'Claude Opus 4.6',
     contextWindow: 1_000_000,

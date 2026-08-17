@@ -42,6 +42,11 @@ import {
   createClearOpencodeCacheHandler,
 } from './routes/opencode-models.js';
 import {
+  createGetCursorModelsHandler,
+  createRefreshCursorModelsHandler,
+  createClearCursorCacheHandler,
+} from './routes/cursor-models.js';
+import {
   createGetCursorConfigHandler,
   createSetCursorDefaultModelHandler,
   createSetCursorModelsHandler,
@@ -103,6 +108,9 @@ export function createSetupRoutes(): Router {
   router.post('/opencode/models/refresh', createRefreshOpencodeModelsHandler());
   router.get('/opencode/providers', createGetOpencodeProvidersHandler());
   router.post('/opencode/cache/clear', createClearOpencodeCacheHandler());
+  router.get('/cursor/models', createGetCursorModelsHandler());
+  router.post('/cursor/models/refresh', createRefreshCursorModelsHandler());
+  router.post('/cursor/cache/clear', createClearCursorCacheHandler());
   router.get('/cursor-config', createGetCursorConfigHandler());
   router.post('/cursor-config/default-model', createSetCursorDefaultModelHandler());
   router.post('/cursor-config/models', createSetCursorModelsHandler());

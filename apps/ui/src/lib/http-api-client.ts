@@ -55,6 +55,7 @@ import type {
 } from '@/store/types';
 import type { WorktreeAPI, GitAPI, ModelDefinition, ProviderStatus } from '@/types/electron';
 import { getGlobalFileBrowser } from '@/contexts/file-browser-context';
+import { toast } from 'sonner';
 
 const logger = createLogger('HttpClient');
 const NO_STORE_CACHE_MODE: RequestCache = 'no-store';
@@ -1205,13 +1206,19 @@ export class HttpApiClient implements ElectronAPI {
   // File picker - uses server-side file browser dialog
   async openDirectory(): Promise<DialogResult> {
     const fileBrowser = getGlobalFileBrowser();
+    logger.warn(`[openDirectory] invoked; fileBrowser registered = ${!!fileBrowser}`);
 
     if (!fileBrowser) {
       logger.error('File browser not initialized');
+      toast.error('Directory picker unavailable', {
+        description:
+          'The in-app file browser is not registered. Try fully restarting AboardAI. (file-browser not initialized)',
+      });
       return { canceled: true, filePaths: [] };
     }
 
     const path = await fileBrowser();
+    logger.warn(`[openDirectory] file browser resolved path = ${path ?? '(null/cancelled)'}`);
 
     if (!path) {
       return { canceled: true, filePaths: [] };
@@ -1238,6 +1245,10 @@ export class HttpApiClient implements ElectronAPI {
 
     if (!fileBrowser) {
       logger.error('File browser not initialized');
+      toast.error('File picker unavailable', {
+        description:
+          'The in-app file browser is not registered. Try fully restarting AboardAI. (file-browser not initialized)',
+      });
       return { canceled: true, filePaths: [] };
     }
 
@@ -1610,6 +1621,47 @@ export class HttpApiClient implements ElectronAPI {
       }>;
       error?: string;
     }> => this.get(`/api/setup/cursor-config?projectPath=${encodeURIComponent(projectPath)}`),
+
+    getCursorModels: (
+      refresh?: boolean
+    ): Promise<{
+      success: boolean;
+      models?: Array<{
+        id: string;
+        name: string;
+        modelString: string;
+        provider: string;
+        description: string;
+        supportsTools: boolean;
+        supportsVision: boolean;
+        default?: boolean;
+      }>;
+      count?: number;
+      cached?: boolean;
+      error?: string;
+    }> => this.get(`/api/setup/cursor/models${refresh ? '?refresh=true' : ''}`),
+
+    refreshCursorModels: (): Promise<{
+      success: boolean;
+      models?: Array<{
+        id: string;
+        name: string;
+        modelString: string;
+        provider: string;
+        description: string;
+        supportsTools: boolean;
+        supportsVision: boolean;
+        default?: boolean;
+      }>;
+      count?: number;
+      error?: string;
+    }> => this.post('/api/setup/cursor/models/refresh'),
+
+    clearCursorCache: (): Promise<{
+      success: boolean;
+      message?: string;
+      error?: string;
+    }> => this.post('/api/setup/cursor/cache/clear'),
 
     setCursorDefaultModel: (
       projectPath: string,
@@ -2601,6 +2653,16 @@ export class HttpApiClient implements ElectronAPI {
       this.post('/api/spec-regeneration/generate-features', {
         projectPath,
         maxFeatures,
+      }),
+    importDocument: (
+      projectPath: string,
+      input: { documentText?: string; documentPath?: string; maxFeatures?: number }
+    ) =>
+      this.post('/api/spec-regeneration/import-document', {
+        projectPath,
+        documentText: input.documentText,
+        documentPath: input.documentPath,
+        maxFeatures: input.maxFeatures,
       }),
     sync: (projectPath: string) => this.post('/api/spec-regeneration/sync', { projectPath }),
     stop: (projectPath?: string) => this.post('/api/spec-regeneration/stop', { projectPath }),

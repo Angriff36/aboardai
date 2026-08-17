@@ -174,18 +174,18 @@ RUN chmod +x /usr/local/bin/docker-entrypoint.sh
 # The entrypoint script will switch to aboardai user before running the command
 
 # Environment variables
-ENV PORT=3008
+ENV PORT=47820
 ENV DATA_DIR=/data
 ENV HOME=/home/aboardai
 # Add user's local bin to PATH for cursor-agent
 ENV PATH="/home/aboardai/.local/bin:${PATH}"
 
 # Expose port
-EXPOSE 3008
+EXPOSE 47820
 
 # Health check (using curl since it's already installed, more reliable than busybox wget)
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-    CMD curl -f http://localhost:3008/api/health || exit 1
+    CMD curl -f http://localhost:47820/api/health || exit 1
 
 # Use entrypoint to fix permissions before starting
 ENTRYPOINT ["/usr/local/bin/docker-entrypoint.sh"]

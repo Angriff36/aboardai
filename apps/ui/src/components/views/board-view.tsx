@@ -68,6 +68,7 @@ import {
   ChangePRNumberDialog,
 } from './board-view/dialogs';
 import type { DependencyLinkType } from './board-view/dialogs';
+import { ImportDocumentDialog } from './board-view/dialogs/import-document-dialog';
 import { BulkEnhanceDialog } from './board-view/dialogs/bulk-enhance-dialog';
 import { PipelineSettingsDialog } from './board-view/dialogs/pipeline-settings-dialog';
 import { CreateWorktreeDialog } from './board-view/dialogs/create-worktree-dialog';
@@ -239,6 +240,7 @@ export function BoardView({ initialFeatureId, initialProjectPath }: BoardViewPro
 
   // Backlog plan dialog state
   const [showPlanDialog, setShowPlanDialog] = useState(false);
+  const [showImportDocDialog, setShowImportDocDialog] = useState(false);
   const [pendingBacklogPlan, setPendingBacklogPlan] = useState<BacklogPlanResult | null>(null);
   const [isGeneratingPlan, setIsGeneratingPlan] = useState(false);
 
@@ -1979,6 +1981,7 @@ export function BoardView({ initialFeatureId, initialProjectPath }: BoardViewPro
           }
         }}
         onOpenPlanDialog={() => setShowPlanDialog(true)}
+        onOpenImportDocument={() => setShowImportDocDialog(true)}
         hasPendingPlan={Boolean(pendingBacklogPlan)}
         onOpenPendingPlan={() => setShowPlanDialog(true)}
         isMounted={isMounted}
@@ -2391,6 +2394,13 @@ export function BoardView({ initialFeatureId, initialProjectPath }: BoardViewPro
         isGeneratingPlan={isGeneratingPlan}
         setIsGeneratingPlan={setIsGeneratingPlan}
         currentBranch={planUseSelectedWorktreeBranch ? selectedWorktreeBranch : undefined}
+      />
+
+      {/* Import Document Dialog - break a plan/audit/PRD into board tasks */}
+      <ImportDocumentDialog
+        open={showImportDocDialog}
+        onOpenChange={setShowImportDocDialog}
+        projectPath={currentProject.path}
       />
 
       {/* Plan Approval Dialog */}

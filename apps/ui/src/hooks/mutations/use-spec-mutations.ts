@@ -138,6 +138,51 @@ export function useGenerateFeatures(projectPath: string) {
 }
 
 /**
+ * Input for importing a document into board tasks.
+ * Provide either pasted `documentText` or a `documentPath` to read from disk.
+ */
+export interface ImportDocumentInput {
+  documentText?: string;
+  documentPath?: string;
+  maxFeatures?: number;
+}
+
+/**
+ * Import an existing document (audit, implementation plan, PRD, checklist, …) and break
+ * it into board tasks. Runs in the background on the server; the board refreshes when the
+ * shared `spec_regeneration_complete` event fires.
+ *
+ * @param projectPath - Path to the project
+ * @returns Mutation for starting a document import
+ */
+export function useImportDocument(projectPath: string) {
+  return useMutation({
+    mutationFn: async (input: ImportDocumentInput) => {
+      const api = getElectronAPI();
+      if (!api.specRegeneration) {
+        throw new Error('Spec regeneration API not available');
+      }
+
+      if (!input.documentText?.trim() && !input.documentPath?.trim()) {
+        throw new Error('Provide either pasted text or a file path to import.');
+      }
+
+      const result = await api.specRegeneration.importDocument(projectPath, {
+        documentText: input.documentText,
+        documentPath: input.documentPath,
+        maxFeatures: input.maxFeatures,
+      });
+
+      if (!result.success) {
+        throw new Error(result.error || 'Failed to start document import');
+      }
+
+      return result;
+    },
+  });
+}
+
+/**
  * Save spec file content
  *
  * @param projectPath - Path to the project

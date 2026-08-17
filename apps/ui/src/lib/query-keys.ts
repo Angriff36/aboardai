@@ -120,6 +120,8 @@ export const queryKeys = {
     opencode: () => ['models', 'opencode'] as const,
     /** OpenCode providers */
     opencodeProviders: () => ['models', 'opencode', 'providers'] as const,
+    /** Cursor models */
+    cursor: () => ['models', 'cursor'] as const,
     /** Provider status */
     providers: () => ['models', 'providers'] as const,
   },

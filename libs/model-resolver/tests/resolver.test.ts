@@ -99,6 +99,22 @@ describe('model-resolver', () => {
         expect(result).toBe(CLAUDE_MODEL_MAP.haiku);
       });
 
+      it("should resolve 'fable' legacy alias to claude-fable-5", () => {
+        const result = resolveModelString('fable');
+
+        expect(result).toBe(CLAUDE_MODEL_MAP.fable);
+        expect(result).toBe('claude-fable-5');
+        expect(consoleLogSpy).toHaveBeenCalledWith(
+          expect.stringContaining('Migrated legacy ID: "fable" -> "claude-fable"')
+        );
+      });
+
+      it("should resolve 'claude-fable' canonical ID to claude-fable-5", () => {
+        const result = resolveModelString('claude-fable');
+
+        expect(result).toBe('claude-fable-5');
+      });
+
       it('should log the resolution for aliases', () => {
         resolveModelString('sonnet');
 
@@ -349,7 +365,7 @@ describe('model-resolver', () => {
 
   describe('CLAUDE_MODEL_MAP integration', () => {
     it('should have valid mappings for all known aliases', () => {
-      const aliases = ['sonnet', 'opus', 'haiku'];
+      const aliases = ['sonnet', 'opus', 'haiku', 'fable'];
 
       for (const alias of aliases) {
         const resolved = resolveModelString(alias);

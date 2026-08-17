@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useState, useCallback, useEffect } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { useAppStore } from '@/store/app-store';
 import type { CursorModelId } from '@aboardai/types';
@@ -13,18 +14,20 @@ import { useCursorPermissions } from '../hooks/use-cursor-permissions';
 import { CursorPermissionsSection } from './cursor-permissions-section';
 import { CursorModelConfiguration } from './cursor-model-configuration';
 import { ProviderToggle } from './provider-toggle';
+import { useCursorModels } from '@/hooks/queries';
+import { queryKeys } from '@/lib/query-keys';
 
 export function CursorSettingsTab() {
-  // Global settings from store
+  const queryClient = useQueryClient();
   const {
     enabledCursorModels,
     cursorDefaultModel,
     setCursorDefaultModel,
     toggleCursorModel,
     currentProject,
+    syncCursorModelsDiscovery,
   } = useAppStore();
 
-  // Custom hooks for data fetching
   const { status, isLoading, loadData } = useCursorStatus();
   const {
     permissions,
@@ -36,8 +39,31 @@ export function CursorSettingsTab() {
     copyConfig,
   } = useCursorPermissions(currentProject?.path);
 
-  // Local state for model configuration saving
+  const { data: modelsData = [], isFetching: isFetchingModels, refetch } = useCursorModels();
+
+  useEffect(() => {
+    if (modelsData.length > 0) {
+      void syncCursorModelsDiscovery(modelsData);
+    }
+  }, [modelsData, syncCursorModelsDiscovery]);
+
   const [isSaving, setIsSaving] = useState(false);
+
+  const handleRefreshCursorCli = useCallback(async () => {
+    await Promise.all([
+      queryClient.invalidateQueries({ queryKey: queryKeys.cli.cursor() }),
+      queryClient.invalidateQueries({ queryKey: queryKeys.models.cursor() }),
+    ]);
+    await loadData();
+    await refetch();
+    toast.success('Cursor CLI refreshed');
+  }, [queryClient, loadData, refetch]);
+
+  const handleRefreshModels = useCallback(async () => {
+    await queryClient.invalidateQueries({ queryKey: queryKeys.models.cursor() });
+    await refetch();
+    toast.success('Cursor models refreshed');
+  }, [queryClient, refetch]);
 
   const handleDefaultModelChange = (model: CursorModelId) => {
     setIsSaving(true);
@@ -74,13 +100,10 @@ export function CursorSettingsTab() {
 
   return (
     <div className="space-y-6">
-      {/* Provider Visibility Toggle */}
       <ProviderToggle provider="cursor" providerLabel="Cursor" />
 
-      {/* CLI Status */}
-      <CursorCliStatus status={status} isChecking={isLoading} onRefresh={loadData} />
+      <CursorCliStatus status={status} isChecking={isLoading} onRefresh={handleRefreshCursorCli} />
 
-      {/* CLI Permissions Section */}
       <CursorPermissionsSection
         status={status}
         permissions={permissions}
@@ -93,12 +116,14 @@ export function CursorSettingsTab() {
         onLoadPermissions={loadPermissions}
       />
 
-      {/* Model Configuration - Always show (global settings) */}
       {status?.installed && (
         <CursorModelConfiguration
           enabledCursorModels={enabledCursorModels}
           cursorDefaultModel={cursorDefaultModel}
           isSaving={isSaving}
+          dynamicModels={modelsData}
+          isLoadingDynamicModels={isFetchingModels}
+          onRefreshModels={handleRefreshModels}
           onDefaultModelChange={handleDefaultModelChange}
           onModelToggle={handleModelToggle}
         />

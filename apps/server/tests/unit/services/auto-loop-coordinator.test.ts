@@ -752,19 +752,19 @@ describe('auto-loop-coordinator.ts', () => {
       await coordinator.stopAutoLoopForProject('/test/project', null);
     });
 
-    it('signalShouldPauseForProject emits event and stops loop', async () => {
+    it('signalShouldPauseForProject emits event and stops loop on genuine failures', async () => {
       await coordinator.startAutoLoopForProject('/test/project', null, 1);
       vi.mocked(mockEventBus.emitAutoModeEvent).mockClear();
 
       coordinator.signalShouldPauseForProject('/test/project', {
-        type: 'quota_exhausted',
-        message: 'Rate limited',
+        type: 'agent_error',
+        message: 'Agent crashed',
       });
 
       expect(mockEventBus.emitAutoModeEvent).toHaveBeenCalledWith(
         'auto_mode_paused_failures',
         expect.objectContaining({
-          errorType: 'quota_exhausted',
+          errorType: 'agent_error',
           projectPath: '/test/project',
         })
       );
@@ -773,7 +773,33 @@ describe('auto-loop-coordinator.ts', () => {
       expect(coordinator.isAutoLoopRunningForProject('/test/project', null)).toBe(false);
     });
 
-    it('quota/rate limit errors pause immediately', async () => {
+    it('rate_limit / quota errors cool down instead of stopping the loop', async () => {
+      for (const type of ['rate_limit', 'quota_exhausted'] as const) {
+        await coordinator.startAutoLoopForProject('/test/project', null, 1);
+        vi.mocked(mockEventBus.emitAutoModeEvent).mockClear();
+
+        coordinator.signalShouldPauseForProject('/test/project', {
+          type,
+          message: 'Usage limit',
+        });
+
+        // Loop stays running (will retry after cooldown), NOT stopped
+        expect(coordinator.isAutoLoopRunningForProject('/test/project', null)).toBe(true);
+        // Emits an informational error event, not a pause-and-stop
+        expect(mockEventBus.emitAutoModeEvent).toHaveBeenCalledWith(
+          'auto_mode_error',
+          expect.objectContaining({ errorType: type, projectPath: '/test/project' })
+        );
+        expect(mockEventBus.emitAutoModeEvent).not.toHaveBeenCalledWith(
+          'auto_mode_stopped',
+          expect.anything()
+        );
+
+        await coordinator.stopAutoLoopForProject('/test/project', null);
+      }
+    });
+
+    it('quota/rate limit errors are acted on immediately (trackFailure returns true)', async () => {
       await coordinator.startAutoLoopForProject('/test/project', null, 1);
 
       const result = coordinator.trackFailureAndCheckPauseForProject('/test/project', {
@@ -781,12 +807,12 @@ describe('auto-loop-coordinator.ts', () => {
         message: 'API quota exceeded',
       });
 
-      expect(result).toBe(true); // Should pause immediately
+      expect(result).toBe(true); // Short-circuits regardless of failure count
 
       await coordinator.stopAutoLoopForProject('/test/project', null);
     });
 
-    it('rate_limit type also pauses immediately', async () => {
+    it('rate_limit type is also acted on immediately', async () => {
       await coordinator.startAutoLoopForProject('/test/project', null, 1);
 
       const result = coordinator.trackFailureAndCheckPauseForProject('/test/project', {

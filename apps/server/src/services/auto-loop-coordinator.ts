@@ -15,6 +15,9 @@ const logger = createLogger('AutoLoopCoordinator');
 const CONSECUTIVE_FAILURE_THRESHOLD = 3;
 const FAILURE_WINDOW_MS = 60000;
 
+// On a rate-limit / quota error, don't stop auto mode — cool down this long, then retry.
+const RATE_LIMIT_COOLDOWN_MS = 10 * 60 * 1000;
+
 // Sleep intervals for the auto-loop (in milliseconds)
 const SLEEP_INTERVAL_CAPACITY_MS = 5000;
 const SLEEP_INTERVAL_IDLE_MS = 10000;
@@ -36,6 +39,8 @@ export interface ProjectAutoLoopState {
   pausedDueToFailures: boolean;
   hasEmittedIdleEvent: boolean;
   branchName: string | null;
+  // While Date.now() < cooldownUntil, the loop dispatches nothing (rate-limit backoff).
+  cooldownUntil: number;
 }
 
 /**
@@ -136,6 +141,7 @@ export class AutoLoopCoordinator {
       pausedDueToFailures: false,
       hasEmittedIdleEvent: false,
       branchName,
+      cooldownUntil: 0,
     };
 
     this.autoLoopsByProject.set(worktreeKey, projectState);
@@ -169,6 +175,11 @@ export class AutoLoopCoordinator {
     const { projectPath, branchName } = projectState.config;
     while (projectState.isRunning && !projectState.abortController.signal.aborted) {
       try {
+        // Rate-limit / quota cooldown: dispatch nothing until it elapses, then retry.
+        if (projectState.cooldownUntil > Date.now()) {
+          await this.sleep(SLEEP_INTERVAL_IDLE_MS, projectState.abortController.signal);
+          continue;
+        }
         // Count ALL running features (both auto and manual) against the concurrency limit.
         // This ensures auto mode is aware of the total system load and does not over-subscribe
         // resources. Manual tasks always bypass the limit and run immediately, but their
@@ -394,6 +405,21 @@ export class AutoLoopCoordinator {
       getWorktreeAutoLoopKey(projectPath, branchName)
     );
     if (!projectState || projectState.pausedDueToFailures) return;
+
+    // Rate-limit / quota: don't stop the loop. Back off and retry so auto mode
+    // keeps running until the user toggles it off.
+    if (actualErrorInfo.type === 'rate_limit' || actualErrorInfo.type === 'quota_exhausted') {
+      projectState.cooldownUntil = Date.now() + RATE_LIMIT_COOLDOWN_MS;
+      projectState.consecutiveFailures = [];
+      this.eventBus.emitAutoModeEvent('auto_mode_error', {
+        error: `Usage limit hit (${actualErrorInfo.type}); auto mode will retry in ${RATE_LIMIT_COOLDOWN_MS / 60000} min.`,
+        errorType: actualErrorInfo.type,
+        projectPath,
+        branchName,
+      });
+      return;
+    }
+
     projectState.pausedDueToFailures = true;
     const failureCount = projectState.consecutiveFailures.length;
     this.eventBus.emitAutoModeEvent('auto_mode_paused_failures', {

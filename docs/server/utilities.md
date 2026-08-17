@@ -211,9 +211,9 @@ Model alias mapping for Claude models.
 
 ```typescript
 export const CLAUDE_MODEL_MAP: Record<string, string> = {
-  haiku: 'claude-haiku-4-5',
-  sonnet: 'claude-sonnet-4-20250514',
-  opus: 'claude-opus-4-6',
+  haiku: 'claude-haiku-4-5-20251001',
+  sonnet: 'claude-sonnet-4-6',
+  opus: 'claude-opus-4-8',
 } as const;
 ```
 
@@ -223,7 +223,7 @@ Default models per provider.
 
 ```typescript
 export const DEFAULT_MODELS = {
-  claude: 'claude-opus-4-6',
+  claude: 'claude-opus-4-8',
   openai: 'gpt-5.2',
 } as const;
 ```
@@ -248,20 +248,20 @@ Resolve a model key/alias to a full model string.
 import { resolveModelString, DEFAULT_MODELS } from '../lib/model-resolver.js';
 
 resolveModelString('opus');
-// Returns: "claude-opus-4-6"
-// Logs: "[ModelResolver] Resolved model alias: "opus" -> "claude-opus-4-6""
+// Returns: "claude-opus-4-8"
+// Logs: "[ModelResolver] Resolved model alias: "opus" -> "claude-opus-4-8""
 
 resolveModelString('gpt-5.2');
 // Returns: "gpt-5.2"
 // Logs: "[ModelResolver] Using OpenAI/Codex model: gpt-5.2"
 
-resolveModelString('claude-sonnet-4-20250514');
-// Returns: "claude-sonnet-4-20250514"
-// Logs: "[ModelResolver] Using full Claude model string: claude-sonnet-4-20250514"
+resolveModelString('claude-sonnet-4-6');
+// Returns: "claude-sonnet-4-6"
+// Logs: "[ModelResolver] Using full Claude model string: claude-sonnet-4-6"
 
 resolveModelString('invalid-model');
-// Returns: "claude-opus-4-6"
-// Logs: "[ModelResolver] Unknown model key "invalid-model", using default: "claude-opus-4-6""
+// Returns: "claude-opus-4-8"
+// Logs: "[ModelResolver] Unknown model key "invalid-model", using default: "claude-opus-4-8""
 ```
 
 ---
@@ -279,7 +279,7 @@ import { getEffectiveModel } from '../lib/model-resolver.js';
 
 // Explicit model takes precedence
 getEffectiveModel('sonnet', 'opus');
-// Returns: "claude-sonnet-4-20250514"
+// Returns: "claude-sonnet-4-6"
 
 // Falls back to session model
 getEffectiveModel(undefined, 'haiku');

@@ -494,7 +494,7 @@ E2E tests verify the entire application works correctly from a user's perspectiv
 
 - **Framework:** [Playwright](https://playwright.dev/)
 - **Location:** `e2e/` directory
-- **Test ports:** UI on port 3007, Server on port 3008
+- **Test ports:** UI on port 3107, Server on port 3108
 
 **Running E2E tests:**
 
@@ -565,12 +565,12 @@ AboardAI uses **GitHub Actions** for continuous integration. Every pull request 
 
 The following checks must pass before your PR can be merged:
 
-| Check             | Description                                   |
-| ----------------- | --------------------------------------------- |
-| **Format**        | Verifies code is formatted with Prettier      |
-| **Build**         | Ensures the project compiles without errors   |
+| Check             | Description                                  |
+| ----------------- | -------------------------------------------- |
+| **Format**        | Verifies code is formatted with Prettier     |
+| **Build**         | Ensures the project compiles without errors  |
 | **Package Tests** | Runs tests for shared `@aboardai/*` packages |
-| **Server Tests**  | Runs server unit tests with coverage          |
+| **Server Tests**  | Runs server unit tests with coverage         |
 
 #### CI Testing Environment
 

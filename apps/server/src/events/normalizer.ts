@@ -315,10 +315,34 @@ export class NormalizedEventStream {
   }
 
   /** Build a tool_result event with 4k cap, textTruncated flag, and toolUseId correlation */
-  private toolResultEvent(raw: string, toolUseId?: string): NormalizedEvent {
-    const truncated = raw.length > TOOL_RESULT_MAX_CHARS;
-    const text = truncated ? raw.substring(0, TOOL_RESULT_MAX_CHARS) + '…' : raw;
+  private toolResultEvent(raw: string | ContentBlock[], toolUseId?: string): NormalizedEvent {
+    const flat = this.flattenContent(raw);
+    const truncated = flat.length > TOOL_RESULT_MAX_CHARS;
+    const text = truncated ? flat.substring(0, TOOL_RESULT_MAX_CHARS) + '…' : flat;
     return this.make('tool_result', { text, textTruncated: truncated, toolUseId });
+  }
+
+  /**
+   * Coerce tool_result content to a string. The Anthropic/Claude SDK delivers
+   * tool_result content as either a plain string OR an array of nested content
+   * blocks ([{type:'text', text:'...'}], image blocks, etc.). Passing the array
+   * form straight through to a NormalizedEvent.text makes React try to render an
+   * object child → "React error #31". Flatten text blocks; describe non-text ones.
+   */
+  private flattenContent(raw: string | ContentBlock[] | undefined): string {
+    if (raw === undefined || raw === null) return '';
+    if (typeof raw === 'string') return raw;
+    if (!Array.isArray(raw)) return String(raw);
+    return raw
+      .map((block) => {
+        if (typeof block === 'string') return block;
+        if (block && typeof block === 'object') {
+          if (typeof block.text === 'string') return block.text;
+          return `[${block.type ?? 'content'}]`;
+        }
+        return String(block);
+      })
+      .join('\n');
   }
 
   /** Truncate tool input to a short preview string */

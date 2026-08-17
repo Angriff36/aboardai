@@ -19,6 +19,8 @@ import type {
   PhaseModelEntry,
   PipelineStep,
   ModelDefinition,
+  CursorModelId,
+  CodexModelId,
   ServerLogLevel,
   ParsedTask,
   PlanSpec,
@@ -321,6 +323,8 @@ const initialState: AppState = {
   favoriteModels: [],
   enabledCursorModels: getAllCursorModelIds(),
   cursorDefaultModel: 'cursor-auto',
+  dynamicCursorModels: [],
+  knownCursorModelIds: [],
   enabledCodexModels: getAllCodexModelIds(),
   codexDefaultModel: 'codex-gpt-5.2-codex',
   codexAutoLoadAgents: false,
@@ -1310,9 +1314,40 @@ export const useAppStore = create<AppState & AppActions>()((set, get) => ({
   toggleCursorModel: (model, enabled) =>
     set((state) => ({
       enabledCursorModels: enabled
-        ? [...state.enabledCursorModels, model]
+        ? [...new Set([...state.enabledCursorModels, model])]
         : state.enabledCursorModels.filter((m) => m !== model),
+      knownCursorModelIds: [...new Set([...state.knownCursorModelIds, model])],
     })),
+  setDynamicCursorModels: (models) => set({ dynamicCursorModels: models }),
+  syncCursorModelsDiscovery: async (models) => {
+    const allIds = models.map((m) => m.id);
+    const currentEnabled = get().enabledCursorModels;
+    const currentKnown = get().knownCursorModelIds;
+    const trulyNew = allIds.filter((id) => !currentKnown.includes(id));
+    const updatedEnabled: CursorModelId[] =
+      trulyNew.length > 0
+        ? [...new Set([...currentEnabled, ...(trulyNew as CursorModelId[])])]
+        : currentEnabled;
+    const updatedKnown = [...new Set([...currentKnown, ...allIds])];
+
+    set({
+      dynamicCursorModels: models,
+      enabledCursorModels: updatedEnabled,
+      knownCursorModelIds: updatedKnown,
+    });
+
+    if (trulyNew.length > 0) {
+      try {
+        const httpApi = getHttpApiClient();
+        await httpApi.settings.updateGlobal({
+          enabledCursorModels: updatedEnabled,
+          knownCursorModelIds: updatedKnown,
+        });
+      } catch (error) {
+        logger.error('Failed to sync Cursor models after discovery:', error);
+      }
+    }
+  },
 
   // Codex CLI Settings actions
   setEnabledCodexModels: (models) => set({ enabledCodexModels: models }),
@@ -2892,7 +2927,7 @@ export const useAppStore = create<AppState & AppActions>()((set, get) => ({
       const data = await httpApi.get<{
         success: boolean;
         models?: Array<{
-          id: string;
+          id: CodexModelId;
           label: string;
           description: string;
           hasThinking: boolean;

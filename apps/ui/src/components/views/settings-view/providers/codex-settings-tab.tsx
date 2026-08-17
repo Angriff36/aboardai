@@ -20,6 +20,8 @@ export function CodexSettingsTab() {
     codexEnableImages,
     enabledCodexModels,
     codexDefaultModel,
+    codexModels,
+    fetchCodexModels,
     setCodexAutoLoadAgents,
     setCodexEnableWebSearch,
     setCodexEnableImages,
@@ -50,7 +52,7 @@ export function CodexSettingsTab() {
         }
       : null);
 
-  // Load Codex CLI status and auth status on mount
+  // Load Codex CLI status, auth status, and the models exposed by this installation.
   useEffect(() => {
     const checkCodexStatus = async () => {
       const api = getElectronAPI();
@@ -106,7 +108,8 @@ export function CodexSettingsTab() {
       }
     };
     checkCodexStatus();
-  }, [setCodexCliStatus, setCodexAuthStatus]);
+    void fetchCodexModels();
+  }, [fetchCodexModels, setCodexCliStatus, setCodexAuthStatus]);
 
   const handleRefreshCodexCli = useCallback(async () => {
     setIsCheckingCodexCli(true);
@@ -154,12 +157,13 @@ export function CodexSettingsTab() {
           });
         }
       }
+      await fetchCodexModels(true);
     } catch (error) {
       logger.error('Failed to refresh Codex CLI status:', error);
     } finally {
       setIsCheckingCodexCli(false);
     }
-  }, [setCodexCliStatus, setCodexAuthStatus]);
+  }, [fetchCodexModels, setCodexCliStatus, setCodexAuthStatus]);
 
   const handleDefaultModelChange = useCallback(
     (model: CodexModelId) => {
@@ -203,6 +207,7 @@ export function CodexSettingsTab() {
       {showUsageTracking && <CodexUsageSection />}
 
       <CodexModelConfiguration
+        availableModels={codexModels}
         enabledCodexModels={enabledCodexModels}
         codexDefaultModel={codexDefaultModel}
         isSaving={isSaving}

@@ -568,6 +568,64 @@ describe('NormalizedEventStream — tool_result truncation', () => {
 
     expect(evts[0].text).toBe('short result');
   });
+
+  it('flattens array-shaped tool_result content into a string (Anthropic block form)', () => {
+    const stream = new NormalizedEventStream({
+      provider: 'claude',
+      featureId: 'test',
+      clock: fixedClock,
+    });
+
+    // Anthropic tool_result content can be an array of content blocks, not just a string.
+    // Passing the array straight through makes event.text an object → React error #31.
+    const evts = stream.feed({
+      type: 'user',
+      message: {
+        role: 'user',
+        content: [
+          {
+            type: 'tool_result',
+            tool_use_id: 'tu-1',
+            content: [
+              { type: 'text', text: 'first line' },
+              { type: 'text', text: 'second line' },
+            ],
+          },
+        ],
+      },
+    });
+
+    expect(evts).toHaveLength(1);
+    expect(evts[0].kind).toBe('tool_result');
+    expect(typeof evts[0].text).toBe('string');
+    expect(evts[0].text).toBe('first line\nsecond line');
+  });
+
+  it('renders non-text blocks in array tool_result content without leaking objects', () => {
+    const stream = new NormalizedEventStream({
+      provider: 'claude',
+      featureId: 'test',
+      clock: fixedClock,
+    });
+
+    const evts = stream.feed({
+      type: 'user',
+      message: {
+        role: 'user',
+        content: [
+          {
+            type: 'tool_result',
+            tool_use_id: 'tu-1',
+            content: [{ type: 'image', source: { type: 'base64', data: 'AAAA' } }],
+          },
+        ],
+      },
+    });
+
+    expect(typeof evts[0].text).toBe('string');
+    // Must not contain a literal "[object Object]" leak.
+    expect(evts[0].text).not.toContain('[object Object]');
+  });
 });
 
 describe('NormalizedEventStream — session event', () => {

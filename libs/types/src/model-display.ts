@@ -65,6 +65,13 @@ export const CLAUDE_MODELS: ModelOption[] = [
     badge: 'Premium',
     provider: 'claude',
   },
+  {
+    id: 'fable',
+    label: 'Claude Fable 5',
+    description: 'Next-generation Claude model.',
+    badge: 'New',
+    provider: 'claude',
+  },
 ];
 
 /**
@@ -264,7 +271,15 @@ export function getModelDisplayName(model: ModelAlias | string): string {
     'claude-haiku': 'Claude Haiku',
     'claude-sonnet': 'Claude Sonnet',
     'claude-opus': 'Claude Opus',
+    fable: 'Claude Fable 5',
+    'claude-fable': 'Claude Fable 5',
+    // Current full model IDs
+    'claude-haiku-4-5-20251001': 'Claude Haiku 4.5',
     'claude-sonnet-4-6': 'Claude Sonnet 4.6',
+    'claude-opus-4-8': 'Claude Opus 4.8',
+    'claude-fable-5': 'Claude Fable 5',
+    // Previous full model IDs (kept for back-compat)
+    'claude-haiku-4-5': 'Claude Haiku 4.5',
     'claude-opus-4-6': 'Claude Opus 4.6',
     [CODEX_MODEL_MAP.gpt53Codex]: 'GPT-5.3-Codex',
     [CODEX_MODEL_MAP.gpt53CodexSpark]: 'GPT-5.3-Codex-Spark',
