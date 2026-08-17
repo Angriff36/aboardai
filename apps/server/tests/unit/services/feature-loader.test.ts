@@ -370,6 +370,54 @@ describe('feature-loader.ts', () => {
       expect(fs.writeFile).toHaveBeenCalled();
     });
 
+    it('assigns a new feature-owned branch when switching from shared to isolated', async () => {
+      vi.mocked(fs.readFile).mockResolvedValue(
+        JSON.stringify({
+          id: 'feature-123',
+          title: 'Build Login',
+          category: 'ui',
+          description: 'Description',
+          worktreeMode: 'shared',
+          branchName: 'release/shared',
+        })
+      );
+      vi.mocked(fs.writeFile).mockResolvedValue(undefined);
+
+      const result = await loader.update(testProjectPath, 'feature-123', {
+        worktreeMode: 'isolated',
+        worktreeBaseBranch: 'develop',
+      });
+
+      expect(result.worktreeMode).toBe('isolated');
+      expect(result.branchName).toMatch(/^feature\/build-login-[a-f0-9]{8}$/);
+      expect(result.branchName).not.toBe('release/shared');
+      expect(result.worktreeBaseBranch).toBe('develop');
+    });
+
+    it('clears the isolated base branch when switching to a shared checkout', async () => {
+      vi.mocked(fs.readFile).mockResolvedValue(
+        JSON.stringify({
+          id: 'feature-123',
+          title: 'Build Login',
+          category: 'ui',
+          description: 'Description',
+          worktreeMode: 'isolated',
+          branchName: 'feature/build-login-deadbeef',
+          worktreeBaseBranch: 'develop',
+        })
+      );
+      vi.mocked(fs.writeFile).mockResolvedValue(undefined);
+
+      const result = await loader.update(testProjectPath, 'feature-123', {
+        worktreeMode: 'shared',
+        branchName: 'release/shared',
+      });
+
+      expect(result.worktreeMode).toBe('shared');
+      expect(result.branchName).toBe('release/shared');
+      expect(result.worktreeBaseBranch).toBeUndefined();
+    });
+
     it("should throw if feature doesn't exist", async () => {
       const error: any = new Error('File not found');
       error.code = 'ENOENT';

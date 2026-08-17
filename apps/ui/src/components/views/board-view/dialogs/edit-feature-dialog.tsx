@@ -65,6 +65,8 @@ interface EditFeatureDialogProps {
       imagePaths: DescriptionImagePath[];
       textFilePaths: DescriptionTextFilePath[];
       branchName: string; // Can be empty string to use current branch
+      worktreeMode: 'isolated' | 'shared';
+      worktreeBaseBranch?: string;
       priority: number;
       planningMode: PlanningMode;
       requirePlanApproval: boolean;
@@ -102,10 +104,9 @@ export function EditFeatureDialog({
   const navigate = useNavigate();
   const [editingFeature, setEditingFeature] = useState<Feature | null>(feature);
   const [orchestrationVerified, setOrchestrationVerified] = useState(false);
-  // Derive initial workMode from feature's branchName
+  // Preserve feature-owned isolation when reopening an existing feature.
   const [workMode, setWorkMode] = useState<WorkMode>(() => {
-    // If feature has a branchName, it's using 'custom' mode
-    // Otherwise, it's on 'current' branch (no worktree isolation)
+    if (feature?.worktreeMode === 'isolated') return 'auto';
     return feature?.branchName ? 'custom' : 'current';
   });
   const [editFeaturePreviewMap, setEditFeaturePreviewMap] = useState<ImagePreviewMap>(
@@ -165,8 +166,9 @@ export function EditFeatureDialog({
     if (feature) {
       setPlanningMode(feature.planningMode ?? 'skip');
       setRequirePlanApproval(feature.requirePlanApproval ?? false);
-      // Derive workMode from feature's branchName
-      setWorkMode(feature.branchName ? 'custom' : 'current');
+      setWorkMode(
+        feature.worktreeMode === 'isolated' ? 'auto' : feature.branchName ? 'custom' : 'current'
+      );
       // Reset history tracking state
       setOriginalDescription(feature.description ?? '');
       setDescriptionChangeSource(null);
@@ -227,10 +229,12 @@ export function EditFeatureDialog({
 
     const normalizedEntry = normalizeModelEntry(modelEntry);
 
-    // For 'current' mode, use empty string (work on current branch)
-    // For 'auto' mode, use empty string (will be auto-generated in use-board-actions)
-    // For 'custom' mode, use the specified branch name
-    const finalBranchName = workMode === 'custom' ? editingFeature.branchName || '' : '';
+    const finalBranchName =
+      workMode === 'auto' && editingFeature.worktreeMode === 'isolated'
+        ? editingFeature.branchName || ''
+        : workMode === 'custom'
+          ? editingFeature.branchName || ''
+          : '';
 
     // Check if child dependencies changed
     const childDepsChanged =
@@ -250,6 +254,8 @@ export function EditFeatureDialog({
       imagePaths: editingFeature.imagePaths ?? [],
       textFilePaths: editingFeature.textFilePaths ?? [],
       branchName: finalBranchName,
+      worktreeMode: workMode === 'auto' ? 'isolated' : 'shared',
+      worktreeBaseBranch: workMode === 'auto' ? editingFeature.worktreeBaseBranch : undefined,
       priority: editingFeature.priority ?? 2,
       planningMode,
       requirePlanApproval,

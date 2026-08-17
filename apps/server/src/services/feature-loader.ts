@@ -21,7 +21,10 @@ import {
   ensureAboardAIDir,
 } from '@aboardai/platform';
 import { addImplementedFeature, type ImplementedFeature } from '../lib/xml-extractor.js';
-import { buildDefaultWorktreeAssignment } from './feature-worktree-assignment.js';
+import {
+  buildDefaultWorktreeAssignment,
+  createFeatureBranchName,
+} from './feature-worktree-assignment.js';
 
 const logger = createLogger('FeatureLoader');
 
@@ -480,10 +483,24 @@ export class FeatureLoader {
       updatedHistory = [...updatedHistory, historyEntry];
     }
 
+    const normalizedUpdates = { ...updates };
+    if (updates.worktreeMode === 'shared') {
+      // Switching out of isolation must not retain the owned branch or its base.
+      normalizedUpdates.branchName = updates.branchName;
+      normalizedUpdates.worktreeBaseBranch = undefined;
+    } else if (updates.worktreeMode === 'isolated' && feature.worktreeMode !== 'isolated') {
+      // A shared branch belongs to its checkout, not to this feature. Allocate a
+      // stable feature-owned branch while retaining the shared branch as its base.
+      normalizedUpdates.branchName =
+        updates.branchName || createFeatureBranchName(feature.id, updates.title ?? feature.title);
+      normalizedUpdates.worktreeBaseBranch =
+        updates.worktreeBaseBranch ?? feature.worktreeBaseBranch ?? feature.branchName;
+    }
+
     // Merge updates
     const updatedFeature: Feature = {
       ...feature,
-      ...updates,
+      ...normalizedUpdates,
       ...(updatedImagePaths !== undefined ? { imagePaths: updatedImagePaths } : {}),
       descriptionHistory: updatedHistory,
     };

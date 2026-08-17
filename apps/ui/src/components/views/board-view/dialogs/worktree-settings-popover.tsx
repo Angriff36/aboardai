@@ -39,7 +39,7 @@ export function WorktreeSettingsPopover({
                 htmlFor="worktree-branch-toggle"
                 className="text-xs font-medium cursor-pointer"
               >
-                Default to worktree mode
+                Prefill manual branch
               </Label>
             </div>
             <Switch
@@ -51,8 +51,8 @@ export function WorktreeSettingsPopover({
           </div>
 
           <p className="text-[10px] text-muted-foreground leading-relaxed">
-            New features will automatically use isolated worktrees, keeping changes separate from
-            your main branch until you're ready to merge.
+            When enabled, the selected worktree branch is prefilled if you manually switch a new
+            feature from isolated mode to a shared custom branch.
           </p>
         </div>
       </PopoverContent>
