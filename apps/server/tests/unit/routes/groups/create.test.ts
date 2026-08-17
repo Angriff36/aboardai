@@ -92,6 +92,10 @@ function buildMocks(
       .mockImplementation((_: string, featureId: string) =>
         Promise.resolve(featureMap[featureId] ?? null)
       ),
+    update: vi.fn().mockImplementation(async (_projectPath, featureId, updates) => ({
+      ...featureMap[featureId],
+      ...updates,
+    })),
   } as unknown as any;
 
   return { mockGroupService, mockFeatureLoader, mockEngine, mockStore };
@@ -227,15 +231,10 @@ describe('POST /api/groups/create', () => {
     );
   });
 
-  it('baseBranch write-back: feature without branchName gets baseBranch written', async () => {
-    const { atomicWriteJson } = await import('@aboardai/utils');
-    const atomicWriteJsonMock = vi.mocked(atomicWriteJson);
-
+  it('assigns every grouped feature a distinct isolated branch based on the group base', async () => {
     const { mockGroupService, mockFeatureLoader } = buildMocks({
       featureMap: {
-        // feat-1: no branchName (null) → baseBranch should be written
         'feat-1': { ...buildFeature('feat-1', 'backlog'), branchName: null },
-        // feat-2: has branchName → should NOT be overwritten
         'feat-2': { ...buildFeature('feat-2', 'ready'), branchName: 'existing-branch' },
       },
     });
@@ -250,11 +249,18 @@ describe('POST /api/groups/create', () => {
     await handler(req, res);
 
     expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ success: true }));
-    // atomicWriteJson should have been called once for feat-1 (no branchName); feat-2 skipped
-    expect(atomicWriteJsonMock).toHaveBeenCalledTimes(1);
-    expect(atomicWriteJsonMock).toHaveBeenCalledWith(
-      expect.stringContaining('feat-1'),
-      expect.objectContaining({ branchName: 'main' })
-    );
+    expect(mockFeatureLoader.update).toHaveBeenCalledTimes(2);
+    const assignments = mockFeatureLoader.update.mock.calls.map((call: unknown[]) => call[2]);
+    expect(assignments[0]).toMatchObject({
+      worktreeMode: 'isolated',
+      worktreeBaseBranch: 'main',
+      branchName: expect.stringMatching(/^feature\/feature-feat-1-[a-f0-9]{8}$/),
+    });
+    expect(assignments[1]).toMatchObject({
+      worktreeMode: 'isolated',
+      worktreeBaseBranch: 'main',
+      branchName: expect.stringMatching(/^feature\/feature-feat-2-[a-f0-9]{8}$/),
+    });
+    expect(assignments[0].branchName).not.toBe(assignments[1].branchName);
   });
 });
