@@ -1,8 +1,9 @@
-import { useEffect, useMemo } from 'react';
+import { useCallback, useEffect, useMemo } from 'react';
 import { useShallow } from 'zustand/react/shallow';
 import type {
   ModelAssignmentCandidate,
   ModelId,
+  ModelProvider,
   ReasoningEffort,
   ThinkingLevel,
 } from '@aboardai/types';
@@ -31,8 +32,20 @@ function optionalReasoningEffort(
   return supportsReasoningEffort(model) ? configured : undefined;
 }
 
+export interface FeatureModelProviderGroup {
+  key: string;
+  label: string;
+  enabled: boolean;
+  candidates: ModelAssignmentCandidate[];
+  builtInProvider?: ModelProvider;
+  customProviderId?: string;
+  refreshable?: boolean;
+}
+
 export function useFeatureModelCatalog(): {
   candidates: ModelAssignmentCandidate[];
+  groups: FeatureModelProviderGroup[];
+  setProviderEnabled: (groupKey: string, enabled: boolean) => Promise<void>;
   isLoading: boolean;
   error: Error | null;
 } {
@@ -52,6 +65,8 @@ export function useFeatureModelCatalog(): {
     codexDefaultModel,
     fetchCodexModels,
     syncCursorModelsDiscovery,
+    toggleProviderDisabled,
+    updateClaudeCompatibleProvider,
     claudeCompatibleProviders,
     defaultFeatureModel,
     defaultThinkingLevel,
@@ -73,6 +88,8 @@ export function useFeatureModelCatalog(): {
       codexDefaultModel: state.codexDefaultModel,
       fetchCodexModels: state.fetchCodexModels,
       syncCursorModelsDiscovery: state.syncCursorModelsDiscovery,
+      toggleProviderDisabled: state.toggleProviderDisabled,
+      updateClaudeCompatibleProvider: state.updateClaudeCompatibleProvider,
       claudeCompatibleProviders: state.claudeCompatibleProviders,
       defaultFeatureModel: state.defaultFeatureModel,
       defaultThinkingLevel: state.defaultThinkingLevel,
@@ -94,10 +111,8 @@ export function useFeatureModelCatalog(): {
     }
   }, [cursorQuery.data, syncCursorModelsDiscovery]);
 
-  const candidates = useMemo(() => {
+  const allCandidates = useMemo(() => {
     const result: ModelAssignmentCandidate[] = [];
-    const isDisabled = (provider: (typeof disabledProviders)[number]) =>
-      disabledProviders.includes(provider);
     const add = (
       providerKey: string,
       providerLabel: string,
@@ -123,105 +138,84 @@ export function useFeatureModelCatalog(): {
       });
     };
 
-    if (!isDisabled('claude')) {
-      for (const option of CLAUDE_MODELS) {
-        const selectedThinking =
-          defaultFeatureModel.model === option.id
-            ? defaultFeatureModel.thinkingLevel
-            : defaultThinkingLevel;
-        add(
-          'claude',
-          'Claude Code',
-          option.id,
-          option.label,
+    for (const option of CLAUDE_MODELS) {
+      const selectedThinking =
+        defaultFeatureModel.model === option.id
+          ? defaultFeatureModel.thinkingLevel
+          : defaultThinkingLevel;
+      add(
+        'claude',
+        'Claude Code',
+        option.id,
+        option.label,
+        defaultFeatureModel.model === option.id,
+        undefined,
+        optionalThinkingLevel(option.id, selectedThinking ?? 'none'),
+        undefined,
+        option.id !== 'claude-fable'
+      );
+    }
+
+    for (const option of getAvailableCursorModels(enabledCursorModels, cursorQuery.data ?? [])) {
+      add('cursor', 'Cursor', option.id, option.label, option.id === cursorDefaultModel);
+    }
+
+    for (const option of codexModels) {
+      const selectedEffort =
+        defaultFeatureModel.model === option.id
+          ? defaultFeatureModel.reasoningEffort
+          : defaultReasoningEffort;
+      add(
+        'codex',
+        'Codex',
+        option.id,
+        option.label,
+        option.id === codexDefaultModel ||
+          option.isDefault ||
           defaultFeatureModel.model === option.id,
-          undefined,
-          optionalThinkingLevel(option.id, selectedThinking ?? 'none'),
-          undefined,
-          option.id !== 'claude-fable'
-        );
-      }
-    }
-
-    if (!isDisabled('cursor')) {
-      for (const option of getAvailableCursorModels(enabledCursorModels, cursorQuery.data ?? [])) {
-        add('cursor', 'Cursor', option.id, option.label, option.id === cursorDefaultModel);
-      }
-    }
-
-    if (!isDisabled('codex')) {
-      for (const option of codexModels) {
-        const selectedEffort =
-          defaultFeatureModel.model === option.id
-            ? defaultFeatureModel.reasoningEffort
-            : defaultReasoningEffort;
-        add(
-          'codex',
-          'Codex',
-          option.id,
-          option.label,
-          option.id === codexDefaultModel ||
-            option.isDefault ||
-            defaultFeatureModel.model === option.id,
-          undefined,
-          undefined,
-          optionalReasoningEffort(option.id, selectedEffort ?? 'none')
-        );
-      }
-    }
-
-    if (!isDisabled('gemini')) {
-      for (const option of GEMINI_MODELS.filter((item) =>
-        enabledGeminiModels.includes(item.id as (typeof enabledGeminiModels)[number])
-      )) {
-        add('gemini', 'Gemini', option.id, option.label, option.id === geminiDefaultModel);
-      }
-    }
-
-    if (!isDisabled('copilot')) {
-      for (const option of COPILOT_MODELS.filter((item) =>
-        enabledCopilotModels.includes(item.id as (typeof enabledCopilotModels)[number])
-      )) {
-        add(
-          'copilot',
-          'GitHub Copilot',
-          option.id,
-          option.label,
-          option.id === copilotDefaultModel
-        );
-      }
-    }
-
-    if (!isDisabled('opencode')) {
-      const staticOptions = OPENCODE_MODELS.filter((item) =>
-        (enabledOpencodeModels as string[]).includes(item.id)
+        undefined,
+        undefined,
+        optionalReasoningEffort(option.id, selectedEffort ?? 'none')
       );
-      const staticNames = new Set(
-        staticOptions.map((item) => item.id.replace(/^opencode[-/]/, ''))
-      );
-      const dynamicOptions = (opencodeQuery.data ?? [])
-        .filter(
-          (item) =>
-            (enabledDynamicModelIds.length === 0 || enabledDynamicModelIds.includes(item.id)) &&
-            !staticNames.has(item.id.replace(/^opencode[-/]/, ''))
-        )
-        .map((item) => ({ id: item.id, label: item.name, provider: item.provider }));
+    }
 
-      for (const option of [...staticOptions, ...dynamicOptions]) {
-        const executionGroup =
-          'provider' in option && option.provider ? `opencode:${option.provider}` : 'opencode';
-        add(
-          executionGroup,
-          executionGroup === 'opencode' ? 'OpenCode' : `OpenCode · ${option.provider}`,
-          option.id,
-          option.label,
-          option.id === opencodeDefaultModel
-        );
-      }
+    for (const option of GEMINI_MODELS.filter((item) =>
+      enabledGeminiModels.includes(item.id as (typeof enabledGeminiModels)[number])
+    )) {
+      add('gemini', 'Gemini', option.id, option.label, option.id === geminiDefaultModel);
+    }
+
+    for (const option of COPILOT_MODELS.filter((item) =>
+      enabledCopilotModels.includes(item.id as (typeof enabledCopilotModels)[number])
+    )) {
+      add('copilot', 'GitHub Copilot', option.id, option.label, option.id === copilotDefaultModel);
+    }
+
+    const staticOptions = OPENCODE_MODELS.filter((item) =>
+      (enabledOpencodeModels as string[]).includes(item.id)
+    );
+    const staticNames = new Set(staticOptions.map((item) => item.id.replace(/^opencode[-/]/, '')));
+    const dynamicOptions = (opencodeQuery.data ?? [])
+      .filter(
+        (item) =>
+          (enabledDynamicModelIds.length === 0 || enabledDynamicModelIds.includes(item.id)) &&
+          !staticNames.has(item.id.replace(/^opencode[-/]/, ''))
+      )
+      .map((item) => ({ id: item.id, label: item.name, provider: item.provider }));
+
+    for (const option of [...staticOptions, ...dynamicOptions]) {
+      const executionGroup =
+        'provider' in option && option.provider ? `opencode:${option.provider}` : 'opencode';
+      add(
+        executionGroup,
+        executionGroup === 'opencode' ? 'OpenCode' : `OpenCode · ${option.provider}`,
+        option.id,
+        option.label,
+        option.id === opencodeDefaultModel
+      );
     }
 
     for (const provider of claudeCompatibleProviders ?? []) {
-      if (provider.enabled === false) continue;
       provider.models.forEach((model, index) => {
         const selectedThinking =
           defaultFeatureModel.providerId === provider.id && defaultFeatureModel.model === model.id
@@ -252,7 +246,6 @@ export function useFeatureModelCatalog(): {
     defaultFeatureModel,
     defaultReasoningEffort,
     defaultThinkingLevel,
-    disabledProviders,
     enabledCopilotModels,
     enabledCursorModels,
     enabledDynamicModelIds,
@@ -263,9 +256,66 @@ export function useFeatureModelCatalog(): {
     opencodeQuery.data,
   ]);
 
+  const groups = useMemo<FeatureModelProviderGroup[]>(() => {
+    const grouped = new Map<string, FeatureModelProviderGroup>();
+    for (const candidate of allCandidates) {
+      const customProviderId = candidate.providerKey.startsWith('claude-compatible:')
+        ? candidate.providerKey.slice('claude-compatible:'.length)
+        : undefined;
+      const builtInProvider = customProviderId
+        ? undefined
+        : candidate.providerKey.startsWith('opencode:')
+          ? 'opencode'
+          : (candidate.providerKey as ModelProvider);
+      const customProvider = customProviderId
+        ? claudeCompatibleProviders?.find((provider) => provider.id === customProviderId)
+        : undefined;
+      const enabled = customProvider
+        ? customProvider.enabled !== false
+        : !disabledProviders.includes(builtInProvider as ModelProvider);
+      const current = grouped.get(candidate.providerKey);
+      if (current) {
+        current.candidates.push(candidate);
+      } else {
+        grouped.set(candidate.providerKey, {
+          key: candidate.providerKey,
+          label: candidate.providerLabel,
+          enabled,
+          candidates: [candidate],
+          builtInProvider,
+          customProviderId,
+          refreshable: builtInProvider === 'cursor' || builtInProvider === 'opencode',
+        });
+      }
+    }
+    return [...grouped.values()];
+  }, [allCandidates, claudeCompatibleProviders, disabledProviders]);
+
+  const candidates = useMemo(
+    () => groups.filter((group) => group.enabled).flatMap((group) => group.candidates),
+    [groups]
+  );
+
+  const setProviderEnabled = useCallback(
+    async (groupKey: string, enabled: boolean) => {
+      const group = groups.find((item) => item.key === groupKey);
+      if (!group) return;
+      if (group.customProviderId) {
+        await updateClaudeCompatibleProvider(group.customProviderId, { enabled });
+        return;
+      }
+      if (group.builtInProvider) {
+        await toggleProviderDisabled(group.builtInProvider, !enabled);
+      }
+    },
+    [groups, toggleProviderDisabled, updateClaudeCompatibleProvider]
+  );
+
   const queryError = cursorQuery.error ?? opencodeQuery.error;
   return {
     candidates,
+    groups,
+    setProviderEnabled,
     isLoading: codexModelsLoading || cursorQuery.isLoading || opencodeQuery.isLoading,
     error: queryError instanceof Error ? queryError : null,
   };

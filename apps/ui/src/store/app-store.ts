@@ -1476,12 +1476,17 @@ export const useAppStore = create<AppState & AppActions>()((set, get) => ({
 
   // Provider Visibility Settings actions
   setDisabledProviders: (providers) => set({ disabledProviders: providers }),
-  toggleProviderDisabled: (provider, disabled) =>
-    set((state) => ({
-      disabledProviders: disabled
-        ? [...state.disabledProviders, provider]
-        : state.disabledProviders.filter((p) => p !== provider),
-    })),
+  toggleProviderDisabled: async (provider, disabled) => {
+    const next = disabled
+      ? [...new Set([...get().disabledProviders, provider])]
+      : get().disabledProviders.filter((item) => item !== provider);
+    set({ disabledProviders: next });
+    try {
+      await getHttpApiClient().settings.updateGlobal({ disabledProviders: next });
+    } catch (error) {
+      logger.error('Failed to sync provider visibility:', error);
+    }
+  },
   isProviderDisabled: (provider) => get().disabledProviders.includes(provider),
 
   // Claude Agent SDK Settings actions

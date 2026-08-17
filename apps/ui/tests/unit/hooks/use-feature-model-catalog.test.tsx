@@ -130,4 +130,64 @@ describe('useFeatureModelCatalog', () => {
       'cursor-grok-4.6-high-fast',
     ]);
   });
+
+  it('returns disabled provider groups without exposing their candidates', async () => {
+    discoveredCursorModels = [
+      { id: 'cursor-composer-2.5', name: 'Composer 2.5', provider: 'cursor' },
+    ];
+    const toggleProviderDisabled = vi.fn().mockResolvedValue(undefined);
+    const updateClaudeCompatibleProvider = vi.fn().mockResolvedValue(undefined);
+    const state = {
+      enabledCursorModels: ['cursor-composer-2.5'],
+      cursorDefaultModel: 'cursor-composer-2.5',
+      enabledGeminiModels: [],
+      enabledCopilotModels: [],
+      enabledOpencodeModels: [],
+      enabledDynamicModelIds: [],
+      disabledProviders: ['claude', 'codex', 'gemini', 'copilot', 'opencode'],
+      codexModels: [],
+      codexModelsLoading: false,
+      fetchCodexModels: vi.fn().mockResolvedValue(undefined),
+      syncCursorModelsDiscovery: vi.fn().mockResolvedValue(undefined),
+      toggleProviderDisabled,
+      updateClaudeCompatibleProvider,
+      claudeCompatibleProviders: [
+        {
+          id: 'openrouter',
+          name: 'OpenRouter',
+          providerType: 'openrouter',
+          enabled: false,
+          models: [{ id: 'openrouter/model', displayName: 'OpenRouter Model' }],
+        },
+      ],
+      defaultFeatureModel: { model: 'cursor-composer-2.5' },
+      defaultThinkingLevel: 'medium',
+      defaultReasoningEffort: 'medium',
+    };
+    mockUseAppStore.mockImplementation((selector?: unknown) =>
+      typeof selector === 'function' ? selector(state) : state
+    );
+
+    const { result } = renderHook(() => useFeatureModelCatalog());
+
+    expect(result.current.groups).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ key: 'cursor', label: 'Cursor', enabled: true }),
+        expect.objectContaining({
+          key: 'claude-compatible:openrouter',
+          label: 'OpenRouter',
+          enabled: false,
+          candidates: [expect.objectContaining({ model: 'openrouter/model' })],
+        }),
+      ])
+    );
+    expect(result.current.candidates.map((candidate) => candidate.model)).not.toContain(
+      'openrouter/model'
+    );
+
+    await result.current.setProviderEnabled('cursor', false);
+    expect(toggleProviderDisabled).toHaveBeenCalledWith('cursor', true);
+    await result.current.setProviderEnabled('claude-compatible:openrouter', true);
+    expect(updateClaudeCompatibleProvider).toHaveBeenCalledWith('openrouter', { enabled: true });
+  });
 });

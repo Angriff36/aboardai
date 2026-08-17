@@ -657,7 +657,7 @@ export interface AppActions {
 
   // Provider Visibility Settings actions
   setDisabledProviders: (providers: ModelProvider[]) => void;
-  toggleProviderDisabled: (provider: ModelProvider, disabled: boolean) => void;
+  toggleProviderDisabled: (provider: ModelProvider, disabled: boolean) => Promise<void>;
   isProviderDisabled: (provider: ModelProvider) => boolean;
 
   // Claude Agent SDK Settings actions
