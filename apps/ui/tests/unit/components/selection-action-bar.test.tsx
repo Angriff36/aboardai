@@ -23,6 +23,25 @@ describe('SelectionActionBar', () => {
     expect(onEnhance).toHaveBeenCalledTimes(1);
   });
 
+  it('offers optional model balancing for selected backlog features', async () => {
+    const user = userEvent.setup();
+    const onBalanceModels = vi.fn();
+
+    render(
+      <SelectionActionBar
+        selectedCount={3}
+        totalCount={5}
+        onBalanceModels={onBalanceModels}
+        onClear={vi.fn()}
+        onSelectAll={vi.fn()}
+      />
+    );
+
+    await user.click(screen.getByRole('button', { name: 'Balance Models' }));
+    expect(onBalanceModels).toHaveBeenCalledTimes(1);
+    expect(screen.getByRole('button', { name: 'Edit Selected' })).toBeInTheDocument();
+  });
+
   it('does not offer enhancement while selecting approval items', () => {
     render(
       <SelectionActionBar
@@ -31,11 +50,13 @@ describe('SelectionActionBar', () => {
         mode="waiting_approval"
         onVerify={vi.fn()}
         onEnhance={vi.fn()}
+        onBalanceModels={vi.fn()}
         onClear={vi.fn()}
         onSelectAll={vi.fn()}
       />
     );
 
     expect(screen.queryByRole('button', { name: 'Enhance Selected' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Balance Models' })).not.toBeInTheDocument();
   });
 });

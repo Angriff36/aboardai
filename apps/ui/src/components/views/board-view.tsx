@@ -35,6 +35,7 @@ import type {
   FeatureStatusWithPipeline,
   FeatureTemplate,
   ReasoningEffort,
+  Feature as SharedFeature,
 } from '@aboardai/types';
 import { pathsEqual } from '@/lib/utils';
 import { initializeProject } from '@/lib/project-init';
@@ -70,6 +71,7 @@ import {
 import type { DependencyLinkType } from './board-view/dialogs';
 import { ImportDocumentDialog } from './board-view/dialogs/import-document-dialog';
 import { BulkEnhanceDialog } from './board-view/dialogs/bulk-enhance-dialog';
+import { BalanceModelsDialog } from './board-view/dialogs/balance-models-dialog';
 import { PipelineSettingsDialog } from './board-view/dialogs/pipeline-settings-dialog';
 import { CreateWorktreeDialog } from './board-view/dialogs/create-worktree-dialog';
 import { DeleteWorktreeDialog } from './board-view/dialogs/delete-worktree-dialog';
@@ -278,6 +280,7 @@ export function BoardView({ initialFeatureId, initialProjectPath }: BoardViewPro
   } = useSelectionMode();
   const [showMassEditDialog, setShowMassEditDialog] = useState(false);
   const [showBulkEnhanceDialog, setShowBulkEnhanceDialog] = useState(false);
+  const [showBalanceModelsDialog, setShowBalanceModelsDialog] = useState(false);
   const [bulkEnhanceFailedIds, setBulkEnhanceFailedIds] = useState<string[] | null>(null);
 
   // View mode state (kanban vs list)
@@ -1107,6 +1110,47 @@ export function BoardView({ initialFeatureId, initialProjectPath }: BoardViewPro
   const selectedFeatures = useMemo(() => {
     return hookFeatures.filter((f) => selectedFeatureIds.has(f.id));
   }, [hookFeatures, selectedFeatureIds]);
+
+  const selectedBacklogFeatures = useMemo(() => {
+    return hookFeatures.filter(
+      (feature) => feature.status === 'backlog' && selectedFeatureIds.has(feature.id)
+    );
+  }, [hookFeatures, selectedFeatureIds]);
+
+  const handleBalancedModelUpdate = useCallback(
+    async (
+      featureId: string,
+      updates: Pick<SharedFeature, 'model' | 'providerId' | 'thinkingLevel' | 'reasoningEffort'>
+    ) => {
+      if (!currentProject) throw new Error('No project selected');
+      const result = await getHttpApiClient().features.update(
+        currentProject.path,
+        featureId,
+        updates
+      );
+      if (!result.success) {
+        throw new Error(result.error || 'Feature update failed');
+      }
+    },
+    [currentProject]
+  );
+
+  const handleBalancedModelsComplete = useCallback(
+    ({ succeededIds, failedIds }: { succeededIds: string[]; failedIds: string[] }) => {
+      loadFeatures();
+      if (failedIds.length > 0) {
+        selectAll(failedIds);
+        toast.warning(`${succeededIds.length} assigned, ${failedIds.length} need attention`);
+        return;
+      }
+      toast.success(
+        `Balanced ${succeededIds.length} feature${succeededIds.length === 1 ? '' : 's'} across verified models`
+      );
+      setShowBalanceModelsDialog(false);
+      exitSelectionMode();
+    },
+    [exitSelectionMode, loadFeatures, selectAll]
+  );
 
   const selectedFeatureNames = useMemo(
     () =>
@@ -2180,6 +2224,9 @@ export function BoardView({ initialFeatureId, initialProjectPath }: BoardViewPro
           onEnhance={
             selectionTarget === 'backlog' ? () => handleBulkEnhanceDialogChange(true) : undefined
           }
+          onBalanceModels={
+            selectionTarget === 'backlog' ? () => setShowBalanceModelsDialog(true) : undefined
+          }
           onEdit={selectionTarget === 'backlog' ? () => setShowMassEditDialog(true) : undefined}
           onDelete={selectionTarget === 'backlog' ? handleBulkDelete : undefined}
           onVerify={selectionTarget === 'waiting_approval' ? handleBulkVerify : undefined}
@@ -2214,6 +2261,15 @@ export function BoardView({ initialFeatureId, initialProjectPath }: BoardViewPro
         onOpenChange={handleBulkEnhanceDialogChange}
         onRun={handleRunBulkEnhancement}
         onFinished={handleBulkEnhancementFinished}
+      />
+
+      <BalanceModelsDialog
+        open={showBalanceModelsDialog}
+        projectPath={currentProject?.path ?? ''}
+        features={selectedBacklogFeatures}
+        onOpenChange={setShowBalanceModelsDialog}
+        onUpdateFeature={handleBalancedModelUpdate}
+        onComplete={handleBalancedModelsComplete}
       />
 
       {/* Board Background Modal */}

@@ -1,6 +1,15 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Pencil, X, CheckSquare, Trash2, CheckCircle2, Loader2, Sparkles } from 'lucide-react';
+import {
+  Pencil,
+  X,
+  CheckSquare,
+  Trash2,
+  CheckCircle2,
+  Loader2,
+  Sparkles,
+  Scale,
+} from 'lucide-react';
 import { cn } from '@/lib/utils';
 import {
   Dialog,
@@ -17,6 +26,7 @@ interface SelectionActionBarProps {
   selectedCount: number;
   totalCount: number;
   onEnhance?: () => void;
+  onBalanceModels?: () => void;
   onEdit?: () => void;
   onDelete?: () => void;
   onVerify?: () => Promise<void> | void;
@@ -29,6 +39,7 @@ export function SelectionActionBar({
   selectedCount,
   totalCount,
   onEnhance,
+  onBalanceModels,
   onEdit,
   onDelete,
   onVerify,
@@ -104,6 +115,18 @@ export function SelectionActionBar({
               >
                 <Sparkles className="w-4 h-4 mr-1.5" />
                 Enhance Selected
+              </Button>
+
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={onBalanceModels}
+                disabled={selectedCount === 0 || !onBalanceModels}
+                className="h-8 border-brand-500/40 bg-brand-500/10 text-brand-500 hover:bg-brand-500/20 hover:text-brand-500 disabled:opacity-50"
+                data-testid="selection-balance-models-button"
+              >
+                <Scale className="w-4 h-4 mr-1.5" />
+                Balance Models
               </Button>
 
               <Button
