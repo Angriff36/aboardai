@@ -68,6 +68,7 @@ import {
   ChangePRNumberDialog,
 } from './board-view/dialogs';
 import type { DependencyLinkType } from './board-view/dialogs';
+import { BulkEnhanceDialog } from './board-view/dialogs/bulk-enhance-dialog';
 import { PipelineSettingsDialog } from './board-view/dialogs/pipeline-settings-dialog';
 import { CreateWorktreeDialog } from './board-view/dialogs/create-worktree-dialog';
 import { DeleteWorktreeDialog } from './board-view/dialogs/delete-worktree-dialog';
@@ -110,6 +111,14 @@ import { queryKeys } from '@/lib/query-keys';
 import { useAutoModeQueryInvalidation } from '@/hooks/use-query-invalidation';
 import { useUpdateGlobalSettings } from '@/hooks/mutations/use-settings-mutations';
 import { forceSyncSettingsToServer } from '@/hooks/use-settings-sync';
+import {
+  executeBulkFeatureEnhancement,
+  type BulkEnhanceRunOptions,
+} from './board-view/shared/enhancement/bulk-feature-enhancement';
+import type {
+  BulkEnhancementProgress,
+  BulkEnhancementResult,
+} from './board-view/shared/enhancement/bulk-enhancement';
 
 // Stable empty array to avoid infinite loop in selector
 const EMPTY_WORKTREES: ReturnType<ReturnType<typeof useAppStore.getState>['getWorktrees']> = [];
@@ -266,6 +275,8 @@ export function BoardView({ initialFeatureId, initialProjectPath }: BoardViewPro
     exitSelectionMode,
   } = useSelectionMode();
   const [showMassEditDialog, setShowMassEditDialog] = useState(false);
+  const [showBulkEnhanceDialog, setShowBulkEnhanceDialog] = useState(false);
+  const [bulkEnhanceFailedIds, setBulkEnhanceFailedIds] = useState<string[] | null>(null);
 
   // View mode state (kanban vs list)
   const { viewMode, setViewMode, isListView, sortConfig, setSortColumn } = useListViewState();
@@ -1094,6 +1105,78 @@ export function BoardView({ initialFeatureId, initialProjectPath }: BoardViewPro
   const selectedFeatures = useMemo(() => {
     return hookFeatures.filter((f) => selectedFeatureIds.has(f.id));
   }, [hookFeatures, selectedFeatureIds]);
+
+  const selectedFeatureNames = useMemo(
+    () =>
+      Object.fromEntries(
+        selectedFeatures.map((feature) => [
+          feature.id,
+          feature.title || feature.description || feature.id,
+        ])
+      ),
+    [selectedFeatures]
+  );
+
+  const handleRunBulkEnhancement = useCallback(
+    async (
+      options: BulkEnhanceRunOptions,
+      onProgress: (progress: BulkEnhancementProgress) => void,
+      featureIds?: string[]
+    ): Promise<BulkEnhancementResult> => {
+      if (!currentProject) {
+        throw new Error('No project selected');
+      }
+
+      const api = getHttpApiClient();
+      return executeBulkFeatureEnhancement({
+        projectPath: currentProject.path,
+        features: selectedFeatures,
+        featureIds,
+        options,
+        enhance: (originalText, mode, model, thinkingLevel, projectPath) =>
+          api.enhancePrompt.enhance(originalText, mode, model, thinkingLevel, projectPath),
+        update: (projectPath, featureId, updates, source, mode, originalDescription) =>
+          api.features.update(projectPath, featureId, updates, source, mode, originalDescription),
+        onProgress,
+      });
+    },
+    [currentProject, selectedFeatures]
+  );
+
+  const handleBulkEnhancementFinished = useCallback(
+    (result: BulkEnhancementResult) => {
+      const failedIds = result.failures.map((failure) => failure.featureId);
+      setBulkEnhanceFailedIds(failedIds);
+      loadFeatures();
+
+      if (failedIds.length > 0) {
+        selectAll(failedIds);
+        toast.warning(`${result.succeededIds.length} enhanced, ${failedIds.length} need attention`);
+      } else {
+        toast.success(
+          `Enhanced ${result.succeededIds.length} feature${result.succeededIds.length === 1 ? '' : 's'}`
+        );
+      }
+    },
+    [loadFeatures, selectAll]
+  );
+
+  const handleBulkEnhanceDialogChange = useCallback(
+    (open: boolean) => {
+      setShowBulkEnhanceDialog(open);
+      if (open) {
+        setBulkEnhanceFailedIds(null);
+        return;
+      }
+
+      if (bulkEnhanceFailedIds?.length === 0) {
+        exitSelectionMode();
+      } else if (bulkEnhanceFailedIds) {
+        selectAll(bulkEnhanceFailedIds);
+      }
+    },
+    [bulkEnhanceFailedIds, exitSelectionMode, selectAll]
+  );
 
   // Get backlog feature IDs in current branch for "Select All"
   const allSelectableFeatureIds = useMemo(() => {
@@ -2091,6 +2174,9 @@ export function BoardView({ initialFeatureId, initialProjectPath }: BoardViewPro
               ? allSelectableWaitingApprovalFeatureIds.length
               : allSelectableFeatureIds.length
           }
+          onEnhance={
+            selectionTarget === 'backlog' ? () => handleBulkEnhanceDialogChange(true) : undefined
+          }
           onEdit={selectionTarget === 'backlog' ? () => setShowMassEditDialog(true) : undefined}
           onDelete={selectionTarget === 'backlog' ? handleBulkDelete : undefined}
           onVerify={selectionTarget === 'waiting_approval' ? handleBulkVerify : undefined}
@@ -2116,6 +2202,15 @@ export function BoardView({ initialFeatureId, initialProjectPath }: BoardViewPro
         branchCardCounts={branchCardCounts}
         currentBranch={currentWorktreeBranch || undefined}
         projectPath={currentProject?.path}
+      />
+
+      <BulkEnhanceDialog
+        open={showBulkEnhanceDialog}
+        featureCount={selectedFeatures.length}
+        featureNames={selectedFeatureNames}
+        onOpenChange={handleBulkEnhanceDialogChange}
+        onRun={handleRunBulkEnhancement}
+        onFinished={handleBulkEnhancementFinished}
       />
 
       {/* Board Background Modal */}
