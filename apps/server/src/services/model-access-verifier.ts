@@ -1,4 +1,5 @@
 import type { ModelAccessVerificationResult, ModelAssignmentCandidate } from '@aboardai/types';
+import { resolveModelString } from '@aboardai/model-resolver';
 import { resolveProviderContext } from '../lib/settings-helpers.js';
 import type { SettingsService } from './settings-service.js';
 import {
@@ -53,7 +54,7 @@ export async function verifyModelAccess(
     const timer = setTimeout(() => abortController.abort(), timeoutMs);
 
     try {
-      let model = candidate.model;
+      let model = candidate.providerId ? candidate.model : resolveModelString(candidate.model);
       let providerContext: Awaited<ReturnType<typeof resolveProviderContext>> | undefined;
       if (candidate.providerId) {
         providerContext = await resolveProvider(

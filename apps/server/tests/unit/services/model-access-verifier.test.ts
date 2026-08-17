@@ -24,6 +24,23 @@ const compatible: ModelAssignmentCandidate = {
   isProviderDefault: true,
 };
 
+const claudeOpus: ModelAssignmentCandidate = {
+  key: 'claude:claude-opus',
+  model: 'claude-opus',
+  displayName: 'Claude Opus',
+  providerKey: 'claude',
+  providerLabel: 'Claude Code',
+  isProviderDefault: true,
+};
+
+const claudeFable: ModelAssignmentCandidate = {
+  ...claudeOpus,
+  key: 'claude:claude-fable',
+  model: 'claude-fable',
+  displayName: 'Claude Fable 5',
+  isProviderDefault: false,
+};
+
 describe('verifyModelAccess', () => {
   it('probes exact native and compatible model settings in read-only one-turn mode', async () => {
     const provider = { id: 'zai', name: 'Z.AI' };
@@ -107,5 +124,23 @@ describe('verifyModelAccess', () => {
       error: 'Authentication failed',
     });
     expect(results.filter((result) => result.status === 'verified')).toHaveLength(4);
+  });
+
+  it('resolves Claude catalog aliases to executable model IDs before probing', async () => {
+    const probe = vi.fn().mockResolvedValue({ text: 'ok' });
+
+    const results = await verifyModelAccess(
+      [claudeOpus, claudeFable],
+      'C:\\project',
+      {} as SettingsService,
+      { probe }
+    );
+
+    expect(results).toEqual([
+      { key: claudeOpus.key, status: 'verified' },
+      { key: claudeFable.key, status: 'verified' },
+    ]);
+    expect(probe).toHaveBeenNthCalledWith(1, expect.objectContaining({ model: 'claude-opus-4-8' }));
+    expect(probe).toHaveBeenNthCalledWith(2, expect.objectContaining({ model: 'claude-fable-5' }));
   });
 });
