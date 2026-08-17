@@ -59,6 +59,7 @@ import {
   CommandSeparator,
 } from '@/components/ui/command';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { useFeatureModelCatalog } from './use-feature-model-catalog';
 
 const OPENCODE_CLI_GROUP_LABEL = 'OpenCode CLI';
 const OPENCODE_PROVIDER_FALLBACK = 'opencode';
@@ -212,6 +213,11 @@ export function PhaseModelSelector({
   // without requiring a page refresh.
   const { data: dynamicOpencodeModels = [] } = useOpencodeModels();
   const { data: dynamicCursorModels = [] } = useCursorModels();
+  const { candidates: featureModelCatalog } = useFeatureModelCatalog();
+  const catalogCandidateKeys = useMemo(
+    () => new Set(featureModelCatalog.map((candidate) => candidate.key)),
+    [featureModelCatalog]
+  );
 
   // Detect mobile devices to use inline expansion instead of nested popovers
   const isMobile = useIsMobile();
@@ -334,28 +340,39 @@ export function PhaseModelSelector({
 
   // Transform dynamic Codex models from store to component format
   const transformedCodexModels = useMemo(() => {
-    return codexModels.map((model) => ({
-      id: model.id,
-      label: model.label,
-      description: model.description,
-      provider: 'codex' as const,
-      badge: model.tier === 'premium' ? 'Premium' : model.tier === 'basic' ? 'Speed' : undefined,
-    }));
-  }, [codexModels]);
+    return codexModels
+      .filter((model) => catalogCandidateKeys.has(`codex:${model.id}`))
+      .map((model) => ({
+        id: model.id,
+        label: model.label,
+        description: model.description,
+        provider: 'codex' as const,
+        badge: model.tier === 'premium' ? 'Premium' : model.tier === 'basic' ? 'Speed' : undefined,
+      }));
+  }, [catalogCandidateKeys, codexModels]);
 
   const availableCursorModels = useMemo(
-    () => getAvailableCursorModels(enabledCursorModels, dynamicCursorModels),
-    [enabledCursorModels, dynamicCursorModels]
+    () =>
+      getAvailableCursorModels(enabledCursorModels, dynamicCursorModels).filter((model) =>
+        catalogCandidateKeys.has(`cursor:${model.id}`)
+      ),
+    [catalogCandidateKeys, enabledCursorModels, dynamicCursorModels]
   );
 
   // Filter Gemini models to only show enabled ones
   const availableGeminiModels = GEMINI_MODELS.filter((model) => {
-    return enabledGeminiModels.includes(model.id as GeminiModelId);
+    return (
+      enabledGeminiModels.includes(model.id as GeminiModelId) &&
+      catalogCandidateKeys.has(`gemini:${model.id}`)
+    );
   });
 
   // Filter Copilot models to only show enabled ones
   const availableCopilotModels = COPILOT_MODELS.filter((model) => {
-    return enabledCopilotModels.includes(model.id as CopilotModelId);
+    return (
+      enabledCopilotModels.includes(model.id as CopilotModelId) &&
+      catalogCandidateKeys.has(`copilot:${model.id}`)
+    );
   });
 
   // Helper to find current selected model details
@@ -599,8 +616,10 @@ export function PhaseModelSelector({
       (m) => !staticModelNames.has(normalizeModelName(m.id))
     );
 
-    return [...staticModels, ...uniqueDynamic];
-  }, [enabledOpencodeModels, dynamicOpencodeModels, enabledDynamicModelIds]);
+    return [...staticModels, ...uniqueDynamic].filter((model) =>
+      featureModelCatalog.some((candidate) => candidate.model === model.id)
+    );
+  }, [enabledOpencodeModels, dynamicOpencodeModels, enabledDynamicModelIds, featureModelCatalog]);
 
   // Check if providers are disabled (needed for rendering conditions)
   const isCursorDisabled = disabledProviders.includes('cursor');
@@ -625,13 +644,15 @@ export function PhaseModelSelector({
 
     // Process Claude Models (skip if provider is disabled)
     if (!isClaudeDisabled) {
-      CLAUDE_MODELS.forEach((model) => {
-        if (favoriteModels.includes(model.id)) {
-          favs.push(model);
-        } else {
-          cModels.push(model);
+      CLAUDE_MODELS.filter((model) => catalogCandidateKeys.has(`claude:${model.id}`)).forEach(
+        (model) => {
+          if (favoriteModels.includes(model.id)) {
+            favs.push(model);
+          } else {
+            cModels.push(model);
+          }
         }
-      });
+      );
     }
 
     // Process Cursor Models (skip if provider is disabled)
@@ -706,6 +727,7 @@ export function PhaseModelSelector({
     allOpencodeModels,
     disabledProviders,
     isCursorDisabled,
+    catalogCandidateKeys,
   ]);
 
   // Group OpenCode models by model type for better organization
