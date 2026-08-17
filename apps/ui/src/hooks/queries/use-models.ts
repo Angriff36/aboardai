@@ -109,6 +109,7 @@ export function useCursorModels(refresh = false) {
       return (result.models ?? []) as ModelDefinition[];
     },
     staleTime: STALE_TIMES.MODELS,
+    refetchOnMount: refresh ? 'always' : true,
   });
 }
 

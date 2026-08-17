@@ -51,6 +51,7 @@ export function useFeatureModelCatalog(): {
     codexModelsLoading,
     codexDefaultModel,
     fetchCodexModels,
+    syncCursorModelsDiscovery,
     claudeCompatibleProviders,
     defaultFeatureModel,
     defaultThinkingLevel,
@@ -71,13 +72,14 @@ export function useFeatureModelCatalog(): {
       codexModelsLoading: state.codexModelsLoading,
       codexDefaultModel: state.codexDefaultModel,
       fetchCodexModels: state.fetchCodexModels,
+      syncCursorModelsDiscovery: state.syncCursorModelsDiscovery,
       claudeCompatibleProviders: state.claudeCompatibleProviders,
       defaultFeatureModel: state.defaultFeatureModel,
       defaultThinkingLevel: state.defaultThinkingLevel,
       defaultReasoningEffort: state.defaultReasoningEffort,
     }))
   );
-  const cursorQuery = useCursorModels();
+  const cursorQuery = useCursorModels(true);
   const opencodeQuery = useOpencodeModels();
 
   useEffect(() => {
@@ -85,6 +87,12 @@ export function useFeatureModelCatalog(): {
       void fetchCodexModels().catch(() => undefined);
     }
   }, [codexModels.length, codexModelsLoading, fetchCodexModels]);
+
+  useEffect(() => {
+    if (cursorQuery.data?.length) {
+      void syncCursorModelsDiscovery(cursorQuery.data);
+    }
+  }, [cursorQuery.data, syncCursorModelsDiscovery]);
 
   const candidates = useMemo(() => {
     const result: ModelAssignmentCandidate[] = [];

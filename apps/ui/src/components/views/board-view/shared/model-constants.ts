@@ -79,23 +79,20 @@ export const CURSOR_MODELS: ModelOption[] = Object.entries(CURSOR_MODEL_MAP).map
   })
 );
 
-/** Merge static Cursor models with CLI-discovered models, filtered by enabled list. */
+/** Use the live Cursor inventory when available, with static models as an offline fallback. */
 export function getAvailableCursorModels(
   enabledCursorModels: string[],
   dynamicModels: ModelDefinition[] = []
 ): ModelOption[] {
-  const staticIds = new Set(CURSOR_MODELS.map((model) => model.id));
-  const dynamicOptions: ModelOption[] = dynamicModels
-    .filter((model) => !staticIds.has(model.id))
-    .map((model) => ({
-      id: model.id,
-      label: model.name,
-      description: model.description,
-      provider: 'cursor' as ModelProvider,
-      hasThinking: model.id.includes('-thinking') || model.id.endsWith('-high'),
-    }));
+  const dynamicOptions: ModelOption[] = dynamicModels.map((model) => ({
+    id: model.id,
+    label: model.name,
+    description: model.description,
+    provider: 'cursor' as ModelProvider,
+    hasThinking: model.id.includes('-thinking') || model.id.endsWith('-high'),
+  }));
 
-  const allModels = [...CURSOR_MODELS, ...dynamicOptions];
+  const allModels = dynamicOptions.length > 0 ? dynamicOptions : CURSOR_MODELS;
 
   if (enabledCursorModels.length === 0) {
     return allModels;
