@@ -124,6 +124,16 @@ export { specOutputSchema } from './spec.js';
 // Enhancement types
 export type { EnhancementMode, EnhancementExample } from './enhancement.js';
 
+// Balanced model distribution types
+export type {
+  ModelAssignmentCandidate,
+  ModelAccessVerificationStatus,
+  ModelAccessVerificationResult,
+  ModelDistributionAssignment,
+  ModelDistributionCount,
+  ModelDistributionPreview,
+} from './model-distribution.js';
+
 // Prompt customization types
 export type {
   CustomPrompt,
