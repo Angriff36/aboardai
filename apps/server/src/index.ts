@@ -521,7 +521,7 @@ app.use('/api/groups', createGroupRoutes(groupService, featureLoader));
 app.use('/api/enhance-prompt', createEnhancePromptRoutes(settingsService));
 app.use('/api/worktree', createWorktreeRoutes(events, settingsService, featureLoader));
 app.use('/api/git', createGitRoutes());
-app.use('/api/models', createModelsRoutes());
+app.use('/api/models', createModelsRoutes(settingsService));
 app.use('/api/spec-regeneration', createSpecRegenerationRoutes(events, settingsService));
 app.use('/api/running-agents', createRunningAgentsRoutes(autoModeService));
 app.use('/api/workspace', createWorkspaceRoutes());
