@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Pencil, X, CheckSquare, Trash2, CheckCircle2, Loader2 } from 'lucide-react';
+import { Pencil, X, CheckSquare, Trash2, CheckCircle2, Loader2, Sparkles } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import {
   Dialog,
@@ -16,6 +16,7 @@ export type SelectionActionMode = 'backlog' | 'waiting_approval';
 interface SelectionActionBarProps {
   selectedCount: number;
   totalCount: number;
+  onEnhance?: () => void;
   onEdit?: () => void;
   onDelete?: () => void;
   onVerify?: () => Promise<void> | void;
@@ -27,6 +28,7 @@ interface SelectionActionBarProps {
 export function SelectionActionBar({
   selectedCount,
   totalCount,
+  onEnhance,
   onEdit,
   onDelete,
   onVerify,
@@ -92,6 +94,18 @@ export function SelectionActionBar({
         <div className="flex items-center gap-2">
           {mode === 'backlog' && (
             <>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={onEnhance}
+                disabled={selectedCount === 0 || !onEnhance}
+                className="h-8 border-brand-500/40 bg-brand-500/10 text-brand-500 hover:bg-brand-500/20 hover:text-brand-500 disabled:opacity-50"
+                data-testid="selection-enhance-button"
+              >
+                <Sparkles className="w-4 h-4 mr-1.5" />
+                Enhance Selected
+              </Button>
+
               <Button
                 variant="default"
                 size="sm"
