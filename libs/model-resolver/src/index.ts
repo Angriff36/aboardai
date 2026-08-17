@@ -19,3 +19,11 @@ export {
   resolvePhaseModel,
   type ResolvedPhaseModel,
 } from './resolver.js';
+
+export {
+  getOrchestrationModelScore,
+  selectOrchestrationRoles,
+  validateOrchestrationAssignments,
+  toOrchestrationModelAssignment,
+  type OrchestrationAssignments,
+} from './orchestration.js';

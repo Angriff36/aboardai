@@ -183,4 +183,76 @@ describe('BalanceModelsDialog', () => {
     await user.click(screen.getByRole('switch', { name: 'Use OpenRouter' }));
     expect(setProviderEnabled).toHaveBeenCalledWith('claude-compatible:openrouter', true);
   });
+
+  it('bulk-applies a verified orchestrated team to every selected feature', async () => {
+    const user = userEvent.setup();
+    const lead: ModelAssignmentCandidate = {
+      ...codex,
+      key: 'codex:gpt-5.6-sol',
+      model: 'gpt-5.6-sol',
+      displayName: 'GPT-5.6 Sol',
+    };
+    const reviewer: ModelAssignmentCandidate = {
+      ...cursor,
+      key: 'cursor:grok-4.6',
+      model: 'cursor-grok-4.6',
+      displayName: 'Cursor Grok 4.6',
+    };
+    const workhorse: ModelAssignmentCandidate = {
+      ...cursor,
+      key: 'cursor:composer-2.5',
+      model: 'cursor-composer-2.5',
+      displayName: 'Composer 2.5',
+      isProviderDefault: false,
+    };
+    vi.mocked(useFeatureModelCatalog).mockReturnValue({
+      candidates: [lead, reviewer, workhorse],
+      groups: [
+        { key: 'codex', label: 'Codex', enabled: true, candidates: [lead] },
+        { key: 'cursor', label: 'Cursor', enabled: true, candidates: [reviewer, workhorse] },
+      ],
+      setProviderEnabled,
+      isLoading: false,
+      error: null,
+    });
+    verifyAccess.mockResolvedValue({
+      results: [lead, reviewer, workhorse].map((candidate) => ({
+        key: candidate.key,
+        status: 'verified',
+      })),
+    });
+    const update = vi.fn().mockResolvedValue(undefined);
+
+    render(
+      <BalanceModelsDialog
+        open
+        projectPath="C:\\project"
+        features={features}
+        onOpenChange={vi.fn()}
+        onUpdateFeature={update}
+        onComplete={vi.fn()}
+      />
+    );
+
+    await user.click(screen.getByRole('button', { name: 'Assign orchestrated teams' }));
+    await user.click(screen.getByRole('button', { name: 'Verify roles' }));
+    await waitFor(() =>
+      expect(screen.getByRole('button', { name: 'Apply Orchestrated Teams' })).toBeEnabled()
+    );
+    await user.click(screen.getByRole('button', { name: 'Apply Orchestrated Teams' }));
+
+    await waitFor(() => expect(update).toHaveBeenCalledTimes(features.length));
+    expect(update).toHaveBeenCalledWith(
+      'f1',
+      expect.objectContaining({
+        executionMode: 'orchestrated',
+        orchestration: expect.objectContaining({
+          maxReviewRounds: 5,
+          lead: expect.any(Object),
+          workhorse: expect.any(Object),
+          reviewer: expect.any(Object),
+        }),
+      })
+    );
+  });
 });

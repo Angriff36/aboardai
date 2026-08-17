@@ -75,6 +75,15 @@ export type {
   FeatureImportResult,
   ParsedTask,
   PlanSpec,
+  FeatureExecutionMode,
+  OrchestrationSelectionMode,
+  OrchestrationRole,
+  OrchestrationVerdict,
+  OrchestrationPhase,
+  OrchestrationModelAssignment,
+  FeatureOrchestrationConfig,
+  OrchestrationReviewRecord,
+  OrchestrationRunRecord,
 } from './feature.js';
 
 // Session types

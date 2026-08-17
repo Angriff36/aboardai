@@ -8,6 +8,7 @@
 import type { Feature, PlanningMode, ThinkingLevel, ReasoningEffort } from '@aboardai/types';
 import type { loadContextFiles } from '@aboardai/utils';
 import type { PipelineContext } from './pipeline-orchestrator.js';
+import type { MergeResult } from './pipeline-types.js';
 
 // =============================================================================
 // ExecutionService Callback Types
@@ -43,6 +44,7 @@ export type RunAgentFn = (
  * Function to execute pipeline steps
  */
 export type ExecutePipelineFn = (context: PipelineContext) => Promise<void>;
+export type FinalizePipelineFn = (context: PipelineContext) => Promise<MergeResult>;
 
 /**
  * Function to update feature status

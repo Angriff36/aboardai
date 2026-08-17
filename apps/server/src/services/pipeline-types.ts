@@ -17,6 +17,8 @@ export interface PipelineContext {
   useClaudeCodeSystemPrompt?: boolean;
   testAttempts: number;
   maxTestAttempts: number;
+  /** Run all pipeline steps but defer branch merge until independent review approves. */
+  deferMerge?: boolean;
 }
 
 export interface PipelineStatusInfo {

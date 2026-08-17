@@ -42,6 +42,7 @@
   },
   "dependencies": {
     "@aboardai/dependency-resolver": "1.0.0",
+    "@aboardai/model-resolver": "1.0.0",
     "@aboardai/spec-parser": "1.0.0",
     "@aboardai/types": "1.0.0",
     "@codemirror/lang-cpp": "^6.0.3",

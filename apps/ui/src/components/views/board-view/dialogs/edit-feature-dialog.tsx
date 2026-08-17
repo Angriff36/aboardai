@@ -26,7 +26,13 @@ import { useNavigate } from '@tanstack/react-router';
 import { toast } from 'sonner';
 import { cn, migrateModelId, normalizeModelEntry } from '@/lib/utils';
 import { Feature, ModelAlias, ThinkingLevel, PlanningMode } from '@/store/app-store';
-import type { ReasoningEffort, PhaseModelEntry, DescriptionHistoryEntry } from '@aboardai/types';
+import type {
+  ReasoningEffort,
+  PhaseModelEntry,
+  DescriptionHistoryEntry,
+  FeatureExecutionMode,
+  FeatureOrchestrationConfig,
+} from '@aboardai/types';
 import {
   PrioritySelector,
   WorkModeSelector,
@@ -34,6 +40,7 @@ import {
   EnhanceWithAI,
   EnhancementHistoryButton,
   PipelineExclusionControls,
+  OrchestrationModeControl,
   type EnhancementMode,
 } from '../shared';
 import type { WorkMode } from '../shared';
@@ -64,6 +71,8 @@ interface EditFeatureDialogProps {
       dependencies?: string[];
       childDependencies?: string[]; // Feature IDs that should depend on this feature
       excludedPipelineSteps?: string[]; // Pipeline step IDs to skip for this feature
+      executionMode: FeatureExecutionMode;
+      orchestration?: FeatureOrchestrationConfig;
     },
     descriptionHistorySource?: 'enhance' | 'edit',
     enhancementMode?: EnhancementMode,
@@ -92,6 +101,7 @@ export function EditFeatureDialog({
 }: EditFeatureDialogProps) {
   const navigate = useNavigate();
   const [editingFeature, setEditingFeature] = useState<Feature | null>(feature);
+  const [orchestrationVerified, setOrchestrationVerified] = useState(false);
   // Derive initial workMode from feature's branchName
   const [workMode, setWorkMode] = useState<WorkMode>(() => {
     // If feature has a branchName, it's using 'custom' mode
@@ -180,6 +190,7 @@ export function EditFeatureDialog({
       setOriginalChildDependencies(childDeps);
       // Reset pipeline exclusion state
       setExcludedPipelineSteps(feature.excludedPipelineSteps ?? []);
+      setOrchestrationVerified(false);
     } else {
       setEditFeaturePreviewMap(new Map());
       setDescriptionChangeSource(null);
@@ -246,6 +257,9 @@ export function EditFeatureDialog({
       dependencies: parentDependencies,
       childDependencies: childDepsChanged ? childDependencies : undefined,
       excludedPipelineSteps: excludedPipelineSteps.length > 0 ? excludedPipelineSteps : undefined,
+      executionMode: editingFeature.executionMode ?? 'single',
+      orchestration:
+        editingFeature.executionMode === 'orchestrated' ? editingFeature.orchestration : undefined,
     };
 
     // Determine if description changed and what source to use
@@ -441,15 +455,32 @@ export function EditFeatureDialog({
               </Tooltip>
             </div>
 
-            <div className="space-y-1.5">
-              <Label className="text-xs text-muted-foreground">Model</Label>
-              <PhaseModelSelector
-                value={modelEntry}
-                onChange={handleModelChange}
-                compact
-                align="end"
-              />
-            </div>
+            <OrchestrationModeControl
+              projectPath={projectPath}
+              executionMode={editingFeature.executionMode ?? 'single'}
+              orchestration={editingFeature.orchestration}
+              onExecutionModeChange={(executionMode) => {
+                setEditingFeature({ ...editingFeature, executionMode });
+                setOrchestrationVerified(false);
+              }}
+              onOrchestrationChange={(orchestration) =>
+                setEditingFeature({ ...editingFeature, orchestration })
+              }
+              onVerificationChange={setOrchestrationVerified}
+              testIdPrefix="edit-feature"
+            />
+
+            {(editingFeature.executionMode ?? 'single') === 'single' && (
+              <div className="space-y-1.5">
+                <Label className="text-xs text-muted-foreground">Model</Label>
+                <PhaseModelSelector
+                  value={modelEntry}
+                  onChange={handleModelChange}
+                  compact
+                  align="end"
+                />
+              </div>
+            )}
 
             <div className="grid gap-3 grid-cols-2">
               <div className="space-y-1.5">
@@ -630,10 +661,11 @@ export function EditFeatureDialog({
               hotkeyActive={!!editingFeature}
               data-testid="confirm-edit-feature"
               disabled={
-                (editingFeature.status === 'backlog' ||
+                ((editingFeature.status === 'backlog' ||
                   editingFeature.status === 'merge_conflict') &&
-                workMode === 'custom' &&
-                !editingFeature.branchName?.trim()
+                  workMode === 'custom' &&
+                  !editingFeature.branchName?.trim()) ||
+                (editingFeature.executionMode === 'orchestrated' && !orchestrationVerified)
               }
             >
               Save Changes

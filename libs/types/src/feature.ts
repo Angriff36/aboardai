@@ -5,6 +5,68 @@
 import type { PlanningMode, ThinkingLevel } from './settings.js';
 import type { ReasoningEffort } from './provider.js';
 
+export type FeatureExecutionMode = 'single' | 'orchestrated';
+export type OrchestrationSelectionMode = 'automatic' | 'manual';
+export type OrchestrationRole = 'lead' | 'workhorse' | 'reviewer';
+export type OrchestrationVerdict = 'approve' | 'request_changes';
+export type OrchestrationPhase =
+  | 'verifying'
+  | 'planning'
+  | 'implementing'
+  | 'testing'
+  | 'reviewing'
+  | 'revising'
+  | 'approved'
+  | 'waiting_approval'
+  | 'failed';
+
+export interface OrchestrationModelAssignment {
+  candidateKey?: string;
+  model: string;
+  displayName?: string;
+  providerKey: string;
+  providerId?: string;
+  thinkingLevel?: ThinkingLevel;
+  reasoningEffort?: ReasoningEffort;
+}
+
+export interface FeatureOrchestrationConfig {
+  enabled: boolean;
+  selectionMode: OrchestrationSelectionMode;
+  lead?: OrchestrationModelAssignment;
+  workhorse?: OrchestrationModelAssignment;
+  reviewer?: OrchestrationModelAssignment;
+  /** Bounded to 1-5 by the server. Defaults to 5. */
+  maxReviewRounds?: number;
+}
+
+export interface OrchestrationReviewRecord {
+  round: number;
+  verdict: OrchestrationVerdict;
+  summary: string;
+  findings: string[];
+  reviewedAt: string;
+}
+
+export interface OrchestrationRunRecord {
+  version: 1;
+  featureId: string;
+  phase: OrchestrationPhase;
+  startedAt: string;
+  updatedAt: string;
+  completedAt?: string;
+  currentRound: number;
+  maxReviewRounds: number;
+  assignments: {
+    lead: OrchestrationModelAssignment;
+    workhorse: OrchestrationModelAssignment;
+    reviewer: OrchestrationModelAssignment;
+  };
+  reviews: OrchestrationReviewRecord[];
+  finalVerdict?: OrchestrationVerdict;
+  terminalReason?: string;
+}
+
 /**
  * A single entry in the description history
  */
@@ -99,6 +161,8 @@ export interface Feature {
   thinkingLevel?: ThinkingLevel;
   reasoningEffort?: ReasoningEffort;
   providerId?: string;
+  executionMode?: FeatureExecutionMode;
+  orchestration?: FeatureOrchestrationConfig;
   planningMode?: PlanningMode;
   requirePlanApproval?: boolean;
   planSpec?: PlanSpec;

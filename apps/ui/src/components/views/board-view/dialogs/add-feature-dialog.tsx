@@ -27,7 +27,13 @@ import { toast } from 'sonner';
 import { cn, normalizeModelEntry } from '@/lib/utils';
 import { useAppStore } from '@/store/app-store';
 import type { ThinkingLevel, PlanningMode, Feature, FeatureImage } from '@/store/types';
-import type { ReasoningEffort, PhaseModelEntry, AgentModel } from '@aboardai/types';
+import type {
+  ReasoningEffort,
+  PhaseModelEntry,
+  AgentModel,
+  FeatureExecutionMode,
+  FeatureOrchestrationConfig,
+} from '@aboardai/types';
 import { normalizeThinkingLevelForModel, getThinkingLevelsForModel } from '@aboardai/types';
 import {
   PrioritySelector,
@@ -37,6 +43,7 @@ import {
   EnhanceWithAI,
   EnhancementHistoryButton,
   PipelineExclusionControls,
+  OrchestrationModeControl,
   type BaseHistoryEntry,
 } from '../shared';
 import type { WorkMode } from '../shared';
@@ -94,6 +101,8 @@ type FeatureData = {
   childDependencies?: string[]; // Feature IDs that should depend on this feature
   excludedPipelineSteps?: string[]; // Pipeline step IDs to skip for this feature
   workMode: WorkMode;
+  executionMode: FeatureExecutionMode;
+  orchestration?: FeatureOrchestrationConfig;
 };
 
 interface AddFeatureDialogProps {
@@ -183,6 +192,9 @@ export function AddFeatureDialog({
 
   // Model selection state
   const [modelEntry, setModelEntry] = useState<PhaseModelEntry>({ model: 'claude-opus' });
+  const [executionMode, setExecutionMode] = useState<FeatureExecutionMode>('single');
+  const [orchestration, setOrchestration] = useState<FeatureOrchestrationConfig>();
+  const [orchestrationVerified, setOrchestrationVerified] = useState(false);
 
   // Planning mode state
   const [planningMode, setPlanningMode] = useState<PlanningMode>('skip');
@@ -242,6 +254,9 @@ export function AddFeatureDialog({
       );
       setPlanningMode(defaultPlanningMode);
       setRequirePlanApproval(defaultRequirePlanApproval);
+      setExecutionMode('single');
+      setOrchestration(undefined);
+      setOrchestrationVerified(false);
 
       // Apply defaultThinkingLevel from settings to the model entry.
       // This ensures the "Quick-Select Defaults" thinking level setting is respected
@@ -383,6 +398,8 @@ export function AddFeatureDialog({
       childDependencies: childDependencies.length > 0 ? childDependencies : undefined,
       excludedPipelineSteps: excludedPipelineSteps.length > 0 ? excludedPipelineSteps : undefined,
       workMode,
+      executionMode,
+      orchestration: executionMode === 'orchestrated' ? orchestration : undefined,
     };
   };
 
@@ -421,6 +438,9 @@ export function AddFeatureDialog({
     setParentDependencies([]);
     setChildDependencies([]);
     setExcludedPipelineSteps([]);
+    setExecutionMode('single');
+    setOrchestration(undefined);
+    setOrchestrationVerified(false);
     onOpenChange(false);
   };
 
@@ -592,15 +612,27 @@ export function AddFeatureDialog({
               </Tooltip>
             </div>
 
-            <div className="space-y-1.5">
-              <Label className="text-xs text-muted-foreground">Model</Label>
-              <PhaseModelSelector
-                value={modelEntry}
-                onChange={handleModelChange}
-                compact
-                align="end"
-              />
-            </div>
+            <OrchestrationModeControl
+              projectPath={projectPath}
+              executionMode={executionMode}
+              orchestration={orchestration}
+              onExecutionModeChange={setExecutionMode}
+              onOrchestrationChange={setOrchestration}
+              onVerificationChange={setOrchestrationVerified}
+              testIdPrefix="add-feature"
+            />
+
+            {executionMode === 'single' && (
+              <div className="space-y-1.5">
+                <Label className="text-xs text-muted-foreground">Model</Label>
+                <PhaseModelSelector
+                  value={modelEntry}
+                  onChange={handleModelChange}
+                  compact
+                  align="end"
+                />
+              </div>
+            )}
 
             <div className="grid gap-3 grid-cols-2">
               <div className="space-y-1.5">
@@ -749,7 +781,10 @@ export function AddFeatureDialog({
               onClick={handleAddAndStart}
               variant="secondary"
               data-testid="confirm-add-and-start-feature"
-              disabled={workMode === 'custom' && !branchName.trim()}
+              disabled={
+                (workMode === 'custom' && !branchName.trim()) ||
+                (executionMode === 'orchestrated' && !orchestrationVerified)
+              }
             >
               <Play className="w-4 h-4 mr-2" />
               Make
@@ -760,7 +795,10 @@ export function AddFeatureDialog({
             hotkey={{ key: 'Enter', cmdCtrl: true }}
             hotkeyActive={open}
             data-testid="confirm-add-feature"
-            disabled={workMode === 'custom' && !branchName.trim()}
+            disabled={
+              (workMode === 'custom' && !branchName.trim()) ||
+              (executionMode === 'orchestrated' && !orchestrationVerified)
+            }
           >
             {isSpawnMode ? 'Spawn Task' : 'Add Feature'}
           </HotkeyButton>

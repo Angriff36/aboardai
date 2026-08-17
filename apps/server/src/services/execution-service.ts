@@ -3,9 +3,15 @@
  */
 
 import path from 'path';
-import type { Feature } from '@aboardai/types';
+import type {
+  Feature,
+  ModelAssignmentCandidate,
+  OrchestrationModelAssignment,
+  OrchestrationRunRecord,
+} from '@aboardai/types';
 import { createLogger, classifyError, loadContextFiles, recordMemoryUsage } from '@aboardai/utils';
 import { resolveModelString, DEFAULT_MODELS } from '@aboardai/model-resolver';
+import { getGitRepositoryDiffs } from '@aboardai/git-utils';
 import { getFeatureDir } from '@aboardai/platform';
 import { ProviderFactory } from '../providers/provider-factory.js';
 import * as secureFs from '../lib/secure-fs.js';
@@ -14,6 +20,7 @@ import {
   getAutoLoadClaudeMdSetting,
   getUseClaudeCodeSystemPromptSetting,
   filterClaudeMdFromContext,
+  resolveProviderContext,
 } from '../lib/settings-helpers.js';
 import { validateWorkingDirectory } from '../lib/sdk-options.js';
 import { extractSummary } from './spec-parser.js';
@@ -22,6 +29,9 @@ import type { ConcurrencyManager, RunningFeature } from './concurrency-manager.j
 import type { WorktreeResolver } from './worktree-resolver.js';
 import type { SettingsService } from './settings-service.js';
 import { pipelineService } from './pipeline-service.js';
+import { verifyModelAccess } from './model-access-verifier.js';
+import { simpleQuery } from '../providers/simple-query-service.js';
+import { OrchestrationService, type OrchestrationQueryRole } from './orchestration-service.js';
 
 // Re-export callback types from execution-types.ts for backward compatibility
 export type {
@@ -39,6 +49,7 @@ export type {
   RecordSuccessFn,
   SaveExecutionStateFn,
   LoadContextFilesFn,
+  FinalizePipelineFn,
 } from './execution-types.js';
 
 import type {
@@ -56,6 +67,7 @@ import type {
   RecordSuccessFn,
   SaveExecutionStateFn,
   LoadContextFilesFn,
+  FinalizePipelineFn,
 } from './execution-types.js';
 
 const logger = createLogger('ExecutionService');
@@ -86,8 +98,190 @@ export class ExecutionService {
     private signalPauseFn: SignalPauseFn,
     private recordSuccessFn: RecordSuccessFn,
     private saveExecutionStateFn: SaveExecutionStateFn,
-    private loadContextFilesFn: LoadContextFilesFn
+    private loadContextFilesFn: LoadContextFilesFn,
+    private finalizePipelineFn?: FinalizePipelineFn
   ) {}
+
+  private async executeOrchestratedFeature(options: {
+    projectPath: string;
+    feature: Feature;
+    workDir: string;
+    worktreePath: string | null;
+    abortController: AbortController;
+    basePrompt: string;
+    systemPrompt?: string;
+    autoLoadClaudeMd: boolean;
+    useClaudeCodeSystemPrompt: boolean;
+  }): Promise<{ approved: boolean; reason?: string; reviewerModel?: string }> {
+    const {
+      projectPath,
+      feature,
+      workDir,
+      worktreePath,
+      abortController,
+      basePrompt,
+      systemPrompt,
+      autoLoadClaudeMd,
+      useClaudeCodeSystemPrompt,
+    } = options;
+    const orchestrationDir = path.join(getFeatureDir(projectPath, feature.id), 'orchestration');
+    await secureFs.mkdir(orchestrationDir, { recursive: true });
+
+    const toCandidate = (
+      assignment: OrchestrationModelAssignment,
+      role: string
+    ): ModelAssignmentCandidate => ({
+      key: assignment.candidateKey ?? `${role}:${assignment.providerKey}:${assignment.model}`,
+      model: assignment.model,
+      displayName: assignment.displayName ?? assignment.model,
+      providerKey: assignment.providerKey,
+      providerLabel: assignment.providerKey,
+      providerId: assignment.providerId,
+      thinkingLevel: assignment.thinkingLevel,
+      reasoningEffort: assignment.reasoningEffort,
+      isProviderDefault: false,
+      implementationCapable: true,
+    });
+
+    const queryRole = async (
+      _role: OrchestrationQueryRole,
+      assignment: OrchestrationModelAssignment,
+      prompt: string
+    ): Promise<string> => {
+      if (!this.settingsService) throw new Error('Settings service is unavailable');
+      const resolvedModel = resolveModelString(assignment.model, DEFAULT_MODELS.claude);
+      const providerContext = await resolveProviderContext(
+        this.settingsService,
+        resolvedModel,
+        assignment.providerId,
+        '[OrchestrationService]'
+      );
+      const result = await simpleQuery({
+        prompt,
+        model: providerContext.resolvedModel ?? resolvedModel,
+        cwd: workDir,
+        maxTurns: 1,
+        allowedTools: [],
+        readOnly: true,
+        settingSources: [],
+        abortController,
+        thinkingLevel: assignment.thinkingLevel,
+        reasoningEffort: assignment.reasoningEffort,
+        claudeCompatibleProvider: providerContext.provider,
+        credentials: providerContext.credentials,
+      });
+      return result.text;
+    };
+
+    const getPipelineContext = async (assignment: OrchestrationModelAssignment) => {
+      const pipelineConfig = await pipelineService.getPipelineConfig(projectPath);
+      const excludedStepIds = new Set(feature.excludedPipelineSteps || []);
+      const steps = [...(pipelineConfig?.steps || [])]
+        .sort((left, right) => left.order - right.order)
+        .filter((step) => !excludedStepIds.has(step.id));
+      return {
+        projectPath,
+        featureId: feature.id,
+        feature: {
+          ...feature,
+          model: assignment.model,
+          providerId: assignment.providerId,
+          thinkingLevel: assignment.thinkingLevel,
+          reasoningEffort: assignment.reasoningEffort,
+        },
+        steps,
+        workDir,
+        worktreePath,
+        branchName: feature.branchName ?? null,
+        abortController,
+        autoLoadClaudeMd,
+        useClaudeCodeSystemPrompt,
+        testAttempts: 0,
+        maxTestAttempts: 5,
+        deferMerge: true,
+      };
+    };
+
+    const service = new OrchestrationService({
+      verifyAssignments: async (assignments) => {
+        if (!this.settingsService) throw new Error('Settings service is unavailable');
+        return verifyModelAccess(
+          assignments.map((assignment, index) =>
+            toCandidate(assignment, ['lead', 'workhorse', 'reviewer'][index] ?? `role-${index}`)
+          ),
+          projectPath,
+          this.settingsService
+        );
+      },
+      queryRole,
+      runWorkhorse: async (assignment, prompt) => {
+        await this.runAgentFn(
+          workDir,
+          feature.id,
+          prompt,
+          abortController,
+          projectPath,
+          feature.imagePaths?.map((image) => (typeof image === 'string' ? image : image.path)),
+          assignment.model,
+          {
+            projectPath,
+            planningMode: 'skip',
+            requirePlanApproval: false,
+            systemPrompt,
+            autoLoadClaudeMd,
+            useClaudeCodeSystemPrompt,
+            thinkingLevel: assignment.thinkingLevel,
+            reasoningEffort: assignment.reasoningEffort,
+            providerId: assignment.providerId,
+            branchName: feature.branchName ?? null,
+          }
+        );
+      },
+      runPipeline: async (assignment) => {
+        const context = await getPipelineContext(assignment);
+        if (context.steps.length > 0) await this.executePipelineFn(context);
+      },
+      collectEvidence: async () => {
+        const repository = await getGitRepositoryDiffs(workDir);
+        let agentOutput = '';
+        try {
+          agentOutput = (await secureFs.readFile(
+            path.join(getFeatureDir(projectPath, feature.id), 'agent-output.md'),
+            'utf-8'
+          )) as string;
+        } catch {
+          // Review can proceed from the repository diff alone.
+        }
+        const evidence = `## Git diff\n${repository.diff || '(no diff detected)'}\n\n## Workhorse and pipeline output\n${agentOutput || '(no output captured)'}`;
+        return evidence.slice(-120_000);
+      },
+      writeArtifact: (filename, content) =>
+        secureFs.writeFile(path.join(orchestrationDir, filename), content, 'utf-8'),
+      saveRun: (run: OrchestrationRunRecord) =>
+        secureFs.writeFile(
+          path.join(orchestrationDir, 'run.json'),
+          JSON.stringify(run, null, 2),
+          'utf-8'
+        ),
+      finalizeApproved: async () => {
+        if (!feature.branchName || !this.finalizePipelineFn) return;
+        const workhorse = feature.orchestration?.workhorse;
+        if (!workhorse) throw new Error('Workhorse assignment is unavailable during merge');
+        const context = await getPipelineContext(workhorse);
+        const result = await this.finalizePipelineFn({ ...context, deferMerge: false });
+        if (!result.success) {
+          throw new Error(result.error ?? 'Approved work could not be merged');
+        }
+      },
+    });
+
+    const result = await service.execute({ feature, basePrompt });
+    return {
+      approved: result.approved,
+      reason: result.run.terminalReason,
+      reviewerModel: result.run.assignments.reviewer.model,
+    };
+  }
 
   private acquireRunningFeature(options: {
     featureId: string;
@@ -280,9 +474,15 @@ ${feature.spec}
         },
       });
       const combinedSystemPrompt = filterClaudeMdFromContext(contextResult, autoLoadClaudeMd);
+      const isOrchestrated =
+        feature.executionMode === 'orchestrated' && feature.orchestration?.enabled === true;
 
       if (options?.continuationPrompt) {
         prompt = options.continuationPrompt;
+      } else if (isOrchestrated) {
+        // The lead orchestrator owns planning in orchestrated mode. Avoid mixing the
+        // legacy single-agent planning prompt into the role-separated workflow.
+        prompt = this.buildFeaturePrompt(feature, prompts.taskExecution);
       } else {
         const planningPrefix = await this.getPlanningPromptPrefixFn(feature);
         if (planningPrefix) {
@@ -300,6 +500,47 @@ ${feature.spec}
             message: `Starting ${feature.planningMode} planning phase`,
           });
         }
+      }
+
+      if (isOrchestrated && !options?.continuationPrompt) {
+        const orchestrationResult = await this.executeOrchestratedFeature({
+          projectPath,
+          feature,
+          workDir,
+          worktreePath,
+          abortController,
+          basePrompt: prompt,
+          systemPrompt: combinedSystemPrompt || undefined,
+          autoLoadClaudeMd,
+          useClaudeCodeSystemPrompt,
+        });
+        pipelineCompleted = true;
+        const currentFeature = await this.loadFeatureFn(projectPath, featureId);
+        if (currentFeature?.status !== 'merge_conflict') {
+          await this.updateFeatureStatusFn(
+            projectPath,
+            featureId,
+            orchestrationResult.approved ? 'verified' : 'waiting_approval'
+          );
+        }
+        if (orchestrationResult.approved) this.recordSuccessFn();
+
+        if (isAutoMode) {
+          this.eventBus.emitAutoModeEvent('auto_mode_feature_complete', {
+            featureId,
+            featureName: feature.title,
+            branchName: feature.branchName ?? null,
+            executionMode: 'auto',
+            passes: orchestrationResult.approved,
+            message: orchestrationResult.approved
+              ? `Independent review approved by ${orchestrationResult.reviewerModel}`
+              : orchestrationResult.reason || 'Orchestration requires human approval',
+            projectPath,
+            model: feature.orchestration?.lead?.model,
+            provider: feature.orchestration?.lead?.providerKey,
+          });
+        }
+        return;
       }
 
       const imagePaths = feature.imagePaths?.map((img) =>

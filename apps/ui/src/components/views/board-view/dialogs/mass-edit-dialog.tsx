@@ -18,10 +18,15 @@ import {
   PlanningModeSelect,
   WorkModeSelector,
   PipelineExclusionControls,
+  OrchestrationModeControl,
 } from '../shared';
 import type { WorkMode } from '../shared';
 import { PhaseModelSelector } from '@/components/views/settings-view/model-defaults/phase-model-selector';
-import type { PhaseModelEntry } from '@aboardai/types';
+import type {
+  PhaseModelEntry,
+  FeatureExecutionMode,
+  FeatureOrchestrationConfig,
+} from '@aboardai/types';
 import { cn, normalizeModelEntry } from '@/lib/utils';
 
 interface MassEditDialogProps {
@@ -44,6 +49,7 @@ interface ApplyState {
   skipTests: boolean;
   branchName: boolean;
   excludedPipelineSteps: boolean;
+  executionMode: boolean;
 }
 
 function getMixedValues(features: Feature[]): Record<string, boolean> {
@@ -63,6 +69,7 @@ function getMixedValues(features: Feature[]): Record<string, boolean> {
     excludedPipelineSteps: !features.every(
       (f) => JSON.stringify(f.excludedPipelineSteps || []) === firstExcludedSteps
     ),
+    executionMode: !features.every((f) => f.executionMode === first.executionMode),
   };
 }
 
@@ -135,6 +142,7 @@ export function MassEditDialog({
     skipTests: false,
     branchName: false,
     excludedPipelineSteps: false,
+    executionMode: false,
   });
 
   // Field values
@@ -145,6 +153,9 @@ export function MassEditDialog({
   const [requirePlanApproval, setRequirePlanApproval] = useState(false);
   const [priority, setPriority] = useState(2);
   const [skipTests, setSkipTests] = useState(false);
+  const [executionMode, setExecutionMode] = useState<FeatureExecutionMode>('single');
+  const [orchestration, setOrchestration] = useState<FeatureOrchestrationConfig>();
+  const [orchestrationVerified, setOrchestrationVerified] = useState(false);
 
   // Work mode and branch name state
   const [workMode, setWorkMode] = useState<WorkMode>(() => {
@@ -178,6 +189,7 @@ export function MassEditDialog({
         skipTests: false,
         branchName: false,
         excludedPipelineSteps: false,
+        executionMode: false,
       });
       setModel(getInitialValue(selectedFeatures, 'model', 'claude-sonnet') as ModelAlias);
       setThinkingLevel(getInitialValue(selectedFeatures, 'thinkingLevel', 'none') as ThinkingLevel);
@@ -188,6 +200,15 @@ export function MassEditDialog({
       setRequirePlanApproval(getInitialValue(selectedFeatures, 'requirePlanApproval', false));
       setPriority(getInitialValue(selectedFeatures, 'priority', 2));
       setSkipTests(getInitialValue(selectedFeatures, 'skipTests', false));
+      setExecutionMode(
+        getInitialValue(selectedFeatures, 'executionMode', 'single') as FeatureExecutionMode
+      );
+      setOrchestration(
+        getInitialValue(selectedFeatures, 'orchestration', undefined) as
+          | FeatureOrchestrationConfig
+          | undefined
+      );
+      setOrchestrationVerified(false);
       // Reset work mode and branch name
       const initialBranchName = getInitialValue(selectedFeatures, 'branchName', '') as string;
       setBranchName(initialBranchName);
@@ -230,6 +251,10 @@ export function MassEditDialog({
     if (applyState.requirePlanApproval) updates.requirePlanApproval = requirePlanApproval;
     if (applyState.priority) updates.priority = priority;
     if (applyState.skipTests) updates.skipTests = skipTests;
+    if (applyState.executionMode) {
+      updates.executionMode = executionMode;
+      updates.orchestration = executionMode === 'orchestrated' ? orchestration : undefined;
+    }
     if (applyState.branchName) {
       // For 'current' mode, use empty string (work on current branch)
       // For 'auto' mode, use empty string (will be auto-generated)
@@ -293,6 +318,32 @@ export function MassEditDialog({
 
           {/* Separator */}
           <div className="border-t border-border" />
+
+          <FieldWrapper
+            label="Execution Mode"
+            isMixed={mixedValues.executionMode}
+            willApply={applyState.executionMode}
+            onApplyChange={(apply) =>
+              setApplyState((previous) => ({ ...previous, executionMode: apply }))
+            }
+          >
+            <OrchestrationModeControl
+              projectPath={projectPath}
+              executionMode={executionMode}
+              orchestration={orchestration}
+              onExecutionModeChange={(mode) => {
+                setExecutionMode(mode);
+                setApplyState((previous) => ({ ...previous, executionMode: true }));
+                setOrchestrationVerified(false);
+              }}
+              onOrchestrationChange={(config) => {
+                setOrchestration(config);
+                setApplyState((previous) => ({ ...previous, executionMode: true }));
+              }}
+              onVerificationChange={setOrchestrationVerified}
+              testIdPrefix="mass-edit"
+            />
+          </FieldWrapper>
 
           {/* Planning Mode */}
           <FieldWrapper
@@ -391,7 +442,13 @@ export function MassEditDialog({
           </Button>
           <Button
             onClick={handleApply}
-            disabled={!hasAnyApply || isApplying}
+            disabled={
+              !hasAnyApply ||
+              isApplying ||
+              (applyState.executionMode &&
+                executionMode === 'orchestrated' &&
+                !orchestrationVerified)
+            }
             loading={isApplying}
             data-testid="mass-edit-apply-button"
           >

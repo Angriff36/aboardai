@@ -560,7 +560,8 @@ export class AutoModeServiceFacade {
         );
       },
       (_pPath) => getFacade().saveExecutionState(),
-      loadContextFiles
+      loadContextFiles,
+      (context) => pipelineOrchestrator.attemptMerge(context)
     );
 
     // RecoveryService

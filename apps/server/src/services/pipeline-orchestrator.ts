@@ -152,7 +152,7 @@ export class PipelineOrchestrator {
         projectPath,
       });
     }
-    if (ctx.branchName) {
+    if (ctx.branchName && !ctx.deferMerge) {
       const mergeResult = await this.attemptMerge(ctx);
       if (!mergeResult.success && mergeResult.hasConflicts) return;
     }
