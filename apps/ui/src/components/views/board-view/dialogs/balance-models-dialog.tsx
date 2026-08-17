@@ -34,7 +34,10 @@ interface BalanceModelsDialogProps {
   projectPath: string;
   features: Feature[];
   onOpenChange: (open: boolean) => void;
-  onUpdateFeature: (featureId: string, patch: Partial<Feature>) => Promise<void>;
+  onUpdateFeature: (
+    featureId: string,
+    patch: Pick<Feature, 'model' | 'providerId' | 'thinkingLevel' | 'reasoningEffort'>
+  ) => Promise<void>;
   onComplete: (result: { succeededIds: string[]; failedIds: string[] }) => void;
 }
 
@@ -269,17 +272,19 @@ export function BalanceModelsDialog({
                   <ShieldCheck className="h-4 w-4 text-green-500" /> Verified distribution
                 </div>
                 <div className="grid grid-cols-2 gap-2">
-                  {preview.counts.map(({ candidate, count }) => (
-                    <div
-                      key={candidate.key}
-                      className="rounded-lg border border-border bg-background/70 p-3"
-                    >
-                      <div className="truncate text-sm font-medium">{candidate.displayName}</div>
-                      <div className="text-xs text-muted-foreground">
-                        {count} feature{count === 1 ? '' : 's'}
+                  {preview.counts
+                    .filter(({ count }) => count > 0)
+                    .map(({ candidate, count }) => (
+                      <div
+                        key={candidate.key}
+                        className="rounded-lg border border-border bg-background/70 p-3"
+                      >
+                        <div className="truncate text-sm font-medium">{candidate.displayName}</div>
+                        <div className="text-xs text-muted-foreground">
+                          {count} feature{count === 1 ? '' : 's'}
+                        </div>
                       </div>
-                    </div>
-                  ))}
+                    ))}
                 </div>
                 <details className="mt-3 text-sm">
                   <summary className="flex cursor-pointer items-center gap-1 text-muted-foreground">

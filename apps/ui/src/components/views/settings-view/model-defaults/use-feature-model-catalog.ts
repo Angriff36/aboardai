@@ -98,7 +98,8 @@ export function useFeatureModelCatalog(): {
       isProviderDefault: boolean,
       providerId?: string,
       thinkingLevel?: ThinkingLevel,
-      reasoningEffort?: ReasoningEffort
+      reasoningEffort?: ReasoningEffort,
+      implementationCapable = true
     ) => {
       result.push({
         key: providerId ? `provider:${providerId}:${model}` : `${providerKey}:${model}`,
@@ -110,6 +111,7 @@ export function useFeatureModelCatalog(): {
         thinkingLevel,
         reasoningEffort,
         isProviderDefault,
+        implementationCapable,
       });
     };
 
@@ -126,7 +128,9 @@ export function useFeatureModelCatalog(): {
           option.label,
           defaultFeatureModel.model === option.id,
           undefined,
-          optionalThinkingLevel(option.id, selectedThinking ?? 'none')
+          optionalThinkingLevel(option.id, selectedThinking ?? 'none'),
+          undefined,
+          option.id !== 'claude-fable'
         );
       }
     }

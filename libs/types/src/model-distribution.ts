@@ -6,6 +6,8 @@ export interface ModelAssignmentCandidate extends PhaseModelEntry {
   providerKey: string;
   providerLabel: string;
   isProviderDefault: boolean;
+  /** False when a model may be selected manually but is not safe for automatic implementation. */
+  implementationCapable?: boolean;
 }
 
 export type ModelAccessVerificationStatus = 'verified' | 'unavailable';

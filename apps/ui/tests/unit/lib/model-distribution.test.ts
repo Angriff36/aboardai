@@ -40,6 +40,26 @@ describe('createAutomaticCandidates', () => {
       createAutomaticCandidates([cursorComposer, cursorDefault, codexFirst]).map((item) => item.key)
     ).toEqual(['cursor:cursor-auto', 'codex:gpt-5.2-codex']);
   });
+
+  it('keeps provisional models manual-only even when configured as a provider default', () => {
+    const provisional: ModelAssignmentCandidate = {
+      ...cursor,
+      key: 'claude:fable',
+      model: 'claude-fable',
+      providerKey: 'claude',
+      isProviderDefault: true,
+      implementationCapable: false,
+    };
+    const supported: ModelAssignmentCandidate = {
+      ...cursor,
+      key: 'claude:sonnet',
+      model: 'claude-sonnet',
+      providerKey: 'claude',
+      isProviderDefault: false,
+    };
+
+    expect(createAutomaticCandidates([provisional, supported])).toEqual([supported]);
+  });
 });
 
 describe('distributeModels', () => {

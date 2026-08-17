@@ -5,7 +5,7 @@ export function createAutomaticCandidates(
 ): ModelAssignmentCandidate[] {
   const groups = new Map<string, ModelAssignmentCandidate[]>();
 
-  for (const candidate of candidates) {
+  for (const candidate of candidates.filter((item) => item.implementationCapable !== false)) {
     const group = groups.get(candidate.providerKey);
     if (group) {
       group.push(candidate);
