@@ -21,6 +21,7 @@ import {
   ensureAboardAIDir,
 } from '@aboardai/platform';
 import { addImplementedFeature, type ImplementedFeature } from '../lib/xml-extractor.js';
+import { buildDefaultWorktreeAssignment } from './feature-worktree-assignment.js';
 
 const logger = createLogger('FeatureLoader');
 
@@ -372,12 +373,24 @@ export class FeatureLoader {
       });
     }
 
+    const worktreeAssignment = buildDefaultWorktreeAssignment(
+      {
+        id: featureId,
+        title: featureData.title,
+        worktreeMode: featureData.worktreeMode,
+        branchName: featureData.branchName,
+        worktreeBaseBranch: featureData.worktreeBaseBranch,
+      },
+      undefined
+    );
+
     // Ensure feature has required fields
     const feature: Feature = {
       category: featureData.category || 'Uncategorized',
       description: featureData.description || '',
       ...featureData,
       id: featureId,
+      ...worktreeAssignment,
       createdAt: featureData.createdAt || new Date().toISOString(),
       imagePaths: migratedImagePaths,
       descriptionHistory: initialHistory,

@@ -76,6 +76,7 @@ export type {
   ParsedTask,
   PlanSpec,
   FeatureExecutionMode,
+  FeatureWorktreeMode,
   OrchestrationSelectionMode,
   OrchestrationRole,
   OrchestrationVerdict,

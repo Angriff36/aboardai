@@ -314,6 +314,40 @@ describe('feature-loader.ts', () => {
 
       expect(result.category).toBe('Uncategorized');
     });
+
+    it('should default new features to an isolated stable branch', async () => {
+      vi.mocked(fs.mkdir).mockResolvedValue(undefined);
+      vi.mocked(fs.writeFile).mockResolvedValue(undefined);
+
+      const result = await loader.create(testProjectPath, {
+        id: 'feature-isolated',
+        title: 'Ship It',
+        description: 'Test',
+        branchName: 'develop',
+      });
+
+      expect(result).toMatchObject({
+        worktreeMode: 'isolated',
+        branchName: expect.stringMatching(/^feature\/ship-it-[a-f0-9]{8}$/),
+        worktreeBaseBranch: 'develop',
+      });
+    });
+
+    it('should preserve explicit shared branch assignments', async () => {
+      vi.mocked(fs.mkdir).mockResolvedValue(undefined);
+      vi.mocked(fs.writeFile).mockResolvedValue(undefined);
+
+      const result = await loader.create(testProjectPath, {
+        id: 'feature-shared',
+        description: 'Test',
+        worktreeMode: 'shared',
+        branchName: 'release/current',
+      });
+
+      expect(result.worktreeMode).toBe('shared');
+      expect(result.branchName).toBe('release/current');
+      expect(result.worktreeBaseBranch).toBeUndefined();
+    });
   });
 
   describe('update', () => {
