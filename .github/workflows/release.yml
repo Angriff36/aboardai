@@ -68,6 +68,8 @@ jobs:
           path: |
             apps/ui/release/*.dmg
             apps/ui/release/*.zip
+            apps/ui/release/*.blockmap
+            apps/ui/release/latest-mac.yml
           if-no-files-found: error
           retention-days: 30
 
@@ -76,7 +78,10 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: windows-builds
-          path: apps/ui/release/*.exe
+          path: |
+            apps/ui/release/*.exe
+            apps/ui/release/*.blockmap
+            apps/ui/release/latest.yml
           if-no-files-found: error
           retention-days: 30
 
@@ -89,6 +94,8 @@ jobs:
             apps/ui/release/*.AppImage
             apps/ui/release/*.deb
             apps/ui/release/*.rpm
+            apps/ui/release/*.blockmap
+            apps/ui/release/latest-linux.yml
           if-no-files-found: error
           retention-days: 30
 
@@ -125,9 +132,15 @@ jobs:
           files: |
             artifacts/macos-builds/*.dmg
             artifacts/macos-builds/*.zip
+            artifacts/macos-builds/*.blockmap
+            artifacts/macos-builds/latest-mac.yml
             artifacts/windows-builds/*.exe
+            artifacts/windows-builds/*.blockmap
+            artifacts/windows-builds/latest.yml
             artifacts/linux-builds/*.AppImage
             artifacts/linux-builds/*.deb
             artifacts/linux-builds/*.rpm
+            artifacts/linux-builds/*.blockmap
+            artifacts/linux-builds/latest-linux.yml
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
