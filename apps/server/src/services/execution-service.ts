@@ -119,7 +119,7 @@ export class ExecutionService {
     systemPrompt?: string;
     autoLoadClaudeMd: boolean;
     useClaudeCodeSystemPrompt: boolean;
-  }): Promise<{ approved: boolean; reason?: string; reviewerModel?: string }> {
+  }): Promise<{ approved: boolean; failed: boolean; reason?: string; reviewerModel?: string }> {
     const {
       projectPath,
       feature,
@@ -285,6 +285,7 @@ export class ExecutionService {
     const result = await service.execute({ feature, basePrompt });
     return {
       approved: result.approved,
+      failed: result.failed,
       reason: result.run.terminalReason,
       reviewerModel: result.run.assignments.reviewer.model,
     };
@@ -565,6 +566,9 @@ ${feature.spec}
           autoLoadClaudeMd,
           useClaudeCodeSystemPrompt,
         });
+        if (orchestrationResult.failed) {
+          throw new Error(orchestrationResult.reason || 'Orchestration failed');
+        }
         pipelineCompleted = true;
         const currentFeature = await this.loadFeatureFn(projectPath, featureId);
         if (currentFeature?.status !== 'merge_conflict') {

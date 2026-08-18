@@ -36,9 +36,12 @@ import {
   getAutoLoadClaudeMdSetting,
   getUseClaudeCodeSystemPromptSetting,
   filterClaudeMdFromContext,
+  resolveProviderContext,
 } from '../../../src/lib/settings-helpers.js';
 import { extractSummary } from '../../../src/services/spec-parser.js';
 import { resolveModelString } from '@aboardai/model-resolver';
+import { simpleQuery } from '../../../src/providers/simple-query-service.js';
+import { verifyModelAccess } from '../../../src/services/model-access-verifier.js';
 
 // Mock pipelineService
 vi.mock('../../../src/services/pipeline-service.js', () => ({
@@ -70,6 +73,9 @@ vi.mock('../../../src/lib/settings-helpers.js', () => ({
   getAutoLoadClaudeMdSetting: vi.fn().mockResolvedValue(true),
   getUseClaudeCodeSystemPromptSetting: vi.fn().mockResolvedValue(true),
   filterClaudeMdFromContext: vi.fn().mockReturnValue('context prompt'),
+  resolveProviderContext: vi.fn().mockResolvedValue({
+    resolvedModel: 'claude-fable-5',
+  }),
 }));
 
 // Mock sdk-options
@@ -97,6 +103,14 @@ vi.mock('../../../src/providers/provider-factory.js', () => ({
   ProviderFactory: {
     getProviderNameForModel: vi.fn().mockReturnValue('anthropic'),
   },
+}));
+
+vi.mock('../../../src/providers/simple-query-service.js', () => ({
+  simpleQuery: vi.fn(),
+}));
+
+vi.mock('../../../src/services/model-access-verifier.js', () => ({
+  verifyModelAccess: vi.fn(),
 }));
 
 // Mock spec-parser
@@ -252,12 +266,17 @@ describe('execution-service.ts', () => {
     vi.mocked(getAutoLoadClaudeMdSetting).mockResolvedValue(true);
     vi.mocked(getUseClaudeCodeSystemPromptSetting).mockResolvedValue(true);
     vi.mocked(filterClaudeMdFromContext).mockReturnValue('context prompt');
+    vi.mocked(resolveProviderContext).mockResolvedValue({
+      resolvedModel: 'claude-fable-5',
+    } as Awaited<ReturnType<typeof resolveProviderContext>>);
 
     // Re-setup spec-parser mock
     vi.mocked(extractSummary).mockReturnValue('Test summary');
 
     // Re-setup model-resolver mock
     vi.mocked(resolveModelString).mockReturnValue('claude-sonnet-4');
+    vi.mocked(verifyModelAccess).mockResolvedValue([]);
+    vi.mocked(simpleQuery).mockResolvedValue({ text: 'Implementation brief' });
 
     service = new ExecutionService(
       mockEventBus,
@@ -2148,6 +2167,42 @@ describe('execution-service.ts', () => {
         .mocked(mockUpdateFeatureStatusFn)
         .mock.calls.filter((call) => call[2] === 'backlog');
       expect(backlogCalls.length).toBe(1);
+    });
+
+    it('returns an orchestration planning failure to backlog without announcing review-ready work', async () => {
+      const orchestratedFeature: Feature = {
+        ...testFeature,
+        executionMode: 'orchestrated',
+        orchestration: {
+          enabled: true,
+          selectionMode: 'manual',
+          maxReviewRounds: 5,
+          lead: { model: 'claude-fable', providerKey: 'claude' },
+          workhorse: { model: 'cursor-grok-4.6-high-fast', providerKey: 'cursor' },
+          reviewer: { model: 'codex-gpt-5.6-sol', providerKey: 'codex' },
+        },
+      };
+      mockSettingsService = {} as SettingsService;
+      mockLoadFeatureFn = vi.fn().mockResolvedValue(orchestratedFeature);
+      vi.mocked(simpleQuery).mockResolvedValue({ text: '' });
+
+      const svc = createServiceWithMocks();
+      await svc.executeFeature('/test/project', 'feature-1', false, true);
+
+      expect(vi.mocked(mockUpdateFeatureStatusFn).mock.calls.map(([, , status]) => status)).toEqual(
+        ['in_progress', 'backlog']
+      );
+      expect(mockEventBus.emitAutoModeEvent).toHaveBeenCalledWith(
+        'auto_mode_error',
+        expect.objectContaining({
+          featureId: 'feature-1',
+          error: expect.stringMatching(/empty implementation brief/i),
+        })
+      );
+      expect(mockEventBus.emitAutoModeEvent).not.toHaveBeenCalledWith(
+        'auto_mode_feature_complete',
+        expect.objectContaining({ passes: false })
+      );
     });
   });
 });

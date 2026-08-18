@@ -34,6 +34,7 @@ export interface OrchestrationExecutionInput {
 
 export interface OrchestrationExecutionResult {
   approved: boolean;
+  failed: boolean;
   run: OrchestrationRunRecord;
 }
 
@@ -183,7 +184,7 @@ export class OrchestrationService {
           run.terminalReason = 'Reviewer did not return a valid structured verdict';
           run.completedAt = now();
           await persist();
-          return { approved: false, run };
+          return { approved: false, failed: false, run };
         }
 
         const reviewRecord: OrchestrationReviewRecord = {
@@ -204,7 +205,7 @@ export class OrchestrationService {
           run.phase = 'approved';
           run.completedAt = now();
           await persist();
-          return { approved: true, run };
+          return { approved: true, failed: false, run };
         }
 
         if (round === maxReviewRounds) break;
@@ -233,13 +234,13 @@ export class OrchestrationService {
       run.terminalReason = `Reviewer requested changes after ${maxReviewRounds} rounds`;
       run.completedAt = now();
       await persist();
-      return { approved: false, run };
+      return { approved: false, failed: false, run };
     } catch (error) {
-      run.phase = 'waiting_approval';
+      run.phase = 'failed';
       run.terminalReason = error instanceof Error ? error.message : 'Orchestration failed';
       run.completedAt = now();
       await persist();
-      return { approved: false, run };
+      return { approved: false, failed: true, run };
     }
   }
 }

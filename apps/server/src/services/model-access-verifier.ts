@@ -23,6 +23,7 @@ const DEFAULT_TIMEOUT_MS = 20_000;
 
 function safeProviderError(error: unknown): string {
   const message = error instanceof Error ? error.message.toLowerCase() : '';
+  if (/no response/.test(message)) return 'Provider returned no response';
   if (/401|403|auth|token|credential|login/.test(message)) return 'Authentication failed';
   if (/billing|subscription|payment|quota/.test(message)) {
     return 'Subscription or billing access unavailable';
@@ -90,7 +91,10 @@ export async function verifyModelAccess(
           { once: true }
         );
       });
-      await Promise.race([operation, timeout]);
+      const response = await Promise.race([operation, timeout]);
+      if (!response.text.trim()) {
+        throw new Error('Provider returned no response');
+      }
       return { key: candidate.key, status: 'verified' as const };
     } catch (error) {
       return {
