@@ -1,154 +1,54 @@
-# Adding New Cursor Models to AboardAI
+# Cursor model discovery and fallback catalog
 
-This guide explains how to add new Cursor CLI models to AboardAI. The process involves updating a single file with automatic propagation to the UI.
+AboardAI normally discovers the current Cursor model catalog from the installed Cursor agent CLI. Adding a newly released Cursor model usually requires no source change.
 
-## Overview
+## Current model flow
 
-Cursor models are defined in `libs/types/src/cursor-models.ts`. This file contains:
+1. `CursorProvider` locates `cursor-agent` or a supported `cursor agent` command.
+2. `apps/server/src/providers/cursor-model-discovery.ts` runs the CLI with `--list-models`.
+3. The server parses the returned slugs into `ModelDefinition` values and caches the result for five minutes.
+4. `useFeatureModelCatalog()` fetches that inventory for the shared model selectors.
+5. `getAvailableCursorModels()` treats a non-empty live inventory as authoritative.
+6. If discovery returns no usable models, the UI and provider fall back to `CURSOR_MODEL_MAP` in `libs/types/src/cursor-models.ts`.
 
-- `CursorModelId` - Union type of all valid model IDs
-- `CursorModelConfig` - Interface for model metadata
-- `CURSOR_MODEL_MAP` - Record mapping model IDs to their configs
+Enabled-model settings filter whichever inventory is active. They do not make the static fallback map authoritative over a successful live discovery.
 
-The UI automatically reads from `CURSOR_MODEL_MAP`, so adding a model there makes it available everywhere.
+## When no code change is needed
 
----
+If `cursor-agent --list-models` reports the new model, refresh **Settings → Providers → Cursor** or restart AboardAI and verify that the model appears in the picker. Do not add the model to the static map solely to mirror a live catalog entry.
 
-## Step-by-Step Guide
+Use the exact CLI-reported slug. AboardAI converts it to the canonical `cursor-<slug>` form for routing and persistence.
 
-### Step 1: Add the Model ID to the Type
+## Updating the offline fallback
 
-Open `libs/types/src/cursor-models.ts` and add your model ID to the `CursorModelId` union type:
+Update `libs/types/src/cursor-models.ts` only when AboardAI should recognize the model without successful CLI discovery, needs known capability metadata, or needs a deliberate grouped-variant presentation.
 
-```typescript
-export type CursorModelId =
-  | 'auto'
-  | 'claude-sonnet-4'
-  | 'claude-sonnet-4-thinking'
-  | 'composer-1'
-  | 'gpt-4o'
-  | 'gpt-4o-mini'
-  | 'gemini-2.5-pro'
-  | 'o3-mini'
-  | 'your-new-model'; // <-- Add your model here
-```
+For a standalone fallback model:
 
-### Step 2: Add the Model Config to the Map
+1. Add its canonical `cursor-` ID to `CursorModelId`.
+2. Add a matching entry to `CURSOR_MODEL_MAP` with label, description, thinking flag, and vision flag supported by the current adapter.
+3. Add it to `STANDALONE_CURSOR_MODELS`, or place it in the appropriate `CURSOR_MODEL_GROUPS` entry when it is a real variant of another model.
+4. Add a legacy mapping only when an already-persisted old ID must migrate.
 
-In the same file, add an entry to `CURSOR_MODEL_MAP`:
+Do not guess capability flags from a marketing name. Verify what the Cursor CLI and `CursorProvider` actually pass through.
 
-```typescript
-export const CURSOR_MODEL_MAP: Record<CursorModelId, CursorModelConfig> = {
-  // ... existing models ...
+## Verification
 
-  'your-new-model': {
-    id: 'your-new-model',
-    label: 'Your New Model', // Display name in UI
-    description: 'Description of the model capabilities',
-    hasThinking: false, // true if model has built-in reasoning
-    supportsVision: false, // true if model supports image inputs (currently all false)
-  },
-};
-```
-
-### Step 3: Rebuild the Types Package
-
-After making changes, rebuild the types package:
+Check parser and definition behavior with focused server tests, then run the shared gates:
 
 ```bash
-npm run build -w @aboardai/types
+npm run build:packages
+npm run test:packages
+npm run test:server
+npm run typecheck
 ```
 
-### Step 4: Verify the Changes
+For a live smoke test:
 
-The new model will automatically appear in:
+1. Run the installed Cursor agent’s model-list command and save only non-sensitive output.
+2. Open the feature model picker and confirm the same current inventory appears.
+3. Confirm disabling a Cursor model filters it from the picker.
+4. Simulate failed discovery and confirm the static fallback remains usable.
+5. Verify an actual execution only when suitable provider credentials and quota are available.
 
-- **Add Feature Dialog** > Model tab > Cursor CLI section
-- **Edit Feature Dialog** > Model tab > Cursor CLI section
-- **AI Profiles** > Create/Edit Profile > Cursor provider > Model selection
-- **Settings** > Cursor tab > Model configuration
-
----
-
-## Model Config Fields
-
-| Field            | Type      | Description                                                     |
-| ---------------- | --------- | --------------------------------------------------------------- |
-| `id`             | `string`  | Must match the key in the map and the CLI model ID              |
-| `label`          | `string`  | Human-readable name shown in UI                                 |
-| `description`    | `string`  | Tooltip/help text explaining the model                          |
-| `hasThinking`    | `boolean` | Set `true` if model has built-in extended thinking              |
-| `supportsVision` | `boolean` | Set `true` if model supports image inputs (all false currently) |
-
----
-
-## How It Works
-
-### Automatic UI Integration
-
-The UI components read from `CURSOR_MODEL_MAP` at runtime:
-
-1. **model-constants.ts** imports `CURSOR_MODEL_MAP` and creates `CURSOR_MODELS` array
-2. **ModelSelector** component renders Cursor models from this array
-3. **ProfileForm** component uses the map for Cursor model selection
-
-### Provider Routing
-
-When a feature uses a Cursor model:
-
-1. The model string is stored as `cursor-{modelId}` (e.g., `cursor-composer-1`)
-2. `ProviderFactory.getProviderNameForModel()` detects the `cursor-` prefix
-3. `CursorProvider` is used for execution
-4. The model ID (without prefix) is passed to the Cursor CLI
-
----
-
-## Example: Adding a Hypothetical Model
-
-Let's add a hypothetical "cursor-turbo" model:
-
-```typescript
-// In libs/types/src/cursor-models.ts
-
-// Step 1: Add to type
-export type CursorModelId =
-  | 'auto'
-  | 'claude-sonnet-4'
-  // ... other models ...
-  | 'cursor-turbo'; // New model
-
-// Step 2: Add to map
-export const CURSOR_MODEL_MAP: Record<CursorModelId, CursorModelConfig> = {
-  // ... existing entries ...
-
-  'cursor-turbo': {
-    id: 'cursor-turbo',
-    label: 'Cursor Turbo',
-    description: 'Optimized for speed with good quality balance',
-    hasThinking: false,
-    supportsVision: false,
-  },
-};
-```
-
-After rebuilding, "Cursor Turbo" will appear in all model selection UIs.
-
----
-
-## Checklist
-
-- [ ] Added model ID to `CursorModelId` type
-- [ ] Added config entry to `CURSOR_MODEL_MAP`
-- [ ] Rebuilt types package (`npm run build -w @aboardai/types`)
-- [ ] Verified model appears in Add Feature dialog
-- [ ] Verified model appears in AI Profiles form
-- [ ] Tested execution with new model (if Cursor CLI supports it)
-
----
-
-## Notes
-
-- The model ID must exactly match what Cursor CLI expects
-- Check Cursor's documentation for available models: https://cursor.com/docs
-- Models with `hasThinking: true` display a "Thinking" badge in the UI
-- Currently all models have `supportsVision: false` as Cursor CLI doesn't pass images to models
+Provider routing remains in `apps/server/src/providers/provider-factory.ts`; model UI assembly remains in `apps/ui/src/components/views/board-view/shared/model-constants.ts` and `apps/ui/src/components/views/settings-view/model-defaults/use-feature-model-catalog.ts`.

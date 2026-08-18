@@ -1,323 +1,110 @@
-# Claude Compatible Providers System
+# Claude-compatible providers
 
-This document describes the implementation of Claude Compatible Providers, allowing users to configure alternative API endpoints that expose Claude-compatible models to the application.
+AboardAI can route Claude-protocol requests through user-configured API endpoints without treating each endpoint as a separate built-in provider adapter. These configurations are called `ClaudeCompatibleProvider` records.
 
-## Overview
+This system is separate from the built-in Claude, Codex, Cursor, Gemini, OpenCode, and GitHub Copilot providers described in [server provider architecture](server/providers.md).
 
-Claude Compatible Providers allow AboardAI to work with third-party API endpoints that implement Claude's API protocol. This enables:
+## Configuration model
 
-- **Cost savings**: Use providers like z.AI GLM or MiniMax at lower costs
-- **Alternative models**: Access models like GLM-4.7 or MiniMax M2.1 through familiar interfaces
-- **Flexibility**: Configure per-phase model selection to optimize for speed vs quality
-- **Project overrides**: Use different providers for different projects
-
-## Architecture
-
-### Type Definitions
-
-#### ClaudeCompatibleProvider
+The source of truth is `libs/types/src/settings.ts`:
 
 ```typescript
+export type ClaudeCompatibleProviderType =
+  | 'anthropic'
+  | 'glm'
+  | 'minimax'
+  | 'openrouter'
+  | 'custom';
+
+export type ApiKeySource = 'inline' | 'env' | 'credentials';
+
 export interface ClaudeCompatibleProvider {
-  id: string; // Unique identifier (UUID)
-  name: string; // Display name (e.g., "z.AI GLM")
-  baseUrl: string; // API endpoint URL
-  providerType?: string; // Provider type for icon/grouping (e.g., 'glm', 'minimax', 'openrouter')
-  apiKeySource?: ApiKeySource; // 'inline' | 'env' | 'credentials'
-  apiKey?: string; // API key (when apiKeySource = 'inline')
-  useAuthToken?: boolean; // Use ANTHROPIC_AUTH_TOKEN header
-  timeoutMs?: number; // Request timeout in milliseconds
-  disableNonessentialTraffic?: boolean; // Minimize non-essential API calls
-  enabled?: boolean; // Whether provider is active (default: true)
-  models?: ProviderModel[]; // Models exposed by this provider
+  id: string;
+  name: string;
+  providerType: ClaudeCompatibleProviderType;
+  enabled?: boolean;
+  baseUrl: string;
+  apiKeySource: ApiKeySource;
+  apiKey?: string;
+  useAuthToken?: boolean;
+  timeoutMs?: number;
+  disableNonessentialTraffic?: boolean;
+  models: ProviderModel[];
+  providerSettings?: Record<string, unknown>;
 }
 ```
 
-#### ProviderModel
-
-```typescript
-export interface ProviderModel {
-  id: string; // Model ID sent to API (e.g., "GLM-4.7")
-  displayName: string; // Display name in UI (e.g., "GLM 4.7")
-  mapsToClaudeModel?: ClaudeModelAlias; // Which Claude tier this replaces ('haiku' | 'sonnet' | 'opus')
-  capabilities?: {
-    supportsVision?: boolean; // Whether model supports image inputs
-    supportsThinking?: boolean; // Whether model supports extended thinking
-    maxThinkingLevel?: ThinkingLevel; // Maximum thinking level if supported
-  };
-}
-```
-
-#### PhaseModelEntry
-
-Phase model configuration now supports provider models:
+Each `ProviderModel` has an ID sent to the endpoint, a display name, an optional Claude-tier mapping, and optional capability metadata. Phase and feature model selections save the provider record’s `id` separately:
 
 ```typescript
 export interface PhaseModelEntry {
-  providerId?: string; // Provider ID (undefined = native Claude)
-  model: string; // Model ID or alias
-  thinkingLevel?: ThinkingLevel; // 'none' | 'low' | 'medium' | 'high'
-}
-```
-
-### Provider Templates
-
-Available provider templates in `CLAUDE_PROVIDER_TEMPLATES`:
-
-| Template         | Provider Type | Base URL                             | Description                   |
-| ---------------- | ------------- | ------------------------------------ | ----------------------------- |
-| Direct Anthropic | anthropic     | `https://api.anthropic.com`          | Standard Anthropic API        |
-| OpenRouter       | openrouter    | `https://openrouter.ai/api`          | Access Claude and 300+ models |
-| z.AI GLM         | glm           | `https://api.z.ai/api/anthropic`     | GLM models at lower cost      |
-| MiniMax          | minimax       | `https://api.minimax.io/anthropic`   | MiniMax M2.1 model            |
-| MiniMax (China)  | minimax       | `https://api.minimaxi.com/anthropic` | MiniMax for China region      |
-
-### Model Mappings
-
-Each provider model specifies which Claude model tier it maps to via `mapsToClaudeModel`:
-
-**z.AI GLM:**
-
-- `GLM-4.5-Air` → haiku
-- `GLM-4.7` → sonnet, opus
-
-**MiniMax:**
-
-- `MiniMax-M2.1` → haiku, sonnet, opus
-
-**OpenRouter:**
-
-- `anthropic/claude-3.5-haiku` → haiku
-- `anthropic/claude-3.5-sonnet` → sonnet
-- `anthropic/claude-3-opus` → opus
-
-## Server-Side Implementation
-
-### API Key Resolution
-
-The `buildEnv()` function in `claude-provider.ts` resolves API keys based on `apiKeySource`:
-
-```typescript
-function buildEnv(
-  providerConfig?: ClaudeCompatibleProvider,
-  credentials?: Credentials
-): Record<string, string | undefined> {
-  if (providerConfig) {
-    let apiKey: string | undefined;
-    const source = providerConfig.apiKeySource ?? 'inline';
-
-    switch (source) {
-      case 'inline':
-        apiKey = providerConfig.apiKey;
-        break;
-      case 'env':
-        apiKey = process.env.ANTHROPIC_API_KEY;
-        break;
-      case 'credentials':
-        apiKey = credentials?.apiKeys?.anthropic;
-        break;
-    }
-    // ... build environment with resolved key
-  }
-}
-```
-
-### Provider Lookup
-
-The `getProviderByModelId()` helper resolves provider configuration from model IDs:
-
-```typescript
-export async function getProviderByModelId(
-  modelId: string,
-  settingsService: SettingsService,
-  logPrefix?: string
-): Promise<{
-  provider?: ClaudeCompatibleProvider;
-  resolvedModel?: string;
-  credentials?: Credentials;
-}>;
-```
-
-This is used by all routes that call the Claude SDK to:
-
-1. Check if the model ID belongs to a provider
-2. Get the provider configuration (baseUrl, auth, etc.)
-3. Resolve the `mapsToClaudeModel` for the SDK
-
-### Phase Model Resolution
-
-The `getPhaseModelWithOverrides()` helper gets effective phase model config:
-
-```typescript
-export async function getPhaseModelWithOverrides(
-  phaseKey: PhaseModelKey,
-  settingsService: SettingsService,
-  projectPath?: string,
-  logPrefix?: string
-): Promise<{
-  model: string;
-  thinkingLevel?: ThinkingLevel;
   providerId?: string;
-  providerConfig?: ClaudeCompatibleProvider;
-  credentials?: Credentials;
-}>;
-```
-
-This handles:
-
-1. Project-level overrides (if projectPath provided)
-2. Global phase model settings
-3. Default fallback models
-
-## UI Implementation
-
-### Model Selection Dropdowns
-
-Phase model selectors (`PhaseModelSelector`) display:
-
-1. **Claude Models** - Native Claude models (Haiku, Sonnet, Opus)
-2. **Provider Sections** - Each enabled provider as a separate group:
-   - Section header: `{provider.name} (via Claude)`
-   - Models with their mapped Claude tiers: "Maps to Haiku, Sonnet, Opus"
-   - Thinking level submenu for models that support it
-
-### Provider Icons
-
-Icons are determined by `providerType`:
-
-- `glm` → Z logo
-- `minimax` → MiniMax logo
-- `openrouter` → OpenRouter logo
-- Generic → OpenRouter as fallback
-
-### Bulk Replace
-
-The "Bulk Replace" feature allows switching all phase models to a provider at once:
-
-1. Select a provider from the dropdown
-2. Preview shows which models will be assigned:
-   - haiku phases → provider's haiku-mapped model
-   - sonnet phases → provider's sonnet-mapped model
-   - opus phases → provider's opus-mapped model
-3. Apply replaces all phase model configurations
-
-The Bulk Replace button only appears when at least one provider is enabled.
-
-## Project-Level Overrides
-
-Projects can override global phase model settings via `phaseModelOverrides`:
-
-```typescript
-interface Project {
-  // ...
-  phaseModelOverrides?: PhaseModelConfig; // Per-phase overrides
+  model: ModelId;
+  thinkingLevel?: ThinkingLevel;
+  reasoningEffort?: ReasoningEffort;
 }
 ```
 
-### Storage
+Built-in provider models do not use `providerId`; their model IDs route through `ProviderFactory`.
 
-Project overrides are stored in `.aboardai/settings.json`:
+## Templates
 
-```json
-{
-  "phaseModelOverrides": {
-    "enhancementModel": {
-      "providerId": "provider-uuid",
-      "model": "GLM-4.5-Air",
-      "thinkingLevel": "none"
-    }
-  }
-}
-```
+`CLAUDE_PROVIDER_TEMPLATES` currently includes:
 
-### Resolution Priority
+| Template         | Provider type | Default base URL                     |
+| ---------------- | ------------- | ------------------------------------ |
+| Direct Anthropic | `anthropic`   | `https://api.anthropic.com`          |
+| OpenRouter       | `openrouter`  | `https://openrouter.ai/api`          |
+| z.AI GLM         | `glm`         | `https://api.z.ai/api/anthropic`     |
+| MiniMax          | `minimax`     | `https://api.minimax.io/anthropic`   |
+| MiniMax China    | `minimax`     | `https://api.minimaxi.com/anthropic` |
 
-1. Project override for specific phase (if set)
-2. Global phase model setting
-3. Default model for phase
+Templates are editable starting points, not a guarantee that every default model is available to every account. Users can add, remove, or rename exposed model IDs in Settings.
 
-## Migration
+## Credential sources
 
-### v5 → v6 Migration
+- `inline` uses the key saved on the provider record.
+- `env` reads `ANTHROPIC_API_KEY` from the server environment.
+- `credentials` reads the application-managed Anthropic key from `DATA_DIR/credentials.json`.
 
-The system migrated from `claudeApiProfiles` to `claudeCompatibleProviders`:
+`useAuthToken` controls whether the request environment uses the Anthropic auth-token convention rather than the API-key convention. The selected endpoint may have provider-specific requirements.
 
-```typescript
-// Old: modelMappings object
-{
-  modelMappings: {
-    haiku: 'GLM-4.5-Air',
-    sonnet: 'GLM-4.7',
-    opus: 'GLM-4.7'
-  }
-}
+Application-managed credentials are not described by `SettingsService` as encrypted at rest. Protect `DATA_DIR`, avoid committing settings or credentials, and do not include keys in screenshots, logs, tests, or issue reports.
 
-// New: models array with mapsToClaudeModel
-{
-  models: [
-    { id: 'GLM-4.5-Air', displayName: 'GLM 4.5 Air', mapsToClaudeModel: 'haiku' },
-    { id: 'GLM-4.7', displayName: 'GLM 4.7', mapsToClaudeModel: 'sonnet' },
-    { id: 'GLM-4.7', displayName: 'GLM 4.7', mapsToClaudeModel: 'opus' },
-  ]
-}
-```
+## Resolution path
 
-The migration is automatic and preserves existing provider configurations.
+`apps/server/src/lib/settings-helpers.ts` resolves provider context for a request:
 
-## Files Changed
+1. Load global settings and the configured provider list.
+2. Resolve an explicit `providerId` when one is saved on the feature or phase model.
+3. Reject or skip a disabled provider.
+4. Resolve the provider-specific model and credentials.
+5. Pass the provider record and credentials to the Claude execution path.
 
-### Types
+`apps/server/src/providers/claude-provider.ts` builds a request-scoped environment from that context. Provider endpoint or model-map variables must not leak into unrelated direct-Anthropic requests.
 
-| File                         | Changes                                                              |
-| ---------------------------- | -------------------------------------------------------------------- |
-| `libs/types/src/settings.ts` | `ClaudeCompatibleProvider`, `ProviderModel`, `PhaseModelEntry` types |
-| `libs/types/src/provider.ts` | `ExecuteOptions.claudeCompatibleProvider` field                      |
-| `libs/types/src/index.ts`    | Exports for new types                                                |
+## UI and persistence
 
-### Server
+The Settings provider editor manages `claudeCompatibleProviders`. Enabled records contribute provider groups and model options to shared model selectors. Disabling a provider removes its candidates from new selections without deleting the record.
 
-| File                                           | Changes                                                  |
-| ---------------------------------------------- | -------------------------------------------------------- |
-| `apps/server/src/providers/claude-provider.ts` | Provider config handling, buildEnv updates               |
-| `apps/server/src/lib/settings-helpers.ts`      | `getProviderByModelId()`, `getPhaseModelWithOverrides()` |
-| `apps/server/src/services/settings-service.ts` | v5→v6 migration                                          |
-| `apps/server/src/routes/**/*.ts`               | Provider lookup for all SDK calls                        |
+Global records are stored in `DATA_DIR/settings.json`. Project settings under `<project>/.aboardai/settings.json` can override phase model selections; the referenced provider definition remains global.
 
-### UI
+Legacy `ClaudeApiProfile` and `claudeApiProfiles` types remain only for migration. New code should use `ClaudeCompatibleProvider` and `claudeCompatibleProviders`.
 
-| File                                               | Changes                                   |
-| -------------------------------------------------- | ----------------------------------------- |
-| `apps/ui/src/.../phase-model-selector.tsx`         | Provider model rendering, thinking levels |
-| `apps/ui/src/.../bulk-replace-dialog.tsx`          | Bulk replace feature                      |
-| `apps/ui/src/.../api-profiles-section.tsx`         | Provider management UI                    |
-| `apps/ui/src/components/ui/provider-icon.tsx`      | Provider-specific icons                   |
-| `apps/ui/src/hooks/use-project-settings-loader.ts` | Load phaseModelOverrides                  |
+## Verification
 
-## Testing
+Before assigning work to a configured endpoint:
+
+1. Confirm the base URL and credential source.
+2. Enable the provider and expose only verified model IDs.
+3. Use the model access verification flow in the UI.
+4. Check that a disabled provider disappears from candidate lists.
+5. Confirm direct Anthropic and other configured providers still use their own credentials after the request.
+
+Relevant automated gates are:
 
 ```bash
-# Build and run
-npm run build:packages
-npm run dev:web
-
-# Run server tests
 npm run test:server
+npm run test:packages
+npm run typecheck
 ```
-
-### Test Cases
-
-1. **Provider setup**: Add z.AI GLM provider with inline API key
-2. **Model selection**: Select GLM-4.7 for a phase, verify it appears in dropdown
-3. **Thinking levels**: Select thinking level for provider model
-4. **Bulk replace**: Switch all phases to a provider at once
-5. **Project override**: Set per-project model override, verify it persists
-6. **Provider deletion**: Delete all providers, verify empty state persists
-
-## Future Enhancements
-
-Potential improvements:
-
-1. **Provider validation**: Test API connection before saving
-2. **Usage tracking**: Show which phases use which provider
-3. **Cost estimation**: Display estimated costs per provider
-4. **Model capabilities**: Auto-detect supported features from provider

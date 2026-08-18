@@ -1,672 +1,185 @@
 # AboardAI
 
-AboardAI is an autonomous AI development studio—AI agents plan, implement, and verify features for your projects in isolated git worktrees, with a kanban board, ideation engine, and multi-provider agent support.
+AboardAI is an actively developed, self-hosted AI development studio. It gives developers a project dashboard, Kanban workflow, agent chat, planning tools, and git worktree controls for coordinating AI-assisted feature work from one application.
 
-AboardAI is a fork of [automaker](https://github.com/AutoMaker-Org/automaker) — see [NOTICE](NOTICE) for attribution.
+AboardAI runs as either an Electron desktop application or a browser application backed by the same Express and WebSocket server. Agent execution remains under your control: choose a provider and model, decide whether work happens on the current checkout or in a dedicated worktree, review streamed activity and diffs, and approve the result.
 
-## What Makes AboardAI Different?
+## What AboardAI does
 
-Traditional development tools help you write code. AboardAI helps you **orchestrate AI agents** to build entire features autonomously. Think of it as having a team of AI developers working for you—you define what needs to be built, and AboardAI handles the implementation.
+- Manages projects and feature cards across backlog, active, review, and completed states.
+- Runs features manually or through Auto Mode with configurable concurrency and dependency blocking.
+- Supports skip, lite, spec, and full planning modes, including optional plan approval.
+- Creates and manages git worktrees, branches, commits, diffs, merges, pushes, and pull requests.
+- Streams normalized agent events, tool activity, test output, and feature status over WebSocket.
+- Supports reusable pipelines, grouped work, and orchestrated lead/workhorse/reviewer execution.
+- Provides persistent agent chat sessions, prompt queues, context files, specifications, ideation, and project analysis.
+- Includes GitHub issue and pull-request review workflows, a dependency graph, file editor, and integrated terminal.
+- Stores project state in the project’s `.aboardai/` directory so feature records travel with the repository.
 
-### The Workflow
+These capabilities are implemented in the current repository. Some depend on local tooling, provider credentials, git configuration, or project settings.
 
-1. **Add Features** - Describe features you want built (with text, images, or screenshots)
-2. **Move to "In Progress"** - AboardAI automatically assigns an AI agent to implement the feature
-3. **Watch It Build** - See real-time progress as the agent writes code, runs tests, and makes changes
-4. **Review & Verify** - Review the changes, run tests, and approve when ready
-5. **Ship Faster** - Build entire applications in days, not weeks
+## Supported AI providers
 
-### Powered by Claude Agent SDK
+The server currently registers six built-in execution providers:
 
-AboardAI leverages the [Claude Agent SDK](https://www.npmjs.com/package/@anthropic-ai/claude-agent-sdk) to give AI agents full access to your codebase. Agents can read files, write code, execute commands, run tests, and make git commits—all while working in isolated git worktrees to keep your main branch safe. The SDK provides autonomous AI agents that can use tools, make decisions, and complete complex multi-step tasks without constant human intervention.
+| Provider       | Integration        | Authentication recognized by AboardAI                                      |
+| -------------- | ------------------ | -------------------------------------------------------------------------- |
+| Claude         | Claude Agent SDK   | Claude CLI credentials, `ANTHROPIC_API_KEY`, or an Anthropic auth token    |
+| Codex          | Codex SDK and CLI  | `codex login` credentials or `OPENAI_API_KEY`                              |
+| Cursor         | Cursor agent CLI   | Cursor agent login or `CURSOR_API_KEY`                                     |
+| Gemini         | Gemini CLI         | Gemini CLI login, `GEMINI_API_KEY`, or supported Google/Vertex credentials |
+| OpenCode       | OpenCode CLI       | Providers configured through OpenCode authentication                       |
+| GitHub Copilot | GitHub Copilot SDK | GitHub CLI/Copilot authentication or `GITHUB_TOKEN`                        |
 
-> **[!IMPORTANT]**
->
-> **Claude Agent SDK billing change (effective June 15, 2026)**
->
-> This applies **only to AboardAI's Claude provider**, which is built on the Claude Agent SDK. If you run agents with other providers (Codex, Copilot, Cursor, Gemini, OpenCode), they are billed through those services and are unaffected. Anthropic is moving programmatic Agent SDK usage out of your normal subscription rate limits and onto a **separate, dollar-denominated monthly credit pool**. Interactive use (Claude.ai chat, Claude Code in your terminal/IDE) keeps using your existing subscription limits, but the Agent SDK, the `claude -p` command, and apps built on it like AboardAI draw from this new credit instead.
->
-> - **Monthly credit by plan:** Pro `$20`, Max 5x `$100`, Max 20x `$200` (Team Standard `$20`, Team Premium `$100`, Enterprise `$20–$200`). Credit is metered at standard API rates, refreshes each billing cycle, and does **not** roll over.
-> - **You must claim the credit once.** It is a one-time opt-in through your Claude account; after that it refreshes automatically each cycle. Team/Enterprise admins receive instructions by email, and each member claims their own credit.
-> - **When the credit runs out:** Further Agent SDK usage either flows to usage credits at standard API rates (only if you have usage credits enabled) or stops until the credit refreshes.
->
-> See Anthropic's [official guidance](https://support.claude.com/en/articles/15036540-use-the-claude-agent-sdk-with-your-claude-plan) for the authoritative details.
+AboardAI also supports user-configured Claude-compatible API endpoints. Templates currently exist for direct Anthropic, OpenRouter, z.AI GLM, and MiniMax endpoints, with a custom endpoint option. See [Claude-compatible providers](docs/UNIFIED_API_KEY_PROFILES.md) and [provider architecture](docs/server/providers.md).
 
-### Why This Matters
+Available models are resolved from the selected provider and local configuration. Cursor and OpenCode can discover models from their installed CLIs, so the UI is not limited to a permanently hard-coded catalog.
 
-The future of software development is **agentic coding**—where developers become architects directing AI agents rather than manual coders. AboardAI puts this future in your hands today, letting you experience what it's like to build software 10x faster with AI agents handling the implementation while you focus on architecture and business logic.
+Provider credentials are separate from AboardAI application login. In web mode, the server generates or loads an `ABOARDAI_API_KEY`; enter the key printed by the server to establish the session cookie. Electron supplies its local server key automatically. Development-only auto-login is available through `ABOARDAI_AUTO_LOGIN=true` and is disabled in production.
 
-## Community & Support
+## Requirements
 
-Join the **Agentic Jumpstart** to connect with other builders exploring **agentic coding** and autonomous development workflows.
+- Node.js `>=22.0.0 <23.0.0`
+- npm
+- Git, including worktree support for isolated feature work
+- At least one supported provider configured for real agent execution
 
-In the Discord, you can:
+Provider CLIs are not all mandatory. Install and authenticate only the provider or providers you plan to use, then confirm their status under **Settings → Providers**.
 
-- 💬 Discuss agentic coding patterns and best practices
-- 🧠 Share ideas for AI-driven development workflows
-- 🛠️ Get help setting up or extending AboardAI
-- 🚀 Show off projects built with AI agents
-- 🤝 Collaborate with other developers and contributors
-
-👉 **Join the Discord:** [Agentic Jumpstart Discord](https://discord.gg/jjem7aEDKU)
-
----
-
-## Getting Started
-
-### Prerequisites
-
-- **Node.js 22+** (required: >=22.0.0 <23.0.0)
-- **npm** (comes with Node.js)
-- **[Claude Code CLI](https://code.claude.com/docs/en/overview)** - Install and authenticate with your Anthropic subscription. AboardAI integrates with your authenticated Claude Code CLI to access Claude models.
-
-### Quick Start
+## Install and run
 
 ```bash
-# 1. Clone the repository
 git clone https://github.com/Angriff36/aboardai.git
 cd aboardai
-
-# 2. Install dependencies
 npm install
-
-# 3. Start AboardAI
-npm run dev
-# Choose between:
-#   1. Web Application (browser at localhost:47821)
-#   2. Desktop Application (Electron - recommended)
-```
-
-**Authentication:** AboardAI integrates with your authenticated Claude Code CLI. Make sure you have [installed and authenticated](https://code.claude.com/docs/en/quickstart) the Claude Code CLI before running AboardAI. Your CLI credentials will be detected automatically.
-
-**For Development:** `npm run dev` starts the development server with Vite live reload and hot module replacement for fast refresh and instant updates as you make changes.
-
-## How to Run
-
-### Development Mode
-
-Start AboardAI in development mode:
-
-```bash
 npm run dev
 ```
 
-This will prompt you to choose your run mode, or you can specify a mode directly:
-
-#### Electron Desktop App (Recommended)
+`npm run dev` opens the interactive launcher. Direct commands are also available:
 
 ```bash
-# Standard development mode
-npm run dev:electron
-
-# With DevTools open automatically
-npm run dev:electron:debug
-
-# For WSL (Windows Subsystem for Linux)
-npm run dev:electron:wsl
-
-# For WSL with GPU acceleration
-npm run dev:electron:wsl:gpu
+npm run dev:web              # Browser UI at http://localhost:47821
+npm run dev:electron         # Electron desktop application
+npm run dev:electron:debug   # Electron with DevTools open
+npm run dev:server           # Backend only at http://localhost:47820
+npm run dev:full             # Backend and browser UI together
 ```
 
-#### Web Browser Mode
+The launcher also exposes Docker-oriented development modes. Run `./start-aboardai.sh --help` from Bash for its current options.
+
+### Ports
+
+| Service                       | Default | Override                                          |
+| ----------------------------- | ------: | ------------------------------------------------- |
+| Backend HTTP/WebSocket server | `47820` | `PORT` or launcher-managed `ABOARDAI_SERVER_PORT` |
+| Browser/Vite UI               | `47821` | `ABOARDAI_WEB_PORT`                               |
+| Playwright UI                 |  `3107` | `TEST_PORT`                                       |
+| Playwright backend            |  `3108` | `TEST_SERVER_PORT`                                |
+
+## Build and test
 
 ```bash
-# Run in web browser (http://localhost:47821)
-npm run dev:web
+npm run build                 # Shared packages + browser UI
+npm run build:packages        # All @aboardai/* shared packages
+npm run build:server          # Shared packages + Express server
+npm run build:electron        # Desktop package for the current platform
+npm run build:electron:win    # Windows NSIS, x64
+npm run build:electron:mac    # macOS DMG/ZIP, x64 + arm64
+npm run build:electron:linux  # Linux AppImage/DEB/RPM, x64
+
+npm run test                  # Playwright E2E suite
+npm run test:headed           # Playwright with a visible browser
+npm run test:packages         # Shared-package Vitest projects
+npm run test:server           # Server Vitest project
+npm run test:all              # All Vitest projects
+npm run typecheck             # UI TypeScript check
+npm run lint                  # UI ESLint
+npm run format:check          # Repository Prettier check
 ```
 
-### Interactive TUI Launcher (Recommended for New Users)
+Desktop artifacts are written to `apps/ui/release/`. The Electron application identity is `com.aboardai.app`, and the product name is `AboardAI`.
 
-For a user-friendly interactive menu, use the built-in TUI launcher script:
+## Docker
+
+The default production compose file publishes the UI on `47821` and the API on `47820`. It uses Docker-managed volumes and does not mount host project directories. Add an explicit override only when you intend to grant the container access to host projects or credentials.
 
 ```bash
-# Show interactive menu with all launch options
-./start-aboardai.sh
-
-# Or launch directly without menu
-./start-aboardai.sh web          # Web browser
-./start-aboardai.sh electron     # Desktop app
-./start-aboardai.sh electron-debug  # Desktop + DevTools
-
-# Additional options
-./start-aboardai.sh --help       # Show all available options
-./start-aboardai.sh --version    # Show version information
-./start-aboardai.sh --check-deps # Verify project dependencies
-./start-aboardai.sh --no-colors  # Disable colored output
-./start-aboardai.sh --no-history # Don't remember last choice
+docker compose up -d --build
+docker compose logs -f
+docker compose down
 ```
 
-**Features:**
-
-- 🎨 Beautiful terminal UI with gradient colors and ASCII art
-- ⌨️ Interactive menu (press 1-3 to select, Q to exit)
-- 💾 Remembers your last choice
-- ✅ Pre-flight checks (validates Node.js, npm, dependencies)
-- 📏 Responsive layout (adapts to terminal size)
-- ⏱️ 30-second timeout for hands-free selection
-- 🌐 Cross-shell compatible (bash/zsh)
-
-**History File:**
-Your last selected mode is saved in `~/.aboardai_launcher_history` for quick re-runs.
-
-### Building for Production
-
-#### Web Application
-
-```bash
-# Build for web deployment (uses Vite)
-npm run build
-```
-
-#### Desktop Application
-
-```bash
-# Build for current platform (macOS/Windows/Linux)
-npm run build:electron
-
-# Platform-specific builds
-npm run build:electron:mac     # macOS (DMG + ZIP, x64 + arm64)
-npm run build:electron:win     # Windows (NSIS installer, x64)
-npm run build:electron:linux   # Linux (AppImage + DEB + RPM, x64)
-
-# Output directory: apps/ui/release/
-```
-
-**Linux Distribution Packages:**
-
-- **AppImage**: Universal format, works on any Linux distribution
-- **DEB**: Ubuntu, Debian, Linux Mint, Pop!\_OS
-- **RPM**: Fedora, RHEL, Rocky Linux, AlmaLinux, openSUSE
-
-**Installing on Fedora/RHEL:**
-
-```bash
-# Download the RPM package
-wget https://github.com/AboardAI-Org/aboardai/releases/latest/download/AboardAI-<version>-x86_64.rpm
-
-# Install with dnf (Fedora)
-sudo dnf install ./AboardAI-<version>-x86_64.rpm
-
-# Or with yum (RHEL/CentOS)
-sudo yum localinstall ./AboardAI-<version>-x86_64.rpm
-```
-
-#### Docker Deployment
-
-Docker provides the most secure way to run AboardAI by isolating it from your host filesystem.
-
-```bash
-# Build and run with Docker Compose
-docker-compose up -d
-
-# Access UI at http://localhost:47821
-# API at http://localhost:47820
-
-# View logs
-docker-compose logs -f
-
-# Stop containers
-docker-compose down
-```
-
-##### Authentication
-
-AboardAI integrates with your authenticated Claude Code CLI. To use CLI authentication in Docker, mount your Claude CLI config directory (see [Claude CLI Authentication](#claude-cli-authentication) below).
-
-##### Working with Projects (Host Directory Access)
-
-By default, the container is isolated from your host filesystem. To work on projects from your host machine, create a `docker-compose.override.yml` file (gitignored):
-
-```yaml
-services:
-  server:
-    volumes:
-      # Mount your project directories
-      - /path/to/your/project:/projects/your-project
-```
-
-##### Claude CLI Authentication
-
-Mount your Claude CLI config directory to use your authenticated CLI credentials:
-
-```yaml
-services:
-  server:
-    volumes:
-      # Linux/macOS
-      - ~/.claude:/home/aboardai/.claude
-      # Windows
-      - C:/Users/YourName/.claude:/home/aboardai/.claude
-```
-
-**Note:** The Claude CLI config must be writable (do not use `:ro` flag) as the CLI writes debug files.
-
-> **⚠️ Important: Linux/WSL Users**
->
-> The container runs as UID 1001 by default. If your host user has a different UID (common on Linux/WSL where the first user is UID 1000), you must create a `.env` file to match your host user:
->
-> ```bash
-> # Check your UID/GID
-> id -u  # outputs your UID (e.g., 1000)
-> id -g  # outputs your GID (e.g., 1000)
-> ```
->
-> Create a `.env` file in the aboardai directory:
->
-> ```
-> UID=1000
-> GID=1000
-> ```
->
-> Then rebuild the images:
->
-> ```bash
-> docker compose build
-> ```
->
-> Without this, files written by the container will be inaccessible to your host user.
-
-##### GitHub CLI Authentication (For Git Push/PR Operations)
-
-To enable git push and GitHub CLI operations inside the container:
-
-```yaml
-services:
-  server:
-    volumes:
-      # Mount GitHub CLI config
-      # Linux/macOS
-      - ~/.config/gh:/home/aboardai/.config/gh
-      # Windows
-      - 'C:/Users/YourName/AppData/Roaming/GitHub CLI:/home/aboardai/.config/gh'
-
-      # Mount git config for user identity (name, email)
-      - ~/.gitconfig:/home/aboardai/.gitconfig:ro
-    environment:
-      # GitHub token (required on Windows where tokens are in Credential Manager)
-      # Get your token with: gh auth token
-      - GH_TOKEN=${GH_TOKEN}
-```
-
-Then add `GH_TOKEN` to your `.env` file:
-
-```bash
-GH_TOKEN=gho_your_github_token_here
-```
-
-##### Complete docker-compose.override.yml Example
-
-```yaml
-services:
-  server:
-    volumes:
-      # Your projects
-      - /path/to/project1:/projects/project1
-      - /path/to/project2:/projects/project2
-
-      # Authentication configs
-      - ~/.claude:/home/aboardai/.claude
-      - ~/.config/gh:/home/aboardai/.config/gh
-      - ~/.gitconfig:/home/aboardai/.gitconfig:ro
-    environment:
-      - GH_TOKEN=${GH_TOKEN}
-```
-
-##### Architecture Support
-
-The Docker image supports both AMD64 and ARM64 architectures. The GitHub CLI and Claude CLI are automatically downloaded for the correct architecture during build.
-
-##### Playwright for Automated Testing
-
-The Docker image includes **Playwright Chromium pre-installed** for AI agent verification tests. When agents implement features in automated testing mode, they use Playwright to verify the implementation works correctly.
-
-**No additional setup required** - Playwright verification works out of the box.
-
-#### Optional: Persist browsers for manual updates
-
-By default, Playwright Chromium is pre-installed in the Docker image. If you need to manually update browsers or want to persist browser installations across container restarts (not image rebuilds), you can mount a volume.
-
-**Important:** When you first add this volume mount to an existing setup, the empty volume will override the pre-installed browsers. You must re-install them:
-
-```bash
-# After adding the volume mount for the first time
-docker exec --user aboardai -w /app aboardai-server npx playwright install chromium
-```
-
-Add this to your `docker-compose.override.yml`:
-
-```yaml
-services:
-  server:
-    volumes:
-      - playwright-cache:/home/aboardai/.cache/ms-playwright
-
-volumes:
-  playwright-cache:
-    name: aboardai-playwright-cache
-```
-
-**Updating browsers manually:**
-
-```bash
-docker exec --user aboardai -w /app aboardai-server npx playwright install chromium
-```
-
-### Testing
-
-#### End-to-End Tests (Playwright)
-
-```bash
-npm run test            # Headless E2E tests
-npm run test:headed     # Browser visible E2E tests
-```
-
-#### Unit Tests (Vitest)
-
-```bash
-npm run test:server              # Server unit tests
-npm run test:server:coverage     # Server tests with coverage
-npm run test:packages            # All shared package tests
-npm run test:all                 # Packages + server tests
-```
-
-#### Test Configuration
-
-- E2E tests run on ports 3107 (UI) and 3108 (server)
-- Automatically starts test servers before running
-- Uses Chromium browser via Playwright
-- Mock agent mode available in CI with `ABOARDAI_MOCK_AGENT=true`
-
-### Linting
-
-```bash
-# Run ESLint
-npm run lint
-```
-
-### Environment Configuration
-
-#### Optional - Server
-
-- `PORT` - Server port (default: 47820)
-- `DATA_DIR` - Data storage directory (default: ./data)
-- `ENABLE_REQUEST_LOGGING` - HTTP request logging (default: true)
-
-#### Optional - Security
-
-- `ABOARDAI_API_KEY` - Optional API authentication for the server
-- `ALLOWED_ROOT_DIRECTORY` - Restrict file operations to specific directory
-- `CORS_ORIGIN` - CORS allowed origins (comma-separated list; defaults to localhost only)
-
-#### Optional - Development
-
-- `VITE_SKIP_ELECTRON` - Skip Electron in dev mode
-- `OPEN_DEVTOOLS` - Auto-open DevTools in Electron
-- `ABOARDAI_SKIP_SANDBOX_WARNING` - Skip sandbox warning dialog (useful for dev/CI)
-- `ABOARDAI_AUTO_LOGIN=true` - Skip login prompt in development (ignored when NODE_ENV=production)
-
-### Authentication Setup
-
-AboardAI integrates with your authenticated Claude Code CLI and uses your Anthropic subscription.
-
-Install and authenticate the Claude Code CLI following the [official quickstart guide](https://code.claude.com/docs/en/quickstart).
-
-Once authenticated, AboardAI will automatically detect and use your CLI credentials. No additional configuration needed!
-
-> **Note:** As of **June 15, 2026**, Claude Agent SDK usage (used by AboardAI's **Claude** provider) is billed from a separate monthly credit pool rather than your interactive subscription limits, and the credit must be claimed once via your Claude account. See [Claude Agent SDK billing change](#powered-by-claude-agent-sdk) above for details.
-
-## Features
-
-### Core Workflow
-
-- 📋 **Kanban Board** - Visual drag-and-drop board to manage features through backlog, in progress, waiting approval, and verified stages
-- 🤖 **AI Agent Integration** - Automatic AI agent assignment to implement features when moved to "In Progress"
-- 🔀 **Git Worktree Isolation** - Each feature executes in isolated git worktrees to protect your main branch
-- 📡 **Real-time Streaming** - Watch AI agents work in real-time with live tool usage, progress updates, and task completion
-- 🔄 **Follow-up Instructions** - Send additional instructions to running agents without stopping them
-
-### AI & Planning
-
-- 🧠 **Multi-Model Support** - Choose from Claude Opus, Sonnet, and Haiku per feature
-- 💭 **Extended Thinking** - Enable thinking modes (none, medium, deep, ultra) for complex problem-solving
-- 📝 **Planning Modes** - Four planning levels: skip (direct implementation), lite (quick plan), spec (task breakdown), full (phased execution)
-- ✅ **Plan Approval** - Review and approve AI-generated plans before implementation begins
-- 📊 **Multi-Agent Task Execution** - Spec mode spawns dedicated agents per task for focused implementation
-- 👥 **Task Groups** - Group features for concurrent execution with configurable concurrency limits, per-child retry, and auto-advance to review
-- 🛠️ **Agent Board Tool** - Agents can update feature status through a validated tool, enabling autonomous board state mutations
-
-### Project Management
-
-- 🔍 **Project Analysis** - AI-powered codebase analysis to understand your project structure
-- 💡 **Feature Suggestions** - AI-generated feature suggestions based on project analysis
-- 📁 **Context Management** - Add markdown, images, and documentation files that agents automatically reference
-- 🔗 **Dependency Blocking** - Features can depend on other features, enforcing execution order
-- 🌳 **Graph View** - Visualize feature dependencies with interactive graph visualization
-- 📋 **GitHub Integration** - Import issues, validate feasibility, and convert to tasks automatically
-
-### Collaboration & Review
-
-- 🧪 **Verification Workflow** - Features move to "Waiting Approval" for review and testing
-- 💬 **Agent Chat** - Interactive chat sessions with AI agents for exploratory work
-- 👤 **AI Profiles** - Create custom agent configurations with different prompts, models, and settings
-- 📜 **Session History** - Persistent chat sessions across restarts with full conversation history
-- 🔍 **Git Diff Viewer** - Review changes made by agents before approving
-
-### Developer Tools
-
-- 🖥️ **Integrated Terminal** - Full terminal access with tabs, splits, and persistent sessions
-- 🖼️ **Image Support** - Attach screenshots and diagrams to feature descriptions for visual context
-- ⚡ **Concurrent Execution** - Configure how many features can run simultaneously (default: 3)
-- ⌨️ **Keyboard Shortcuts** - Fully customizable shortcuts for navigation and actions
-- 🎨 **Theme System** - 25+ themes including Dark, Light, Dracula, Nord, Catppuccin, and more
-- 🖥️ **Cross-Platform** - Desktop app for macOS (x64, arm64), Windows (x64), and Linux (x64)
-- 🌐 **Web Mode** - Run in browser or as Electron desktop app
-
-### Advanced Features
-
-- 🔐 **Docker Isolation** - Security-focused Docker deployment with no host filesystem access
-- 🎯 **Worktree Management** - Create, switch, commit, and create PRs from worktrees
-- 📊 **Usage Tracking** - Monitor Claude API usage with detailed metrics
-- 🔊 **Audio Notifications** - Optional completion sounds (mutable in settings)
-- 💾 **Auto-save** - All work automatically persisted to `.aboardai/` directory
-
-## Tech Stack
-
-### Frontend
-
-- **React 19** - UI framework
-- **Vite 7** - Build tool and development server
-- **Electron 39** - Desktop application framework
-- **TypeScript 5.9** - Type safety
-- **TanStack Router** - File-based routing
-- **Zustand 5** - State management with persistence
-- **Tailwind CSS 4** - Utility-first styling with 25+ themes
-- **Radix UI** - Accessible component primitives
-- **dnd-kit** - Drag and drop for Kanban board
-- **@xyflow/react** - Graph visualization for dependencies
-- **xterm.js** - Integrated terminal emulator
-- **CodeMirror 6** - Code editor for XML/syntax highlighting
-- **Lucide Icons** - Icon library
-
-### Backend
-
-- **Node.js** - JavaScript runtime with ES modules
-- **Express 5** - HTTP server framework
-- **TypeScript 5.9** - Type safety
-- **Claude Agent SDK** - AI agent integration (@anthropic-ai/claude-agent-sdk)
-- **WebSocket (ws)** - Real-time event streaming
-- **node-pty** - PTY terminal sessions
-
-### Testing & Quality
-
-- **Playwright** - End-to-end testing
-- **Vitest** - Unit testing framework
-- **ESLint 9** - Code linting
-- **Prettier 3** - Code formatting
-- **Husky** - Git hooks for pre-commit formatting
-
-### Shared Libraries
-
-- **@aboardai/types** - Shared TypeScript definitions
-- **@aboardai/utils** - Logging, error handling, image processing
-- **@aboardai/prompts** - AI prompt templates
-- **@aboardai/platform** - Path management and security
-- **@aboardai/model-resolver** - Claude model alias resolution
-- **@aboardai/dependency-resolver** - Feature dependency ordering
-- **@aboardai/git-utils** - Git operations and worktree management
-
-## Available Views
-
-AboardAI provides several specialized views accessible via the sidebar or keyboard shortcuts:
-
-| View               | Shortcut | Description                                                                                      |
-| ------------------ | -------- | ------------------------------------------------------------------------------------------------ |
-| **Board**          | `K`      | Kanban board for managing feature workflow (Backlog → In Progress → Waiting Approval → Verified) |
-| **Agent**          | `A`      | Interactive chat sessions with AI agents for exploratory work and questions                      |
-| **Spec**           | `D`      | Project specification editor with AI-powered generation and feature suggestions                  |
-| **Context**        | `C`      | Manage context files (markdown, images) that AI agents automatically reference                   |
-| **Settings**       | `S`      | Configure themes, shortcuts, defaults, authentication, and more                                  |
-| **Terminal**       | `T`      | Integrated terminal with tabs, splits, and persistent sessions                                   |
-| **Graph**          | `H`      | Visualize feature dependencies with interactive graph visualization                              |
-| **Ideation**       | `I`      | Brainstorm and generate ideas with AI assistance                                                 |
-| **Memory**         | `Y`      | View and manage agent memory and conversation history                                            |
-| **GitHub Issues**  | `G`      | Import and validate GitHub issues, convert to tasks                                              |
-| **GitHub PRs**     | `R`      | View and manage GitHub pull requests                                                             |
-| **Running Agents** | -        | View all active agents across projects with status and progress                                  |
-
-### Keyboard Navigation
-
-All shortcuts are customizable in Settings. Default shortcuts:
-
-- **Navigation:** `K` (Board), `A` (Agent), `D` (Spec), `C` (Context), `S` (Settings), `T` (Terminal), `H` (Graph), `I` (Ideation), `Y` (Memory), `G` (GitHub Issues), `R` (GitHub PRs)
-- **UI:** `` ` `` (Toggle sidebar)
-- **Actions:** `N` (New item in current view), `O` (Open project), `P` (Project picker)
-- **Projects:** `Q`/`E` (Cycle previous/next project)
-- **Terminal:** `Alt+D` (Split right), `Alt+S` (Split down), `Alt+W` (Close), `Alt+T` (New tab)
+Read [Docker deployment and isolation](docs/docker.md) before adding host mounts or provider credentials. Development variants are provided in `docker-compose.dev.yml` and `docker-compose.dev-server.yml`.
 
 ## Architecture
 
-### Monorepo Structure
-
-AboardAI is built as an npm workspace monorepo with two main applications and seven shared packages:
+AboardAI is an npm workspace monorepo:
 
 ```text
-aboardai/
-├── apps/
-│   ├── ui/          # React + Vite + Electron frontend
-│   └── server/      # Express + WebSocket backend
-└── libs/            # Shared packages
-    ├── types/                  # Core TypeScript definitions
-    ├── utils/                  # Logging, errors, utilities
-    ├── prompts/                # AI prompt templates
-    ├── platform/               # Path management, security
-    ├── model-resolver/         # Claude model aliasing
-    ├── dependency-resolver/    # Feature dependency ordering
-    └── git-utils/              # Git operations & worktree management
+apps/
+  ui/       React 19, Vite 7, Electron 39, TanStack Router, Zustand, Tailwind CSS
+  server/   Express 5, WebSocket, provider adapters, agents, worktrees, terminal
+
+libs/
+  types/                Shared TypeScript contracts
+  utils/                Logging, errors, images, and context loading
+  prompts/              Agent prompt templates
+  platform/             Paths, filesystem security, and process discovery
+  model-resolver/       Model aliases and provider routing helpers
+  dependency-resolver/  Feature dependency ordering
+  spec-parser/          Specification parsing and validation
+  git-utils/            Git and worktree operations
 ```
 
-### How It Works
+The React renderer talks to the Express backend through HTTP APIs and WebSocket event streams in both web and Electron modes. In Electron, the main process launches and monitors the backend; it does not execute agents inside the renderer. See [agent architecture](apps/ui/docs/AGENT_ARCHITECTURE.md).
 
-1. **Feature Definition** - Users create feature cards on the Kanban board with descriptions, images, and configuration
-2. **Git Worktree Creation** - When a feature starts, a git worktree is created for isolated development
-3. **Agent Execution** - Claude Agent SDK executes in the worktree with full file system and command access
-4. **Real-time Streaming** - Agent output streams via WebSocket to the frontend for live monitoring
-5. **Plan Approval** (optional) - For spec/full planning modes, agents generate plans that require user approval
-6. **Multi-Agent Tasks** (spec mode) - Each task in the spec gets a dedicated agent for focused implementation
-7. **Verification** - Features move to "Waiting Approval" where changes can be reviewed via git diff
-8. **Integration** - After approval, changes can be committed and PRs created from the worktree
+### Storage
 
-### Key Architectural Patterns
-
-- **Event-Driven Architecture** - All server operations emit events that stream to the frontend
-- **Provider Pattern** - Extensible AI provider system (currently Claude, designed for future providers)
-- **Service-Oriented Backend** - Modular services for agent management, features, terminals, settings
-- **State Management** - Zustand with persistence for frontend state across restarts
-- **File-Based Storage** - No database; features stored as JSON files in `.aboardai/` directory
-
-### Security & Isolation
-
-- **Git Worktrees** - Each feature executes in an isolated git worktree, protecting your main branch
-- **Path Sandboxing** - Optional `ALLOWED_ROOT_DIRECTORY` restricts file access
-- **Docker Isolation** - Recommended deployment uses Docker with no host filesystem access
-- **Plan Approval** - Optional plan review before implementation prevents unwanted changes
-
-### Data Storage
-
-AboardAI uses a file-based storage system (no database required):
-
-#### Per-Project Data
-
-Stored in `{projectPath}/.aboardai/`:
+Per-project state is stored under the opened project:
 
 ```text
 .aboardai/
-├── features/              # Feature JSON files and images
-│   └── {featureId}/
-│       ├── feature.json   # Feature metadata
-│       ├── agent-output.md # AI agent output log
-│       └── images/        # Attached images
-├── context/               # Context files for AI agents
-├── worktrees/             # Git worktree metadata
-├── validations/           # GitHub issue validation results
-├── ideation/              # Brainstorming and analysis data
-│   └── analysis.json      # Project structure analysis
-├── board/                 # Board-related data
-├── images/                # Project-level images
-├── settings.json          # Project-specific settings
-├── app_spec.txt           # Project specification (XML format)
-├── active-branches.json   # Active git branches tracking
-└── execution-state.json   # Auto-mode execution state
+  features/<feature-id>/feature.json
+  features/<feature-id>/agent-output.md
+  features/<feature-id>/images/
+  context/
+  ideation/
+  events/
+  settings.json
+  app_spec.txt
+  notifications.json
+  execution-state.json
 ```
 
-#### Global Data
-
-Stored in `DATA_DIR` (default `./data`):
+Global state is stored under `DATA_DIR` (`./data` in normal development, the Electron user-data directory in packaged desktop builds, and `/data` in the production container):
 
 ```text
-data/
-├── settings.json          # Global settings, profiles, shortcuts
-├── credentials.json       # API keys (encrypted)
-├── sessions-metadata.json # Chat session metadata
-└── agent-sessions/        # Conversation histories
-    └── {sessionId}.json
+settings.json
+credentials.json
+sessions-metadata.json
+agent-sessions/
 ```
 
----
+Credentials in `credentials.json` are application-managed but are not described by the code as encrypted at rest. Protect the data directory accordingly.
 
-> **[!CAUTION]**
->
-> ## Security Disclaimer
->
-> **This software uses AI-powered tooling that has access to your operating system and can read, modify, and delete files. Use at your own risk.**
->
-> We have reviewed this codebase for security vulnerabilities, but you assume all risk when running this software. You should review the code yourself before running it.
->
-> **We do not recommend running AboardAI directly on your local computer** due to the risk of AI agents having access to your entire file system. Please sandbox this application using Docker or a virtual machine.
->
-> **[Read the full disclaimer](./DISCLAIMER.md)**
+## Security
 
----
+Agents can read and modify files and execute commands with the permissions granted to the AboardAI server and provider tooling. Worktrees reduce branch contention; they are not a security boundary. Use `ALLOWED_ROOT_DIRECTORY` to restrict server file operations, review provider permissions, and use Docker or another sandbox when stronger isolation is required.
 
-## Learn More
+Read [DISCLAIMER.md](DISCLAIMER.md) before running agents against important data.
 
-### Documentation
+## Project status and support
 
-- [Contributing Guide](./CONTRIBUTING.md) - How to contribute to AboardAI
-- [Project Documentation](./docs/) - Architecture guides, patterns, and developer docs
-- [Shared Packages Guide](./docs/llm-shared-packages.md) - Using monorepo packages
+AboardAI is actively developed. Bugs and feature requests for AboardAI should be filed in the [AboardAI issue tracker](https://github.com/Angriff36/aboardai/issues). Third-party communities and upstream Automaker channels are not official AboardAI support unless explicitly identified as such by this repository.
 
-### Community
+See [CONTRIBUTING.md](CONTRIBUTING.md) for the current development and pull-request workflow.
 
-Join the **Agentic Jumpstart** Discord to connect with other builders exploring **agentic coding**:
+## Origin and attribution
 
-👉 [Agentic Jumpstart Discord](https://discord.gg/jjem7aEDKU)
+AboardAI originated as a fork of [Automaker](https://github.com/AutoMaker-Org/automaker). Automaker-derived code is used under the MIT License. Subsequent AboardAI development is maintained independently; Automaker’s maintainers do not maintain, sponsor, endorse, or support AboardAI.
 
-## Project Status
-
-**This project is no longer actively maintained.** The codebase is provided as-is for those who wish to use, study, or fork it. No bug fixes, security updates, or new features are being developed. Community contributions may still be accepted, but there is no guarantee of review or merge.
+See [LICENSE](LICENSE) for the license terms and [NOTICE](NOTICE) for upstream attribution and the recorded import point.
 
 ## License
 
-This project is licensed under the **MIT License**. See [LICENSE](LICENSE) for the full text.
+MIT. The existing Automaker copyright and license notice is preserved alongside the AboardAI contributors’ notice in [LICENSE](LICENSE).

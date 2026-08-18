@@ -6,7 +6,7 @@
 
 ## Summary
 
-AboardAI is a hard-fork of [automaker](c:/Projects/referencerepos/automaker) (MIT, archived May 2026): a desktop/web application in which AI coding agents autonomously plan, implement, and verify features for a user's projects. The fork preserves automaker's three proven strengths — the auto-mode execution loop, the lifecycle prompt library, and the spec/ideation system — and replaces its two failure points: an unreliable provider/connectivity layer and stale model support. Selected capabilities from three other open-source references (vibe-kanban, OpenHands, ai-agent-board) are grafted in where they strengthen v1.
+AboardAI began as a hard fork of [Automaker](https://github.com/AutoMaker-Org/automaker) under the MIT License: a desktop/web application in which AI coding agents autonomously plan, implement, and verify features for a user's projects. The fork preserves Automaker's three proven strengths — the auto-mode execution loop, the lifecycle prompt library, and the spec/ideation system — and replaces its two failure points: an unreliable provider/connectivity layer and stale model support. Selected capabilities from three other open-source references (vibe-kanban, OpenHands, ai-agent-board) are grafted in where they strengthen v1.
 
 ## Goals
 

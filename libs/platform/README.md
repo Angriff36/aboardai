@@ -204,8 +204,12 @@ AboardAI uses the following directory structure:
 │   ├── context/           # Context files
 │   ├── images/            # Global images
 │   ├── worktrees/         # Git worktrees
-│   ├── app-spec.md        # App specification
-│   └── branch-tracking.json
+│   ├── ideation/          # Ideas, sessions, drafts, and analysis
+│   ├── events/            # Persisted normalized events
+│   ├── app_spec.txt       # App specification
+│   ├── active-branches.json
+│   ├── notifications.json
+│   └── execution-state.json
 ```
 
 ## Dependencies

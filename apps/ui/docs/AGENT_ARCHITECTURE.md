@@ -1,285 +1,84 @@
-# Agent Architecture - Surviving Next.js Restarts
+# Agent architecture
 
-## Problem Statement
+This document describes the current AboardAI agent path. The application no longer uses the inherited Next.js API-route or Electron-renderer execution design.
 
-When using the AboardAI app to iterate on itself:
+## Runtime ownership
 
-1. Agent modifies code files
-2. Next.js hot-reloads and restarts
-3. API routes are killed
-4. Agent conversation is lost
+Agent execution belongs to the Express backend in `apps/server/src/` in both run modes:
 
-## Solution: Electron Main Process Agent
-
-The agent now runs in the **Electron main process** instead of Next.js API routes. This provides:
-
-- ✅ **Survives Next.js restarts** - Main process is independent of renderer
-- ✅ **Persistent state** - Conversations saved to disk automatically
-- ✅ **Real-time streaming** - IPC events for live updates
-- ✅ **Session recovery** - Reconnects automatically after restart
-
-## Architecture Overview
-
-```
-┌─────────────────────────────────────────┐
-│   Electron Main Process                 │
-│   ┌───────────────────────────────┐     │
-│   │  Agent Service                │     │
-│   │  - Manages sessions           │     │
-│   │  - Runs Claude Agent SDK      │     │
-│   │  - Persists to disk           │     │
-│   │  - Streams via IPC            │     │
-│   └───────────────────────────────┘     │
-└──────────────┬──────────────────────────┘
-               │ IPC (survives restarts)
-┌──────────────┴──────────────────────────┐
-│   Electron Renderer (Next.js)           │
-│   ┌───────────────────────────────┐     │
-│   │  React Frontend               │     │
-│   │  - useElectronAgent hook      │     │
-│   │  - Auto-reconnects            │     │
-│   │  - Real-time updates          │     │
-│   └───────────────────────────────┘     │
-└─────────────────────────────────────────┘
+```text
+React/Vite renderer
+  -> HTTP commands through apps/ui/src/lib/http-api-client.ts
+  -> WebSocket events from /api/events
+  -> Express routes in apps/server/src/routes/
+  -> AgentService or AutoModeService
+  -> provider selected by ProviderFactory
+  -> normalized events and persisted project/session state
 ```
 
-## Key Components
+In browser mode, the UI connects to the separately started backend. In Electron mode, `apps/ui/src/electron/server/backend-server.ts` launches and monitors the same backend, while `apps/ui/src/electron/windows/main-window.ts` loads the Vite development page or packaged static UI.
 
-### 1. Agent Service (`electron/agent-service.js`)
+The Electron main process manages the local backend and application window. It does not contain a separate Claude-only agent implementation.
 
-The core service running in the Electron main process:
+## Main components
 
-- **Session Management**: Tracks multiple conversations by session ID
-- **State Persistence**: Saves conversations to `userData/agent-sessions/*.json`
-- **Streaming**: Sends real-time updates to renderer via IPC
-- **Tool Support**: Full Read/Write/Edit/Bash/Grep/Glob capabilities
-- **Error Recovery**: Continues after errors, saves state
+### UI transport
 
-### 2. IPC Handlers (`electron/main.js`)
+- `apps/ui/src/lib/http-api-client.ts` exposes typed HTTP calls for sessions, features, Auto Mode, worktrees, settings, providers, and other server capabilities.
+- `apps/ui/src/hooks/use-electron-agent.ts` is the renderer-facing agent hook retained for UI compatibility; its operations resolve through the backend API.
+- `apps/ui/src/hooks/use-agent-output-websocket.ts` consumes streamed feature output.
+- `apps/ui/src/routes/agent.tsx` renders the persistent agent-chat view.
 
-Electron main process handlers:
+### Server routes
 
-- `agent:start` - Initialize or resume a session
-- `agent:send` - Send a message (returns immediately)
-- `agent:getHistory` - Retrieve conversation history
-- `agent:stop` - Stop current execution
-- `agent:clear` - Clear conversation
-- `agent:stream` - Event emitted for streaming updates
+- `apps/server/src/routes/agent/` starts, sends to, stops, clears, changes models for, and queues prompts in agent-chat sessions.
+- `apps/server/src/routes/sessions/` creates, lists, updates, archives, unarchives, and deletes session metadata.
+- `apps/server/src/routes/auto-mode/` runs feature agents, planning, verification, follow-ups, and recovery.
+- `apps/server/src/routes/models/` reports provider/model availability and verifies model access.
 
-### 3. Preload Bridge (`electron/preload.js`)
+All protected routes pass through the server authentication middleware. The renderer does not gain filesystem or agent authority merely by being loaded.
 
-Secure IPC bridge exposed to renderer:
+### Services
 
-```javascript
-window.electronAPI.agent.start(sessionId, workingDir);
-window.electronAPI.agent.send(sessionId, message, workingDir);
-window.electronAPI.agent.onStream(callback);
-```
+- `AgentService` owns interactive chat sessions, prompt queues, provider execution, and conversation persistence.
+- `AutoModeServiceCompat` exposes the feature-execution facade used by routes.
+- `ExecutionService` builds feature prompts, resolves worktrees, runs planning or orchestration, updates feature state, and records output.
+- `AgentExecutor` handles the detailed planning/task execution loop.
+- `ProviderFactory` routes model IDs to registered provider adapters.
 
-### 4. React Hook (`src/hooks/use-electron-agent.ts`)
+### Providers
 
-Easy-to-use React hook:
+The current registry in `apps/server/src/providers/provider-factory.ts` includes Claude, Codex, Cursor, Gemini, OpenCode, and GitHub Copilot. `ClaudeCompatibleProvider` settings can route Claude-protocol requests to configured endpoints such as OpenRouter, z.AI, MiniMax, or a custom service.
 
-```typescript
-const {
-  messages, // Conversation history
-  isProcessing, // Agent is working
-  isConnected, // Session initialized
-  sendMessage, // Send user message
-  stopExecution, // Stop current task
-  clearHistory, // Clear conversation
-  error, // Error state
-} = useElectronAgent({
-  sessionId: 'project_xyz',
-  workingDirectory: '/path/to/project',
-  onToolUse: (tool) => console.log('Using:', tool),
-});
-```
+Provider output is normalized before it is presented to the UI. Provider-specific event formats should not leak into renderer components.
 
-### 5. Frontend Component (`src/components/views/agent-view.tsx`)
+## Streaming and persistence
 
-Updated to use IPC instead of HTTP:
+The backend creates a shared event emitter in `apps/server/src/lib/events.ts` and exposes it over `/api/events`. UI consumers subscribe to normalized events for agent messages, tool activity, feature progress, tests, notifications, and other long-running operations.
 
-- Generates session ID from project path
-- Auto-reconnects on mount
-- Shows tool usage in real-time
-- Displays connection status
+Interactive session metadata is stored in `DATA_DIR/sessions-metadata.json`; message histories are stored under `DATA_DIR/agent-sessions/`. Feature state and output are stored in the opened project under `.aboardai/features/<feature-id>/`.
 
-## Data Flow
+Persist-before-emit behavior is important for state-changing operations: after a reload or reconnect, the UI refetches authoritative state rather than relying on previously streamed events.
 
-### Sending a Message
+## Restart behavior
 
-1. User types message in React UI
-2. `sendMessage()` calls `window.electronAPI.agent.send()`
-3. IPC handler in main process receives message
-4. Agent service starts processing
-5. Main process streams updates via `agent:stream` events
-6. React hook receives events and updates UI
-7. Conversation saved to disk
+A Vite renderer reload does not stop the separately running Express backend, so active backend work can continue while the UI reconnects.
 
-### Surviving a Restart
+A backend or application shutdown is different. The server’s graceful-shutdown path marks running features as interrupted before closing. After restart, the persisted state supports reconciliation and explicit resume flows; the documentation must not claim that an agent process survives a backend process restart.
 
-1. Agent is modifying code → Next.js restarts
-2. React component unmounts
-3. **Main process keeps running** (agent continues)
-4. React component remounts after restart
-5. Calls `agent:start` with same session ID
-6. Main process returns full conversation history
-7. Subscribes to `agent:stream` events
-8. UI shows complete conversation + live updates
+## Authentication boundaries
 
-## Session Storage
+AboardAI application authentication and provider authentication are separate:
 
-Sessions are stored in:
-
-```
-<userData>/agent-sessions/<sessionId>.json
-```
-
-Each session file contains:
-
-```json
-[
-  {
-    "id": "msg_1234_abc",
-    "role": "user",
-    "content": "Add a new feature...",
-    "timestamp": "2024-12-07T12:00:00.000Z"
-  },
-  {
-    "id": "msg_1235_def",
-    "role": "assistant",
-    "content": "I'll help you add that feature...",
-    "timestamp": "2024-12-07T12:00:05.000Z"
-  }
-]
-```
-
-## Session ID Generation
-
-Session IDs are generated from project paths:
-
-```typescript
-const sessionId = `project_${projectPath.replace(/[^a-zA-Z0-9]/g, '_')}`;
-```
-
-This ensures:
-
-- Each project has its own conversation
-- Conversations persist across app restarts
-- Multiple projects can run simultaneously
-
-## Streaming Events
-
-The agent emits these event types:
-
-### `message`
-
-User message added to conversation
-
-### `stream`
-
-Assistant response streaming (updates in real-time)
-
-### `tool_use`
-
-Agent is using a tool (Read, Write, Edit, etc.)
-
-### `complete`
-
-Agent finished processing
-
-### `error`
-
-Error occurred during processing
-
-## Configuration
-
-The agent is configured with:
-
-```javascript
-{
-  model: "claude-opus-4-8",
-  maxTurns: 20,
-  cwd: workingDirectory,
-  allowedTools: [
-    "Read", "Write", "Edit", "Glob", "Grep",
-    "Bash", "WebSearch", "WebFetch"
-  ],
-  permissionMode: "acceptEdits",  // Auto-approve file edits
-  sandbox: {
-    enabled: true,                // Sandboxed bash execution
-    autoAllowBashIfSandboxed: true
-  }
-}
-```
-
-## Benefits
-
-### For Self-Iteration
-
-Now you can ask the agent to modify AboardAI itself:
-
-```
-User: "Add a dark mode toggle to the settings"
-Agent: *modifies files*
-→ Next.js restarts
-→ Agent continues working
-→ UI reconnects automatically
-→ Shows full conversation history
-```
-
-### For Long-Running Tasks
-
-The agent can work on complex tasks that take multiple turns:
-
-```
-User: "Implement authentication with GitHub OAuth"
-Agent:
-  1. Creates auth API routes
-  2. Next.js restarts
-  3. Agent continues: Adds middleware
-  4. Next.js restarts again
-  5. Agent continues: Updates UI components
-  6. All changes tracked, conversation preserved
-```
+- `apps/server/src/lib/auth.ts` protects HTTP and WebSocket access with the AboardAI API key/session mechanism.
+- Each provider detects its own CLI, OAuth, API-key, or token state.
+- Electron generates and supplies its local backend key through `apps/ui/src/electron/security/api-key-manager.ts`.
 
 ## Testing
 
-To test the architecture:
+- Server behavior is covered by the Vitest server project: `npm run test:server`.
+- Shared provider/model behavior is covered by `npm run test:packages` and server tests.
+- End-to-end renderer/server behavior is covered by Playwright: `npm run test`.
+- `ABOARDAI_MOCK_AGENT=true` routes automated agent execution through the mock provider.
 
-1. Open a project in AboardAI
-2. Ask the agent to modify a file in `src/`
-3. Watch Next.js restart
-4. Verify the conversation continues
-5. Check that history is preserved
-6. Restart the entire Electron app
-7. Verify conversation loads from disk
-
-## Troubleshooting
-
-### "Electron API not available"
-
-- Make sure you're running in Electron, not browser
-- Check `window.isElectron` is `true`
-
-### Session not persisting
-
-- Check userData directory exists
-- Verify write permissions
-- Look for errors in Electron console
-
-### Next.js restart kills agent
-
-- Verify agent service is in `electron/main.js`
-- Check IPC handlers are registered
-- Ensure not using HTTP `/api/chat` route
-
-## Future Enhancements
-
-- [ ] Multiple concurrent sessions
-- [ ] Export conversation history
-- [ ] Undo/redo for agent actions
-- [ ] Progress bars for long-running tasks
-- [ ] Voice input/output
-- [ ] Agent memory across sessions
+When changing this architecture, test the server lifecycle, reconnect behavior, event ordering, session persistence, and at least one representative UI flow.

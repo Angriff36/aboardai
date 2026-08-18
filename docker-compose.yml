@@ -6,7 +6,7 @@
 #   docker-compose up -d
 #   Then open http://localhost:47821
 #
-# See docs/docker-isolation.md for full documentation.
+# See docs/docker.md for full documentation.
 
 services:
   # Frontend UI

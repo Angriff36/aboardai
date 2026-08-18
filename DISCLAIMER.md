@@ -1,85 +1,52 @@
 # Security Disclaimer
 
-## Important Warning
+## Important warning
 
-**AboardAI uses AI-powered tooling that has access to your operating system and can read, modify, and delete files. Use at your own risk.**
+**AboardAI runs AI-powered tools that may read, modify, or delete files and execute commands with the permissions available to the AboardAI server and the selected provider. Use it at your own risk.**
 
-## Risk Assessment
+Supported provider integrations include Claude, Codex, Cursor, Gemini, OpenCode, GitHub Copilot, and user-configured Claude-compatible endpoints. Provider behavior, model output, and tool permissions can vary.
 
-This software utilizes AI agents (such as Claude) that can:
+## Risks
 
-- **Read files** from your file system
-- **Write and modify files** in your projects
-- **Delete files** when instructed
-- **Execute commands** on your operating system
-- **Access environment variables** and configuration files
+An agent may:
 
-While we have made efforts to review this codebase for security vulnerabilities and implement safeguards, **you assume all risk** when running this software.
+- Read source code, configuration, environment variables, and other accessible files.
+- Write, rename, or delete files.
+- Execute shell commands and project scripts.
+- Create git branches, worktrees, commits, pushes, or pull requests when the corresponding workflow is invoked and credentials permit it.
+- Produce incorrect, insecure, incomplete, or destructive changes.
 
-## Recommendations
+Git worktrees reduce checkout contention but are not a security sandbox. Application login protects the HTTP API; it does not limit what an authenticated agent process can do on the host.
 
-### 1. Review the Code First
+## Recommended precautions
 
-Before running AboardAI, we strongly recommend reviewing the source code yourself to understand what operations it performs and ensure you are comfortable with its behavior.
+1. Review the source and provider permissions before use.
+2. Keep important work committed and backed up.
+3. Restrict filesystem access with `ALLOWED_ROOT_DIRECTORY`.
+4. Use a dedicated account, virtual machine, container, or other sandbox when stronger isolation is required.
+5. Review streamed tool activity, diffs, and test output before accepting or merging changes.
+6. Keep credentials out of projects and protect the AboardAI data directory.
 
-### 2. Use Sandboxing (Highly Recommended)
+## Docker isolation
 
-**We do not recommend running AboardAI directly on your local computer** due to the risk of AI agents having access to your entire file system. Instead, consider:
-
-- **Docker**: Run AboardAI in a Docker container to isolate it from your host system
-- **Virtual Machine**: Use a VM (such as VirtualBox, VMware, or Parallels) to create an isolated environment
-- **Cloud Development Environment**: Use a cloud-based development environment that provides isolation
-
-#### Running in Isolated Docker Container
-
-For maximum security, run AboardAI in an isolated Docker container that **cannot access your laptop's files**:
+The default `docker-compose.yml` uses Docker-managed volumes and does not mount host project directories. This prevents the container from reading host projects by default. If you add a bind mount through an override file, every mounted path is intentionally exposed to the container and its agents.
 
 ```bash
-# 1. Set your API key (bash/Linux/Mac - creates UTF-8 file)
-echo "ANTHROPIC_API_KEY=your-api-key-here" > .env
+docker compose up -d --build
 
-# On Windows PowerShell, use instead:
-Set-Content -Path .env -Value "ANTHROPIC_API_KEY=your-api-key-here" -Encoding UTF8
+# UI
+# http://localhost:47821
 
-# 2. Build and run isolated container
-docker-compose up -d
-
-# 3. Access the UI at http://localhost:47821
-#    API at http://localhost:47820/api/health
+# API health check
+# http://localhost:47820/api/health
 ```
 
-The container uses only Docker-managed volumes and has no access to your host filesystem. See [docker-isolation.md](docs/docker-isolation.md) for full documentation.
+See [Docker deployment and isolation](docs/docker.md) for the current compose files, provider credentials, and host-mount examples.
 
-### 3. Limit Access
+## No warranty and limitation of liability
 
-If you must run locally:
+THE SOFTWARE UTILIZES ARTIFICIAL INTELLIGENCE TO GENERATE CODE, EXECUTE COMMANDS, AND INTERACT WITH FILESYSTEMS AND EXTERNAL SERVICES. AI SYSTEMS CAN BE UNPREDICTABLE AND MAY GENERATE INCORRECT, INSECURE, OR DESTRUCTIVE RESULTS.
 
-- Create a dedicated user account with limited permissions
-- Only grant access to specific project directories
-- Avoid running with administrator/root privileges
-- Keep sensitive files and credentials outside of project directories
+This software is provided “as is,” without warranty of any kind, express or implied. In no event shall the authors or copyright holders be liable for any claim, damages, or other liability, including data loss, financial loss, hardware damage, or business interruption, whether in an action of contract, tort, or otherwise, arising from, out of, or in connection with the software or its use.
 
-### 4. Monitor Activity
-
-- Review the agent's actions in the output logs
-- Pay attention to file modifications and command executions
-- Stop the agent immediately if you notice unexpected behavior
-
-## No Warranty & Limitation of Liability
-
-THE SOFTWARE UTILIZES ARTIFICIAL INTELLIGENCE TO GENERATE CODE, EXECUTE COMMANDS, AND INTERACT WITH YOUR FILE SYSTEM. YOU ACKNOWLEDGE THAT AI SYSTEMS CAN BE UNPREDICTABLE, MAY GENERATE INCORRECT, INSECURE, OR DESTRUCTIVE CODE, AND MAY TAKE ACTIONS THAT COULD DAMAGE YOUR SYSTEM, FILES, OR HARDWARE.
-
-This software is provided "as is", without warranty of any kind, express or implied. In no event shall the authors or copyright holders be liable for any claim, damages, or other liability, including but not limited to hardware damage, data loss, financial loss, or business interruption, whether in an action of contract, tort, or otherwise, arising from, out of, or in connection with the software or the use or other dealings in the software.
-
-## Acknowledgment
-
-By using AboardAI, you acknowledge that:
-
-1. You have read and understood this disclaimer
-2. You accept full responsibility for any consequences of using this software
-3. You understand the risks of AI agents having access to your operating system
-4. You agree to take appropriate precautions as outlined above
-
----
-
-**If you are not comfortable with these risks, do not use this software.**
+By using AboardAI, you accept responsibility for the permissions you grant, the credentials you configure, and the actions performed in your environment.

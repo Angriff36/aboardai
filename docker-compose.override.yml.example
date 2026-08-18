@@ -3,7 +3,7 @@ services:
     volumes:
       # Mount your workspace directory to /projects inside the container
       # Example: mount your local /workspace to /projects inside the container
-      - /Users/webdevcody/Workspace/aboardai-workspace:/projects:rw
+      - /path/to/workspace:/projects:rw
 
       # ===== CLI Authentication (Optional) =====
       # Mount host CLI credentials to avoid re-authenticating in container
@@ -38,7 +38,7 @@ services:
       # On macOS, OAuth tokens are stored in SQLite databases, not plain files.
       # Extract your Cursor token with: ./scripts/get-cursor-token.sh
       # Then set it here or in your .env file:
-      # - CURSOR_API_KEY=${CURSOR_API_KEY:-}
+      # - CURSOR_AUTH_TOKEN=${CURSOR_AUTH_TOKEN:-}
 
 volumes:
   # Playwright cache volume - optional, persists browser updates across container rebuilds
