@@ -7,6 +7,7 @@
 import { ipcMain, app } from 'electron';
 import { createLogger } from '@aboardai/utils/logger';
 import { IPC_CHANNELS } from './channels';
+import { updateService } from '../updates/update-manager';
 
 const logger = createLogger('AppHandlers');
 
@@ -34,4 +35,9 @@ export function registerAppHandlers(): void {
     logger.info('Quitting application via IPC request');
     app.quit();
   });
+
+  ipcMain.handle(IPC_CHANNELS.UPDATE.GET_STATUS, () => updateService.getStatus());
+  ipcMain.handle(IPC_CHANNELS.UPDATE.CHECK, () => updateService.checkForUpdates());
+  ipcMain.handle(IPC_CHANNELS.UPDATE.DOWNLOAD, () => updateService.downloadUpdate());
+  ipcMain.handle(IPC_CHANNELS.UPDATE.INSTALL, () => updateService.installUpdate());
 }

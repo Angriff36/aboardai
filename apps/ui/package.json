@@ -1,6 +1,6 @@
 {
   "name": "@aboardai/ui",
-  "version": "1.1.1",
+  "version": "1.1.2",
   "description": "An autonomous AI development studio that helps you build software faster using AI-powered agents",
   "homepage": "https://github.com/Angriff36/aboardai",
   "repository": {
@@ -114,6 +114,7 @@
     "cmdk": "1.1.1",
     "dagre": "0.8.5",
     "dotenv": "17.2.3",
+    "electron-updater": "6.8.9",
     "geist": "1.5.1",
     "idb-keyval": "^6.2.2",
     "lucide-react": "0.562.0",
@@ -176,7 +177,13 @@
     "artifactName": "${productName}-${version}-${arch}.${ext}",
     "electronVersion": "39.8.10",
     "npmRebuild": false,
-    "publish": null,
+    "publish": [
+      {
+        "provider": "github",
+        "owner": "Angriff36",
+        "repo": "aboardai"
+      }
+    ],
     "afterPack": "./scripts/rebuild-server-natives.cjs",
     "directories": {
       "output": "release"

@@ -18,6 +18,7 @@ import {
   Webhook,
   FileCode2,
   FileText,
+  RefreshCw,
 } from 'lucide-react';
 import {
   AnthropicIcon,
@@ -88,7 +89,10 @@ export const GLOBAL_NAV_GROUPS: NavigationGroup[] = [
   },
   {
     label: 'Advanced',
-    items: [{ id: 'developer', label: 'Developer', icon: Code2 }],
+    items: [
+      { id: 'application-updates', label: 'Application Updates', icon: RefreshCw },
+      { id: 'developer', label: 'Developer', icon: Code2 },
+    ],
   },
 ];
 

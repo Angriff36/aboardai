@@ -1,5 +1,6 @@
 // Type definitions for Electron IPC API
 import type { SessionListItem, Message } from '@/types/electron';
+import type { AppUpdateStatus } from '@/types/app-update';
 import type {
   ClaudeUsageResponse,
   CodexUsageResponse,
@@ -737,6 +738,11 @@ export interface ElectronAPI {
   ping: () => Promise<string>;
   getApiKey?: () => Promise<string | null>;
   quit?: () => Promise<void>;
+  getUpdateStatus?: () => Promise<AppUpdateStatus>;
+  checkForUpdates?: () => Promise<AppUpdateStatus>;
+  downloadUpdate?: () => Promise<AppUpdateStatus>;
+  installUpdate?: () => Promise<void>;
+  onUpdateStatus?: (callback: (status: AppUpdateStatus) => void) => () => void;
   openExternalLink: (url: string) => Promise<{ success: boolean; error?: string }>;
   openDirectory: () => Promise<DialogResult>;
   openFile: (options?: object) => Promise<DialogResult>;

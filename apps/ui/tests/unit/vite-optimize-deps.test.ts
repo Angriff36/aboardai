@@ -58,6 +58,7 @@ const EXCEPTIONS = new Set<string>([
   'child_process',
   'crypto',
   'electron',
+  'electron-updater', // Electron main-process updater; bundled for desktop, never loaded by the renderer
   'events',
   'fs',
   'http',
