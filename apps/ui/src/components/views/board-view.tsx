@@ -752,9 +752,9 @@ export function BoardView({ initialFeatureId, initialProjectPath }: BoardViewPro
     return result;
   }, [worktrees, currentWorktreePath]);
 
-  // Auto mode hook - pass current worktree to get worktree-specific state
-  // Must be after selectedWorktree is defined
-  const autoMode = useAutoMode(selectedWorktree);
+  // The top-level Auto Mode control is project-wide. The selected worktree only
+  // filters the board and must not limit which feature worktrees can run.
+  const autoMode = useAutoMode();
 
   const refreshBoardState = useCallback(async () => {
     if (!currentProject) return;

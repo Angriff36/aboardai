@@ -75,10 +75,13 @@ function isPlanApprovalEvent(
 }
 
 /**
- * Hook for managing auto mode (scoped per worktree)
- * @param worktree - Optional worktree info. If not provided, uses main worktree (branchName = null)
+ * Hook for managing the project-wide auto-mode dispatcher.
+ *
+ * The selected worktree is intentionally ignored: the main dispatcher owns
+ * concurrency across every feature worktree. Worktree-specific controls use
+ * the auto-mode API directly from the worktree panel.
  */
-export function useAutoMode(worktree?: WorktreeInfo) {
+export function useAutoMode(_worktree?: WorktreeInfo) {
   // Subscribe to stable action functions and scalar state via useShallow.
   // IMPORTANT: Do NOT subscribe to autoModeByWorktree here. That object gets a
   // new reference on every Zustand mutation to ANY worktree, which would re-render
@@ -114,20 +117,9 @@ export function useAutoMode(worktree?: WorktreeInfo) {
     }))
   );
 
-  // Derive branchName from worktree:
-  // If worktree is provided, use its branch name (even for main worktree, as it might be on a feature branch)
-  // If not provided, default to null (main worktree default)
-  // IMPORTANT: Depend on primitive values (isMain, branch) instead of the worktree object
-  // reference to avoid re-computing when the parent passes a new object with the same values.
-  // This prevents a cascading re-render loop: new worktree ref → new branchName useMemo →
-  // new refreshStatus callback → effect re-fires → store update → re-render → React error #185.
-  const worktreeIsMain = worktree?.isMain;
-  const worktreeBranch = worktree?.branch;
-  const hasWorktree = worktree !== undefined;
-  const branchName = useMemo(() => {
-    if (!hasWorktree) return null;
-    return worktreeIsMain ? null : worktreeBranch || null;
-  }, [hasWorktree, worktreeIsMain, worktreeBranch]);
+  // null identifies the main control-plane loop. That loop can dispatch all
+  // eligible features and lets each feature execute in its own worktree.
+  const branchName = null;
 
   // Use a ref for branchName inside refreshStatus to prevent the callback identity
   // from changing on every worktree switch. Without this, switching worktrees causes:
