@@ -33,4 +33,22 @@ describe('desktop release workflow', () => {
       'npm run build:electron:linux --workspace=apps/ui -- --publish never',
     ]);
   });
+
+  it('does not require a Linux blockmap that electron-builder does not produce', () => {
+    const parsed = parse(workflow) as {
+      jobs: {
+        build: { steps: Array<{ name?: string; with?: { path?: string } }> };
+        upload: { steps: Array<{ name?: string; with?: { files?: string } }> };
+      };
+    };
+    const linuxArtifacts = parsed.jobs.build.steps.find(
+      (step) => step.name === 'Upload Linux artifacts'
+    );
+    const releaseUpload = parsed.jobs.upload.steps.find(
+      (step) => step.name === 'Upload to GitHub Release'
+    );
+
+    expect(linuxArtifacts?.with?.path).not.toContain('*.blockmap');
+    expect(releaseUpload?.with?.files).not.toContain('artifacts/linux-builds/*.blockmap');
+  });
 });
