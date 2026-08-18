@@ -751,25 +751,43 @@ describe('auto-loop-coordinator.ts', () => {
       await coordinator.stopAutoLoopForProject('/test/project', null);
     });
 
-    it('signalShouldPauseForProject emits event and stops loop on genuine failures', async () => {
+    it('keeps auto mode running after repeated execution failures', async () => {
       await coordinator.startAutoLoopForProject('/test/project', null, 1);
       vi.mocked(mockEventBus.emitAutoModeEvent).mockClear();
 
+      coordinator.trackFailureAndCheckPauseForProject('/test/project', {
+        type: 'execution',
+        message: 'Verification timed out',
+      });
+      coordinator.trackFailureAndCheckPauseForProject('/test/project', {
+        type: 'execution',
+        message: 'Verification timed out',
+      });
+      const shouldPause = coordinator.trackFailureAndCheckPauseForProject('/test/project', {
+        type: 'execution',
+        message: 'Verification timed out',
+      });
+
+      expect(shouldPause).toBe(true);
       coordinator.signalShouldPauseForProject('/test/project', {
-        type: 'agent_error',
-        message: 'Agent crashed',
+        type: 'execution',
+        message: 'Verification timed out',
       });
 
       expect(mockEventBus.emitAutoModeEvent).toHaveBeenCalledWith(
-        'auto_mode_paused_failures',
+        'auto_mode_error',
         expect.objectContaining({
-          errorType: 'agent_error',
+          errorType: 'execution',
           projectPath: '/test/project',
         })
       );
+      expect(mockEventBus.emitAutoModeEvent).not.toHaveBeenCalledWith(
+        'auto_mode_stopped',
+        expect.anything()
+      );
+      expect(coordinator.isAutoLoopRunningForProject('/test/project', null)).toBe(true);
 
-      // Loop should be stopped
-      expect(coordinator.isAutoLoopRunningForProject('/test/project', null)).toBe(false);
+      await coordinator.stopAutoLoopForProject('/test/project', null);
     });
 
     it('rate_limit / quota errors cool down instead of stopping the loop', async () => {

@@ -17,6 +17,10 @@ const FAILURE_WINDOW_MS = 60000;
 
 // On a rate-limit / quota error, don't stop auto mode — cool down this long, then retry.
 const RATE_LIMIT_COOLDOWN_MS = 10 * 60 * 1000;
+// Repeated execution failures are often transient provider/CLI startup failures.
+// Keep the dispatcher enabled and back off briefly instead of requiring the user
+// to notice and manually restart Auto Mode.
+const FAILURE_COOLDOWN_MS = 60 * 1000;
 
 // Sleep intervals for the auto-loop (in milliseconds)
 const SLEEP_INTERVAL_CAPACITY_MS = 5000;
@@ -423,20 +427,15 @@ export class AutoLoopCoordinator {
       return;
     }
 
-    projectState.pausedDueToFailures = true;
     const failureCount = projectState.consecutiveFailures.length;
-    this.eventBus.emitAutoModeEvent('auto_mode_paused_failures', {
-      message:
-        failureCount >= CONSECUTIVE_FAILURE_THRESHOLD
-          ? `Auto Mode paused: ${failureCount} consecutive failures detected.`
-          : 'Auto Mode paused: Usage limit or API error detected.',
+    projectState.cooldownUntil = Date.now() + FAILURE_COOLDOWN_MS;
+    projectState.consecutiveFailures = [];
+    this.eventBus.emitAutoModeEvent('auto_mode_error', {
+      error: `Auto Mode encountered ${failureCount} consecutive failures; retrying in ${FAILURE_COOLDOWN_MS / 60000} min.`,
       errorType: actualErrorInfo.type,
-      originalError: actualErrorInfo.message,
-      failureCount,
       projectPath,
       branchName,
     });
-    this.stopAutoLoopForProject(projectPath, branchName);
   }
 
   resetFailureTrackingForProject(projectPath: string, branchName: string | null = null): void {
