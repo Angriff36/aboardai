@@ -342,12 +342,11 @@ describe('auto-loop-coordinator.ts', () => {
 
       // Should NOT execute because total running count (2) meets the concurrency limit (2)
       expect(mockExecuteFeature).not.toHaveBeenCalled();
-      // Verify it was called WITHOUT autoModeOnly (counts all tasks)
-      // The coordinator's wrapper passes options through as undefined when not specified
+      // Main is the control plane, so child-worktree tasks count against its limit.
       expect(mockConcurrencyManager.getRunningCountForWorktree).toHaveBeenCalledWith(
         '/test/project',
         null,
-        undefined
+        { includeChildWorktrees: true }
       );
     });
 
@@ -895,7 +894,7 @@ describe('auto-loop-coordinator.ts', () => {
       expect(mockConcurrencyManager.getRunningCountForWorktree).toHaveBeenCalledWith(
         '/test/project',
         null,
-        undefined
+        { includeChildWorktrees: true }
       );
     });
 
@@ -910,7 +909,7 @@ describe('auto-loop-coordinator.ts', () => {
       expect(mockConcurrencyManager.getRunningCountForWorktree).toHaveBeenCalledWith(
         '/test/project',
         null,
-        { autoModeOnly: true }
+        { autoModeOnly: true, includeChildWorktrees: true }
       );
     });
   });

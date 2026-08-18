@@ -47,6 +47,29 @@ describe('useBoardColumnFeatures', () => {
   });
 
   describe('basic column mapping', () => {
+    it('keeps isolated feature-owned backlog visible from the main control plane', () => {
+      const features = [
+        createMockFeature('feat-isolated', 'backlog', {
+          worktreeMode: 'isolated',
+          branchName: 'feature/feat-isolated-12345678',
+          worktreeBaseBranch: 'main',
+        }),
+      ];
+
+      const { result } = renderHook(() =>
+        useBoardColumnFeatures({
+          ...defaultProps,
+          features,
+          currentWorktreePath: null,
+          currentWorktreeBranch: 'main',
+        })
+      );
+
+      expect(result.current.columnFeaturesMap.backlog.map((feature) => feature.id)).toEqual([
+        'feat-isolated',
+      ]);
+    });
+
     it('should map backlog features to backlog column', () => {
       const features = [createMockFeature('feat-1', 'backlog')];
 

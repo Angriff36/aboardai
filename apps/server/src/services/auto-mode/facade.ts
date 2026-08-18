@@ -117,8 +117,14 @@ export class AutoModeServiceFacade {
 
     // Filter by branch/worktree alignment
     if (branchName === null) {
-      // For main worktree, include features with no branch or matching primary branch
-      return !feature.branchName || (primaryBranch != null && feature.branchName === primaryBranch);
+      // Main is the control-plane dispatcher for feature-owned worktrees. It
+      // must be able to pick isolated features so execution can lazily create
+      // their worktrees.
+      return (
+        feature.worktreeMode === 'isolated' ||
+        !feature.branchName ||
+        (primaryBranch != null && feature.branchName === primaryBranch)
+      );
     } else {
       // For named worktrees, only include features matching that branch
       return feature.branchName === branchName;
@@ -980,7 +986,8 @@ export class AutoModeServiceFacade {
     // are correctly matched when querying for the main worktree (null)
     const runningFeatures = await this.concurrencyManager.getRunningFeaturesForWorktree(
       this.projectPath,
-      branchName
+      branchName,
+      { includeChildWorktrees: branchName === null }
     );
 
     return {
@@ -1060,7 +1067,8 @@ export class AutoModeServiceFacade {
     );
     const currentAgents = await this.concurrencyManager.getRunningCountForWorktree(
       this.projectPath,
-      branchName
+      branchName,
+      { includeChildWorktrees: branchName === null }
     );
 
     return {

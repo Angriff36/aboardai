@@ -46,6 +46,27 @@ describe('AutoModeServiceFacade', () => {
       expect(filtered.map((f) => f.id)).not.toContain('3'); // mismatching branch
     });
 
+    it('dispatches isolated feature-owned work from the main control plane', () => {
+      const feature: Partial<Feature> = {
+        id: 'isolated-feature',
+        status: 'backlog',
+        worktreeMode: 'isolated',
+        branchName: 'feature/isolated-feature-12345678',
+        worktreeBaseBranch: 'main',
+      };
+
+      expect(
+        AutoModeServiceFacade.isFeatureEligibleForAutoMode(feature as Feature, null, 'main')
+      ).toBe(true);
+      expect(
+        AutoModeServiceFacade.isFeatureEligibleForAutoMode(
+          feature as Feature,
+          'another-feature-branch',
+          'main'
+        )
+      ).toBe(false);
+    });
+
     it('should exclude completed, verified, and waiting_approval statuses', () => {
       const features: Partial<Feature>[] = [
         { id: '1', status: 'completed', branchName: 'main' },

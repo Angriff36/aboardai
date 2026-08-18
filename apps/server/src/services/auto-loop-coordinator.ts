@@ -341,7 +341,10 @@ export class AutoLoopCoordinator {
     branchName: string | null,
     options?: { autoModeOnly?: boolean }
   ): Promise<number> {
-    return this.concurrencyManager.getRunningCountForWorktree(projectPath, branchName, options);
+    return this.concurrencyManager.getRunningCountForWorktree(projectPath, branchName, {
+      ...options,
+      includeChildWorktrees: branchName === null,
+    });
   }
 
   trackFailureAndCheckPauseForProject(
