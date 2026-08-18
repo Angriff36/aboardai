@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client';
 import App from './app';
 import { AppErrorBoundary } from './components/ui/app-error-boundary';
 import { isMobileDevice, isPwaStandalone } from './lib/mobile-detect';
+import { shouldRegisterServiceWorker } from './lib/service-worker-policy';
 
 // Defensive fallback: index.html's inline script already applies data-pwa="standalone"
 // before first paint. This re-applies it in case the inline script failed (e.g.
@@ -21,7 +22,13 @@ if (isPwaStandalone) {
 // Note: The SW itself does NOT call skipWaiting() on install, so a newly
 // registered SW won't disrupt a live page — it waits for SKIP_WAITING from the
 // main thread or for all old-SW tabs to close before activating.
-if ('serviceWorker' in navigator && !window.location.protocol.startsWith('file')) {
+if (
+  shouldRegisterServiceWorker({
+    serviceWorkerSupported: 'serviceWorker' in navigator,
+    protocol: window.location.protocol,
+    isElectron: Boolean(window.electronAPI),
+  })
+) {
   navigator.serviceWorker
     .register('/sw.js', {
       // Check for updates on every page load for PWA freshness

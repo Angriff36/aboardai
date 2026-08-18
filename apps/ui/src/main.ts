@@ -16,13 +16,14 @@
  */
 
 import path from 'path';
-import { app, BrowserWindow, dialog } from 'electron';
+import { app, BrowserWindow, dialog, session } from 'electron';
 import { setElectronUserDataPath, setElectronAppPaths, initAllowedPaths } from '@aboardai/platform';
 import { createLogger } from '@aboardai/utils/logger';
 import { DEFAULT_SERVER_PORT, DEFAULT_STATIC_PORT } from './electron/constants';
 import { state } from './electron/state';
 import { reclaimPort } from './electron/utils/port-manager';
 import { getIconPath } from './electron/utils/icon-manager';
+import { clearWebUpdateState } from './electron/utils/clear-web-update-state';
 import { ensureApiKey } from './electron/security/api-key-manager';
 import { createWindow } from './electron/windows/main-window';
 import { startStaticServer, stopStaticServer } from './electron/server/static-server';
@@ -193,6 +194,11 @@ async function handleAppReady(): Promise<void> {
     // Start static file server in production
     if (app.isPackaged) {
       await startStaticServer();
+      try {
+        await clearWebUpdateState(session.defaultSession, `http://localhost:${state.staticPort}`);
+      } catch (error) {
+        logger.warn('Failed to clear obsolete Electron PWA state:', (error as Error).message);
+      }
     }
 
     // Start backend server (unless using external server)
