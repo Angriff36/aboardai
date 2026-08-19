@@ -24,7 +24,6 @@ import {
 } from '../lib/settings-helpers.js';
 import { validateWorkingDirectory } from '../lib/sdk-options.js';
 import { extractSummary } from './spec-parser.js';
-import { performMerge } from './merge-service.js';
 import type { TypedEventBus } from './typed-event-bus.js';
 import type { ConcurrencyManager, RunningFeature } from './concurrency-manager.js';
 import type { WorktreeResolver } from './worktree-resolver.js';
@@ -109,53 +108,6 @@ export class ExecutionService {
     private finalizePipelineFn?: FinalizePipelineFn,
     private worktreeDependencies: ExecutionWorktreeDependencies = {}
   ) {}
-
-  /**
-   * Merge the feature's branch into the primary branch after reviewer
-   * approval. Clean merge → worktree/branch cleaned up per worktreeMode.
-   * Conflict → performMerge leaves the repo for manual resolution and we set
-   * merge_conflict status so the caller skips the 'verified' transition.
-   */
-  private async mergeAfterApproval(
-    projectPath: string,
-    featureId: string,
-    feature: Feature,
-    worktreePath: string | null
-  ): Promise<void> {
-    const branchName = feature.branchName;
-    if (!branchName || !worktreePath) return;
-    try {
-      const targetBranch = (await this.worktreeResolver.getCurrentBranch(projectPath)) ?? 'main';
-      if (branchName === targetBranch) return;
-      logger.info(
-        `Post-review auto-merge for feature ${featureId} (${branchName} -> ${targetBranch})`
-      );
-      const result = await performMerge(
-        projectPath,
-        branchName,
-        worktreePath,
-        targetBranch,
-        { deleteWorktreeAndBranch: feature.worktreeMode === 'isolated' },
-        this.eventBus.getUnderlyingEmitter()
-      );
-      if (!result.success) {
-        if (result.hasConflicts) {
-          await this.updateFeatureStatusFn(projectPath, featureId, 'merge_conflict');
-          this.eventBus.emitAutoModeEvent('pipeline_merge_conflict', {
-            featureId,
-            branchName,
-            projectPath,
-          });
-        } else {
-          logger.warn(`Post-review merge failed for ${featureId}: ${result.error}`);
-        }
-        return;
-      }
-      logger.info(`Post-review merge successful for feature ${featureId}`);
-    } catch (error) {
-      logger.warn(`Post-review merge errored for ${featureId}:`, error);
-    }
-  }
 
   private async executeOrchestratedFeature(options: {
     projectPath: string;
@@ -618,13 +570,6 @@ ${feature.spec}
           throw new Error(orchestrationResult.reason || 'Orchestration failed');
         }
         pipelineCompleted = true;
-        // Final act of the review pass: on approval, merge the feature's
-        // worktree branch back into the primary branch (mirrors the pipeline
-        // path's attemptMerge, REQ-F05). Conflicts set merge_conflict status
-        // and fall through to the manual merge flow.
-        if (orchestrationResult.approved) {
-          await this.mergeAfterApproval(projectPath, featureId, feature, worktreePath);
-        }
         const currentFeature = await this.loadFeatureFn(projectPath, featureId);
         if (currentFeature?.status !== 'merge_conflict') {
           await this.updateFeatureStatusFn(
