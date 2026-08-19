@@ -87,9 +87,15 @@ for (const pkgName of LOCAL_PACKAGES) {
     cpSync(join(srcDir, 'dist'), join(destDir, 'dist'), { recursive: true });
   }
 
-  // Copy package.json
+  // Copy package.json, stripping devDependencies/scripts — npm's arborist
+  // crashes ("Cannot read properties of null (reading 'edgesOut')") resolving
+  // dev-only peer trees (vitest 4) of file:-linked packages during the
+  // production install.
   if (existsSync(join(srcDir, 'package.json'))) {
-    cpSync(join(srcDir, 'package.json'), join(destDir, 'package.json'));
+    const libPkg = JSON.parse(readFileSync(join(srcDir, 'package.json'), 'utf-8'));
+    delete libPkg.devDependencies;
+    delete libPkg.scripts;
+    writeFileSync(join(destDir, 'package.json'), JSON.stringify(libPkg, null, 2));
   }
 
   console.log(`   ✓ ${pkgName}`);
