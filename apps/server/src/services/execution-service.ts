@@ -212,13 +212,38 @@ export class ExecutionService {
     const service = new OrchestrationService({
       verifyAssignments: async (assignments) => {
         if (!this.settingsService) throw new Error('Settings service is unavailable');
-        return verifyModelAccess(
-          assignments.map((assignment, index) =>
-            toCandidate(assignment, ['lead', 'workhorse', 'reviewer'][index] ?? `role-${index}`)
-          ),
-          projectPath,
-          this.settingsService
+        const candidates = assignments.map((assignment, index) =>
+          toCandidate(assignment, ['lead', 'workhorse', 'reviewer'][index] ?? `role-${index}`)
         );
+        const results = await verifyModelAccess(candidates, projectPath, this.settingsService);
+        // CLI providers cold-starting on Windows regularly blow the default
+        // 20s probe timeout while auto mode saturates the machine. Retry
+        // timeouts once with a bigger budget; if a probe still times out,
+        // let the run proceed — the real query will surface a real error.
+        // Auth/billing failures stay fatal.
+        const timedOut = results
+          .map((result, index) => (result.error === 'Verification timed out' ? index : -1))
+          .filter((index) => index >= 0);
+        if (timedOut.length > 0) {
+          const retried = await verifyModelAccess(
+            timedOut.map((index) => candidates[index]),
+            projectPath,
+            this.settingsService,
+            { timeoutMs: 60_000, concurrency: 1 }
+          );
+          retried.forEach((result, j) => {
+            results[timedOut[j]] = result;
+          });
+        }
+        return results.map((result) => {
+          if (result.error === 'Verification timed out') {
+            logger.warn(
+              `Model access probe for ${result.key} timed out twice; proceeding unverified`
+            );
+            return { ...result, status: 'verified' as const, error: undefined };
+          }
+          return result;
+        });
       },
       queryRole,
       runWorkhorse: async (assignment, prompt) => {
