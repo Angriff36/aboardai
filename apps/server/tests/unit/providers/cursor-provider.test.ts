@@ -4,6 +4,57 @@ import { validateBareModelId } from '@aboardai/types';
 
 describe('cursor-provider.ts', () => {
   describe('buildCliArgs', () => {
+    it('does not pass a dash prompt when the real prompt is supplied through stdin', () => {
+      const provider = Object.create(CursorProvider.prototype) as CursorProvider & {
+        cliPath?: string;
+      };
+      provider.cliPath = 'C:\\Users\\Ryan\\AppData\\Local\\cursor-agent\\cursor-agent.cmd';
+
+      const args = provider.buildCliArgs({
+        prompt: 'Reply with only: ok',
+        model: 'cursor-grok-4.6-high-fast',
+        cwd: 'C:\\project',
+      });
+
+      expect(args).not.toContain('-');
+    });
+
+    it('trusts the workspace for read-only ask mode without allowing edits', () => {
+      const provider = Object.create(CursorProvider.prototype) as CursorProvider & {
+        cliPath?: string;
+      };
+      provider.cliPath = 'C:\\Users\\Ryan\\AppData\\Local\\cursor-agent\\cursor-agent.cmd';
+
+      const args = provider.buildCliArgs({
+        prompt: 'Reply with only: ok',
+        model: 'cursor-grok-4.6-high-fast',
+        cwd: 'C:\\project',
+        readOnly: true,
+      });
+
+      expect(args).toContain('--trust');
+      expect(args).toContain('--mode');
+      expect(args).toContain('ask');
+      expect(args).not.toContain('--force');
+    });
+
+    it('restores the Cursor-owned prefix required by Grok CLI model IDs', () => {
+      const provider = Object.create(CursorProvider.prototype) as CursorProvider & {
+        cliPath?: string;
+      };
+      provider.cliPath = 'C:\\Users\\Ryan\\AppData\\Local\\cursor-agent\\cursor-agent.cmd';
+
+      const args = provider.buildCliArgs({
+        prompt: 'Reply with only: ok',
+        model: 'grok-4.6-high-fast',
+        cwd: 'C:\\project',
+        readOnly: true,
+      });
+
+      const modelIndex = args.indexOf('--model');
+      expect(args[modelIndex + 1]).toBe('cursor-grok-4.6-high-fast');
+    });
+
     it('adds --resume when sdkSessionId is provided', () => {
       const provider = Object.create(CursorProvider.prototype) as CursorProvider & {
         cliPath?: string;

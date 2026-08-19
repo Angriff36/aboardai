@@ -28,8 +28,8 @@ const WORK_MODES = [
   },
   {
     value: 'auto' as const,
-    label: 'Auto Worktree',
-    description: 'Create isolated worktree automatically',
+    label: 'Isolated Worktree',
+    description: 'Create a feature-owned worktree when execution starts',
     icon: GitFork,
   },
   {
@@ -107,28 +107,31 @@ export function WorkModeSelector({
       <p className="text-xs text-muted-foreground">
         {workMode === 'current' && (
           <>
-            Work will be done directly on{' '}
+            Shared checkout: work directly on{' '}
             {currentBranch ? (
               <span className="font-medium">{currentBranch}</span>
             ) : (
               'the current branch'
             )}
-            . No isolation.
+            . Concurrent features assigned here will wait their turn.
           </>
         )}
         {workMode === 'auto' && (
           <>
-            A new worktree will be created automatically based on{' '}
+            A feature-owned worktree based on{' '}
             {currentBranch ? (
               <span className="font-medium">{currentBranch}</span>
             ) : (
               'the current branch'
             )}{' '}
-            when this card is created.
+            will be created lazily when this feature starts.
           </>
         )}
         {workMode === 'custom' && (
-          <>Specify a branch name below. A worktree will be created if it doesn't exist.</>
+          <>
+            Shared checkout: specify a branch below. Concurrent features assigned there will wait
+            their turn.
+          </>
         )}
       </p>
 

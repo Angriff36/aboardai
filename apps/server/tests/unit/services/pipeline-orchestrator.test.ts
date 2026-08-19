@@ -104,6 +104,7 @@ describe('PipelineOrchestrator', () => {
     category: 'test',
     description: 'Test description',
     status: 'pipeline_step-1',
+    worktreeMode: 'isolated',
     branchName: 'feature/test-1',
   };
 
@@ -496,6 +497,23 @@ describe('PipelineOrchestrator', () => {
         'feature/test-1',
         '/test/worktree',
         'main',
+        { deleteWorktreeAndBranch: true },
+        expect.anything()
+      );
+    });
+
+    it('retains an explicitly shared checkout after merge', async () => {
+      vi.mocked(performMerge).mockResolvedValue({ success: true });
+      const context = createMergeContext();
+      context.feature = { ...testFeature, worktreeMode: 'shared' };
+
+      await orchestrator.attemptMerge(context);
+
+      expect(performMerge).toHaveBeenCalledWith(
+        '/test/project',
+        'feature/test-1',
+        '/test/worktree',
+        'main',
         { deleteWorktreeAndBranch: false },
         expect.anything()
       );
@@ -863,7 +881,7 @@ describe('PipelineOrchestrator', () => {
         'feature/test-1',
         '/test/project', // Falls back to projectPath when worktreePath is null
         'main',
-        { deleteWorktreeAndBranch: false },
+        { deleteWorktreeAndBranch: true },
         expect.anything()
       );
     });
@@ -917,7 +935,7 @@ describe('PipelineOrchestrator', () => {
           'feature/test-1',
           '/test/custom-worktree',
           'main',
-          { deleteWorktreeAndBranch: false },
+          { deleteWorktreeAndBranch: true },
           expect.anything()
         );
       });
@@ -934,7 +952,7 @@ describe('PipelineOrchestrator', () => {
           'feature/custom-branch',
           '/test/worktree',
           'main',
-          { deleteWorktreeAndBranch: false },
+          { deleteWorktreeAndBranch: true },
           expect.anything()
         );
       });

@@ -32,6 +32,8 @@ import { pipelineService } from './pipeline-service.js';
 import { verifyModelAccess } from './model-access-verifier.js';
 import { simpleQuery } from '../providers/simple-query-service.js';
 import { OrchestrationService, type OrchestrationQueryRole } from './orchestration-service.js';
+import { normalizeFeatureWorktreeAssignment } from './feature-worktree-assignment.js';
+import { workspaceLeaseManager } from './workspace-lease-manager.js';
 
 // Re-export callback types from execution-types.ts for backward compatibility
 export type {
@@ -50,6 +52,9 @@ export type {
   SaveExecutionStateFn,
   LoadContextFilesFn,
   FinalizePipelineFn,
+  PersistWorktreeAssignmentFn,
+  EnsureFeatureWorktreeFn,
+  ExecutionWorktreeDependencies,
 } from './execution-types.js';
 
 import type {
@@ -68,6 +73,7 @@ import type {
   SaveExecutionStateFn,
   LoadContextFilesFn,
   FinalizePipelineFn,
+  ExecutionWorktreeDependencies,
 } from './execution-types.js';
 
 const logger = createLogger('ExecutionService');
@@ -99,7 +105,8 @@ export class ExecutionService {
     private recordSuccessFn: RecordSuccessFn,
     private saveExecutionStateFn: SaveExecutionStateFn,
     private loadContextFilesFn: LoadContextFilesFn,
-    private finalizePipelineFn?: FinalizePipelineFn
+    private finalizePipelineFn?: FinalizePipelineFn,
+    private worktreeDependencies: ExecutionWorktreeDependencies = {}
   ) {}
 
   private async executeOrchestratedFeature(options: {
@@ -112,7 +119,7 @@ export class ExecutionService {
     systemPrompt?: string;
     autoLoadClaudeMd: boolean;
     useClaudeCodeSystemPrompt: boolean;
-  }): Promise<{ approved: boolean; reason?: string; reviewerModel?: string }> {
+  }): Promise<{ approved: boolean; failed: boolean; reason?: string; reviewerModel?: string }> {
     const {
       projectPath,
       feature,
@@ -278,6 +285,7 @@ export class ExecutionService {
     const result = await service.execute({ feature, basePrompt });
     return {
       approved: result.approved,
+      failed: result.failed,
       reason: result.run.terminalReason,
       reviewerModel: result.run.assignments.reviewer.model,
     };
@@ -374,11 +382,70 @@ ${feature.spec}
     if (isAutoMode) await this.saveExecutionStateFn(projectPath);
     let feature: Feature | null = null;
     let pipelineCompleted = false;
+    let releaseWorkspaceLease: (() => void) | undefined;
 
     try {
       validateWorkingDirectory(projectPath);
       feature = await this.loadFeatureFn(projectPath, featureId);
       if (!feature) throw new Error(`Feature ${featureId} not found`);
+
+      const primaryBranch = (await this.worktreeResolver.getCurrentBranch(projectPath)) ?? 'main';
+      const assignment = normalizeFeatureWorktreeAssignment(feature, primaryBranch);
+      const assignmentChanged =
+        feature.worktreeMode !== assignment.worktreeMode ||
+        feature.branchName !== assignment.branchName ||
+        feature.worktreeBaseBranch !== assignment.worktreeBaseBranch;
+      if (assignmentChanged) {
+        feature = this.worktreeDependencies.persistWorktreeAssignmentFn
+          ? await this.worktreeDependencies.persistWorktreeAssignmentFn(
+              projectPath,
+              featureId,
+              assignment
+            )
+          : { ...feature, ...assignment };
+      }
+
+      let worktreePath: string | null = providedWorktreePath ?? null;
+      const branchName = feature.branchName;
+      if (!worktreePath && useWorktrees && feature.worktreeMode === 'isolated' && branchName) {
+        if (this.worktreeDependencies.ensureFeatureWorktreeFn) {
+          worktreePath = await this.worktreeDependencies.ensureFeatureWorktreeFn(
+            projectPath,
+            branchName,
+            feature.worktreeBaseBranch ?? primaryBranch
+          );
+        } else {
+          worktreePath = await this.worktreeResolver.findWorktreeForBranch(projectPath, branchName);
+          if (!worktreePath) {
+            throw new Error(
+              `Worktree enabled but no worktree found for feature branch "${branchName}".`
+            );
+          }
+        }
+      } else if (
+        !worktreePath &&
+        useWorktrees &&
+        feature.worktreeMode === 'shared' &&
+        branchName &&
+        branchName !== primaryBranch
+      ) {
+        worktreePath = await this.worktreeResolver.findWorktreeForBranch(projectPath, branchName);
+        if (!worktreePath) {
+          throw new Error(
+            `Worktree enabled but no worktree found for feature branch "${branchName}".`
+          );
+        }
+      }
+      const workDir = worktreePath ? path.resolve(worktreePath) : path.resolve(projectPath);
+      validateWorkingDirectory(workDir);
+      releaseWorkspaceLease = await (
+        this.worktreeDependencies.workspaceLeaseManager ?? workspaceLeaseManager
+      ).acquire(workDir, featureId, abortController.signal);
+      tempRunningFeature.worktreePath = worktreePath;
+      tempRunningFeature.branchName = branchName ?? null;
+      if (worktreePath) {
+        logger.info(`Using worktree for branch "${branchName}": ${worktreePath}`);
+      }
 
       // Update status to in_progress immediately after acquiring the feature.
       // This prevents a race condition where the UI reloads features and sees the
@@ -415,21 +482,6 @@ ${feature.spec}
         }
       }
 
-      let worktreePath: string | null = providedWorktreePath ?? null;
-      const branchName = feature.branchName;
-      if (!worktreePath && useWorktrees && branchName) {
-        worktreePath = await this.worktreeResolver.findWorktreeForBranch(projectPath, branchName);
-        if (!worktreePath) {
-          throw new Error(
-            `Worktree enabled but no worktree found for feature branch "${branchName}".`
-          );
-        }
-        logger.info(`Using worktree for branch "${branchName}": ${worktreePath}`);
-      }
-      const workDir = worktreePath ? path.resolve(worktreePath) : path.resolve(projectPath);
-      validateWorkingDirectory(workDir);
-      tempRunningFeature.worktreePath = worktreePath;
-      tempRunningFeature.branchName = branchName ?? null;
       // Ensure status is in_progress (may already be set from the early update above,
       // but internal/recursive calls skip the early update and need it here).
       // Mirror the external guard: only transition when the feature is still in
@@ -514,6 +566,9 @@ ${feature.spec}
           autoLoadClaudeMd,
           useClaudeCodeSystemPrompt,
         });
+        if (orchestrationResult.failed) {
+          throw new Error(orchestrationResult.reason || 'Orchestration failed');
+        }
         pipelineCompleted = true;
         const currentFeature = await this.loadFeatureFn(projectPath, featureId);
         if (currentFeature?.status !== 'merge_conflict') {
@@ -821,6 +876,7 @@ Please continue from where you left off and complete all remaining tasks. Use th
         }
       }
     } finally {
+      releaseWorkspaceLease?.();
       this.releaseRunningFeature(featureId);
       if (isAutoMode && projectPath) await this.saveExecutionStateFn(projectPath);
     }

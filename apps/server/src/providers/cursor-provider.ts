@@ -434,7 +434,11 @@ export class CursorProvider extends CliProvider {
 
   buildCliArgs(options: ExecuteOptions): string[] {
     // Model is already bare (no prefix) - validated by executeQuery
-    const model = options.model || 'auto';
+    const requestedModel = options.model || 'auto';
+    // AboardAI's canonical `cursor-` provider prefix is normally removed before
+    // execution. Cursor's own Grok model IDs also begin with `cursor-`, so put
+    // that provider-owned portion back before invoking the CLI.
+    const model = requestedModel.startsWith('grok-') ? `cursor-${requestedModel}` : requestedModel;
 
     // Build CLI arguments for cursor-agent
     // NOTE: Prompt is NOT included here - it's passed via stdin to avoid
@@ -456,7 +460,7 @@ export class CursorProvider extends CliProvider {
     // In read-only mode, use --mode ask for Q&A style (no tools)
     // Otherwise, add --force to allow file edits
     if (options.readOnly) {
-      cliArgs.push('--mode', 'ask');
+      cliArgs.push('--mode', 'ask', '--trust');
     } else {
       cliArgs.push('--force');
     }
@@ -471,8 +475,8 @@ export class CursorProvider extends CliProvider {
       cliArgs.push('--resume', options.sdkSessionId);
     }
 
-    // Use '-' to indicate reading prompt from stdin
-    cliArgs.push('-');
+    // executeQuery supplies the prompt through stdin. Cursor reads stdin when
+    // no positional prompt is provided.
 
     return cliArgs;
   }

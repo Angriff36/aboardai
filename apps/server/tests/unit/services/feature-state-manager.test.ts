@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, vi, type Mock } from 'vitest';
 import path from 'path';
 import { FeatureStateManager } from '@/services/feature-state-manager.js';
-import type { Feature } from '@aboardai/types';
+import type { Feature, OrchestrationRunRecord } from '@aboardai/types';
 import { isPipelineStatus } from '@aboardai/types';
 
 const PIPELINE_SUMMARY_SEPARATOR = '\n\n---\n\n';
@@ -727,6 +727,93 @@ describe('FeatureStateManager', () => {
 
       await manager.resetStuckFeatures('/project');
 
+      expect(atomicWriteJson).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('reconcileAllFeatureStates', () => {
+    const emptyBriefRun: OrchestrationRunRecord = {
+      version: 1,
+      featureId: 'feature-123',
+      phase: 'waiting_approval',
+      startedAt: '2026-08-18T04:23:42.510Z',
+      updatedAt: '2026-08-18T04:24:07.846Z',
+      completedAt: '2026-08-18T04:24:07.846Z',
+      currentRound: 0,
+      maxReviewRounds: 5,
+      assignments: {
+        lead: {
+          candidateKey: 'claude:claude-fable',
+          model: 'claude-fable',
+          displayName: 'Claude Fable 5',
+          providerKey: 'claude',
+        },
+        workhorse: {
+          candidateKey: 'cursor:cursor-grok-4.6-high-fast',
+          model: 'cursor-grok-4.6-high-fast',
+          displayName: 'Grok 4.6 High Fast',
+          providerKey: 'cursor',
+        },
+        reviewer: {
+          candidateKey: 'codex:codex-gpt-5.6-sol',
+          model: 'codex-gpt-5.6-sol',
+          displayName: 'GPT-5.6-Sol',
+          providerKey: 'codex',
+        },
+      },
+      reviews: [],
+      terminalReason: 'Lead orchestrator returned an empty implementation brief',
+    };
+
+    it('requeues the exact legacy empty-brief failure and marks its run failed', async () => {
+      const feature: Feature = {
+        ...mockFeature,
+        status: 'waiting_approval',
+        justFinishedAt: '2026-08-18T04:24:07.847Z',
+      };
+
+      (secureFs.readdir as Mock).mockResolvedValue([
+        { name: 'feature-123', isDirectory: () => true },
+      ]);
+      (readJsonWithRecovery as Mock)
+        .mockResolvedValueOnce({ data: feature, recovered: false, source: 'main' })
+        .mockResolvedValueOnce({ data: emptyBriefRun, recovered: false, source: 'main' });
+
+      await expect(manager.reconcileAllFeatureStates('/project')).resolves.toBe(1);
+
+      expect(atomicWriteJson).toHaveBeenCalledTimes(2);
+      const savedRun = (atomicWriteJson as Mock).mock.calls[0][1] as OrchestrationRunRecord;
+      const savedFeature = (atomicWriteJson as Mock).mock.calls[1][1] as Feature;
+      expect(savedRun.phase).toBe('failed');
+      expect(savedFeature.status).toBe('backlog');
+      expect(savedFeature.justFinishedAt).toBeUndefined();
+      expect(mockEvents.emit).toHaveBeenCalledWith(
+        'auto-mode:event',
+        expect.objectContaining({
+          type: 'feature_status_changed',
+          featureId: 'feature-123',
+          previousStatus: 'waiting_approval',
+          status: 'backlog',
+        })
+      );
+    });
+
+    it('preserves a legitimate waiting-for-review orchestration run', async () => {
+      const feature: Feature = { ...mockFeature, status: 'waiting_approval' };
+      const legitimateRun: OrchestrationRunRecord = {
+        ...emptyBriefRun,
+        currentRound: 1,
+        terminalReason: 'Reviewer requested changes after 5 rounds',
+      };
+
+      (secureFs.readdir as Mock).mockResolvedValue([
+        { name: 'feature-123', isDirectory: () => true },
+      ]);
+      (readJsonWithRecovery as Mock)
+        .mockResolvedValueOnce({ data: feature, recovered: false, source: 'main' })
+        .mockResolvedValueOnce({ data: legitimateRun, recovered: false, source: 'main' });
+
+      await expect(manager.reconcileAllFeatureStates('/project')).resolves.toBe(0);
       expect(atomicWriteJson).not.toHaveBeenCalled();
     });
   });

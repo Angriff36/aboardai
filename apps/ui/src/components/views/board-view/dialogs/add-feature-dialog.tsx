@@ -56,28 +56,15 @@ import {
 } from '@aboardai/dependency-resolver';
 
 /**
- * Determines the default work mode based on global settings and current worktree selection.
- *
- * Priority:
- * 1. If forceCurrentBranchMode is true, always defaults to 'current' (work on current branch)
- * 2. If a non-main worktree is selected in the board header, defaults to 'custom' (use that branch)
- * 3. If useWorktrees global setting is enabled, defaults to 'auto' (automatic worktree creation)
- * 4. Otherwise, defaults to 'current' (work on current branch without isolation)
+ * Feature-owned isolation is the default whenever worktrees are enabled. The
+ * selected branch may still prefill the manual custom-branch input, but it does
+ * not silently opt a new feature into a shared checkout.
  */
-const getDefaultWorkMode = (
+export const getDefaultWorkMode = (
   useWorktrees: boolean,
-  selectedNonMainWorktreeBranch?: string,
-  forceCurrentBranchMode?: boolean
+  _selectedNonMainWorktreeBranch?: string,
+  _forceCurrentBranchMode?: boolean
 ): WorkMode => {
-  // If force current branch mode is enabled (worktree setting is off), always use 'current'
-  if (forceCurrentBranchMode) {
-    return 'current';
-  }
-  // If a non-main worktree is selected, default to 'custom' mode with that branch
-  if (selectedNonMainWorktreeBranch) {
-    return 'custom';
-  }
-  // Otherwise, respect the global worktree setting
   return useWorktrees ? 'auto' : 'current';
 };
 

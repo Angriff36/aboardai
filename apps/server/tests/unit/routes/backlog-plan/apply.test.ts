@@ -146,4 +146,44 @@ describe('createApplyHandler', () => {
       })
     );
   });
+
+  it('treats the selected branch as a base for distinct isolated plan features', async () => {
+    mockCreate.mockImplementation(async (_projectPath, feature) => feature);
+    const req = {
+      body: {
+        projectPath: '/tmp/project',
+        branchName: 'develop',
+        plan: {
+          changes: [
+            {
+              type: 'add',
+              feature: { id: 'feature-one', title: 'Duplicate title', description: 'one' },
+            },
+            {
+              type: 'add',
+              feature: { id: 'feature-two', title: 'Duplicate title', description: 'two' },
+            },
+          ],
+        },
+      },
+    } as any;
+    const res = createMockRes();
+
+    await createApplyHandler()(req, res as any);
+
+    const created = mockCreate.mock.calls.map((call) => call[1]);
+    expect(created).toHaveLength(2);
+    expect(created[0]).toMatchObject({
+      id: 'feature-one',
+      worktreeMode: 'isolated',
+      worktreeBaseBranch: 'develop',
+    });
+    expect(created[1]).toMatchObject({
+      id: 'feature-two',
+      worktreeMode: 'isolated',
+      worktreeBaseBranch: 'develop',
+    });
+    expect(created[0].branchName).toBeUndefined();
+    expect(created[1].branchName).toBeUndefined();
+  });
 });

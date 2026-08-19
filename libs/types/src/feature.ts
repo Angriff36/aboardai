@@ -6,6 +6,7 @@ import type { PlanningMode, ThinkingLevel } from './settings.js';
 import type { ReasoningEffort } from './provider.js';
 
 export type FeatureExecutionMode = 'single' | 'orchestrated';
+export type FeatureWorktreeMode = 'isolated' | 'shared';
 export type OrchestrationSelectionMode = 'automatic' | 'manual';
 export type OrchestrationRole = 'lead' | 'workhorse' | 'reviewer';
 export type OrchestrationVerdict = 'approve' | 'request_changes';
@@ -154,8 +155,10 @@ export interface Feature {
   model?: string;
   imagePaths?: Array<string | FeatureImagePath | { path: string; [key: string]: unknown }>;
   textFilePaths?: FeatureTextFilePath[];
-  // Branch info - worktree path is derived at runtime from branchName
-  branchName?: string | null; // Name of the feature branch (undefined/null = use current worktree)
+  // Checkout assignment. Isolated branches are owned by this feature and provisioned lazily.
+  worktreeMode?: FeatureWorktreeMode;
+  branchName?: string | null; // Execution branch (undefined/null in shared mode = current checkout)
+  worktreeBaseBranch?: string | null; // Branch/ref used to create an isolated feature branch
   skipTests?: boolean;
   excludedPipelineSteps?: string[]; // Array of pipeline step IDs to skip for this feature
   thinkingLevel?: ThinkingLevel;

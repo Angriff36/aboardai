@@ -255,11 +255,16 @@ export function useBoardColumnFeatures({
       // Check if feature matches the current worktree by branchName
       // Features without branchName are considered unassigned (show only on primary worktree)
       const featureBranch = f.branchName;
+      const isViewingPrimary = currentWorktreePath === null;
 
       let matchesWorktree: boolean;
-      if (!featureBranch) {
+      if (isViewingPrimary && f.worktreeMode === 'isolated') {
+        // The primary board is the control plane for feature-owned worktrees.
+        // Isolated features must remain visible here before their lazy worktree
+        // exists, otherwise assigning isolation makes the entire backlog vanish.
+        matchesWorktree = true;
+      } else if (!featureBranch) {
         // No branch assigned - show only on primary worktree
-        const isViewingPrimary = currentWorktreePath === null;
         matchesWorktree = isViewingPrimary;
       } else if (effectiveBranch === null) {
         // We're viewing main but branch hasn't been initialized yet

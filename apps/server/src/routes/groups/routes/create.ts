@@ -4,13 +4,12 @@
 
 import crypto from 'crypto';
 import type { Request, Response } from 'express';
-import { atomicWriteJson } from '@aboardai/utils';
-import { getFeatureDir } from '@aboardai/platform';
+import type { Feature } from '@aboardai/types';
 import type { GroupService } from '../../../services/group-service.js';
 import type { FeatureLoader } from '../../../services/feature-loader.js';
+import { createFeatureBranchName } from '../../../services/feature-worktree-assignment.js';
 import { GroupCommandDenied } from '../../../groups/group-engine.js';
 import { getErrorMessage, logError } from '../common.js';
-import path from 'path';
 
 /** Feature statuses that are eligible to be added to a group */
 const ELIGIBLE_STATUSES = new Set(['backlog', 'ready']);
@@ -47,10 +46,13 @@ export function createCreateHandler(groupService: GroupService, featureLoader: F
 
       // ── Validate each feature exists and has eligible status ────────────────
       const failedFeatureIds: string[] = [];
+      const features = new Map<string, Feature>();
       for (const featureId of featureIds) {
         const feature = await featureLoader.get(projectPath, featureId);
         if (!feature || !ELIGIBLE_STATUSES.has(feature.status ?? '')) {
           failedFeatureIds.push(featureId);
+        } else {
+          features.set(featureId, feature);
         }
       }
 
@@ -63,18 +65,19 @@ export function createCreateHandler(groupService: GroupService, featureLoader: F
         return;
       }
 
-      // ── Apply base-branch write-back for features without a branchName ──────
-      if (baseBranch) {
-        for (const featureId of featureIds) {
-          const feature = await featureLoader.get(projectPath, featureId);
-          if (feature && !feature.branchName) {
-            const featureFilePath = path.join(
-              getFeatureDir(projectPath, featureId),
-              'feature.json'
-            );
-            await atomicWriteJson(featureFilePath, { ...feature, branchName: baseBranch });
-          }
-        }
+      // ── Give every child its own execution branch; baseBranch is only its base ──
+      for (const featureId of featureIds) {
+        const feature = features.get(featureId)!;
+        const ownedBranch =
+          feature.worktreeMode === 'isolated' && feature.branchName
+            ? feature.branchName
+            : createFeatureBranchName(feature.id, feature.title);
+        await featureLoader.update(projectPath, featureId, {
+          worktreeMode: 'isolated',
+          branchName: ownedBranch,
+          worktreeBaseBranch:
+            baseBranch ?? feature.worktreeBaseBranch ?? feature.branchName ?? undefined,
+        });
       }
 
       // ── Create the group ────────────────────────────────────────────────────

@@ -143,4 +143,20 @@ describe('verifyModelAccess', () => {
     expect(probe).toHaveBeenNthCalledWith(1, expect.objectContaining({ model: 'claude-opus-4-8' }));
     expect(probe).toHaveBeenNthCalledWith(2, expect.objectContaining({ model: 'claude-fable-5' }));
   });
+
+  it('does not verify a model when the provider returns an empty probe response', async () => {
+    const probe = vi.fn().mockResolvedValue({ text: '   ' });
+
+    const results = await verifyModelAccess([claudeFable], 'C:\\project', {} as SettingsService, {
+      probe,
+    });
+
+    expect(results).toEqual([
+      {
+        key: claudeFable.key,
+        status: 'unavailable',
+        error: 'Provider returned no response',
+      },
+    ]);
+  });
 });

@@ -752,9 +752,9 @@ export function BoardView({ initialFeatureId, initialProjectPath }: BoardViewPro
     return result;
   }, [worktrees, currentWorktreePath]);
 
-  // Auto mode hook - pass current worktree to get worktree-specific state
-  // Must be after selectedWorktree is defined
-  const autoMode = useAutoMode(selectedWorktree);
+  // The top-level Auto Mode control is project-wide. The selected worktree only
+  // filters the board and must not limit which feature worktrees can run.
+  const autoMode = useAutoMode();
 
   const refreshBoardState = useCallback(async () => {
     if (!currentProject) return;
@@ -970,71 +970,69 @@ export function BoardView({ initialFeatureId, initialProjectPath }: BoardViewPro
       if (!currentProject || selectedFeatureIds.size === 0) return;
 
       try {
-        // Determine final branch name based on work mode:
-        // - 'current': Use selected worktree branch if available, otherwise undefined (work on main)
-        // - 'auto': Auto-generate branch name based on current branch
-        // - 'custom': Use the provided branch name
-        let finalBranchName: string | undefined;
+        const appliesWorkMode = Object.prototype.hasOwnProperty.call(updates, 'worktreeMode');
+        let finalUpdates: Partial<Feature> = updates;
 
-        if (workMode === 'current') {
-          // If a worktree is selected, use its branch; otherwise work on main (undefined = no branch assignment)
-          finalBranchName = currentWorktreeBranch || undefined;
-        } else if (workMode === 'auto') {
-          // Auto-generate a branch name based on primary branch (main/master) and timestamp
-          // Always use primary branch to avoid nested feature/feature/... paths
-          const baseBranch = getPrimaryWorktreeBranch(currentProject.path) || 'main';
-          const timestamp = Date.now();
-          const randomSuffix = Math.random().toString(36).substring(2, 6);
-          finalBranchName = `feature/${baseBranch}-${timestamp}-${randomSuffix}`;
-        } else {
-          // Custom mode - use provided branch name
-          finalBranchName = updates.branchName || undefined;
-        }
+        if (appliesWorkMode) {
+          let finalBranchName: string | undefined;
+          const selectedBaseBranch =
+            currentWorktreeBranch || getPrimaryWorktreeBranch(currentProject.path) || 'main';
 
-        // Create worktree for 'auto' or 'custom' modes when we have a branch name
-        if ((workMode === 'auto' || workMode === 'custom') && finalBranchName) {
-          try {
-            const electronApi = getElectronAPI();
-            if (electronApi?.worktree?.create) {
-              const result = await electronApi.worktree.create(
-                currentProject.path,
-                finalBranchName
-              );
-              if (result.success && result.worktree) {
-                logger.info(
-                  `Worktree for branch "${finalBranchName}" ${
-                    result.worktree?.isNew ? 'created' : 'already exists'
-                  }`
-                );
-                // Auto-select the worktree when creating/using it for bulk update
-                addAndSelectWorktree(result.worktree);
-                // Refresh worktree list in UI
-                setWorktreeRefreshKey((k) => k + 1);
-              } else if (!result.success) {
-                logger.error(
-                  `Failed to create worktree for branch "${finalBranchName}":`,
-                  result.error
-                );
-                toast.error('Failed to create worktree', {
-                  description: result.error || 'An error occurred',
-                });
-                return; // Don't proceed with update if worktree creation failed
-              }
-            }
-          } catch (error) {
-            logger.error('Error creating worktree:', error);
-            toast.error('Failed to create worktree', {
-              description: error instanceof Error ? error.message : 'An error occurred',
-            });
-            return; // Don't proceed with update if worktree creation failed
+          if (workMode === 'current') {
+            finalBranchName = currentWorktreeBranch || undefined;
+          } else if (workMode === 'auto') {
+            // The server gives each feature its own deterministic branch.
+            finalBranchName = undefined;
+          } else {
+            finalBranchName = updates.branchName || undefined;
           }
-        }
 
-        // Use the final branch name in updates
-        const finalUpdates = {
-          ...updates,
-          branchName: finalBranchName,
-        };
+          // Explicit shared branches are validated now; isolated worktrees are created lazily.
+          if (workMode === 'custom' && finalBranchName) {
+            try {
+              const electronApi = getElectronAPI();
+              if (electronApi?.worktree?.create) {
+                const result = await electronApi.worktree.create(
+                  currentProject.path,
+                  finalBranchName
+                );
+                if (result.success && result.worktree) {
+                  logger.info(
+                    `Worktree for branch "${finalBranchName}" ${
+                      result.worktree?.isNew ? 'created' : 'already exists'
+                    }`
+                  );
+                  // Auto-select the worktree when creating/using it for bulk update
+                  addAndSelectWorktree(result.worktree);
+                  // Refresh worktree list in UI
+                  setWorktreeRefreshKey((k) => k + 1);
+                } else if (!result.success) {
+                  logger.error(
+                    `Failed to create worktree for branch "${finalBranchName}":`,
+                    result.error
+                  );
+                  toast.error('Failed to create worktree', {
+                    description: result.error || 'An error occurred',
+                  });
+                  return; // Don't proceed with update if worktree creation failed
+                }
+              }
+            } catch (error) {
+              logger.error('Error creating worktree:', error);
+              toast.error('Failed to create worktree', {
+                description: error instanceof Error ? error.message : 'An error occurred',
+              });
+              return; // Don't proceed with update if worktree creation failed
+            }
+          }
+
+          finalUpdates = {
+            ...updates,
+            branchName: finalBranchName,
+            worktreeMode: workMode === 'auto' ? 'isolated' : 'shared',
+            worktreeBaseBranch: workMode === 'auto' ? selectedBaseBranch : undefined,
+          };
+        }
 
         const api = getHttpApiClient();
         const featureIds = Array.from(selectedFeatureIds);
@@ -1384,20 +1382,15 @@ export function BoardView({ initialFeatureId, initialProjectPath }: BoardViewPro
         thinkingLevel: (modelEntry.thinkingLevel as ThinkingLevel) || 'none',
         reasoningEffort: modelEntry.reasoningEffort as ReasoningEffort,
         providerId: modelEntry.providerId,
-        branchName: selectedWorktreeBranch,
+        branchName: '',
         priority: 2,
         planningMode: useAppStore.getState().defaultPlanningMode ?? 'skip',
         requirePlanApproval: useAppStore.getState().defaultRequirePlanApproval ?? false,
         dependencies: [],
-        workMode: addFeatureUseSelectedWorktreeBranch ? 'custom' : 'current',
+        workMode: useAppStore.getState().useWorktrees ? 'auto' : 'current',
       });
     },
-    [
-      handleAddFeature,
-      defaultSkipTests,
-      addFeatureUseSelectedWorktreeBranch,
-      selectedWorktreeBranch,
-    ]
+    [handleAddFeature, defaultSkipTests]
   );
 
   // Handler for Quick Add & Start - creates and immediately starts a feature
@@ -1425,21 +1418,16 @@ export function BoardView({ initialFeatureId, initialProjectPath }: BoardViewPro
         thinkingLevel: (modelEntry.thinkingLevel as ThinkingLevel) || 'none',
         reasoningEffort: modelEntry.reasoningEffort as ReasoningEffort,
         providerId: modelEntry.providerId,
-        branchName: selectedWorktreeBranch,
+        branchName: '',
         priority: 2,
         planningMode: useAppStore.getState().defaultPlanningMode ?? 'skip',
         requirePlanApproval: useAppStore.getState().defaultRequirePlanApproval ?? false,
         dependencies: [],
-        workMode: addFeatureUseSelectedWorktreeBranch ? 'custom' : 'current',
+        workMode: useAppStore.getState().useWorktrees ? 'auto' : 'current',
         initialStatus: 'in_progress',
       });
     },
-    [
-      handleAddAndStartFeature,
-      defaultSkipTests,
-      addFeatureUseSelectedWorktreeBranch,
-      selectedWorktreeBranch,
-    ]
+    [handleAddAndStartFeature, defaultSkipTests]
   );
 
   // Handler for template selection - creates a feature from a template
@@ -2326,8 +2314,6 @@ export function BoardView({ initialFeatureId, initialProjectPath }: BoardViewPro
             ? currentWorktreeBranch || undefined
             : undefined
         }
-        // When the worktree setting is disabled, force 'current' branch mode
-        forceCurrentBranchMode={!addFeatureUseSelectedWorktreeBranch}
       />
 
       {/* Quick Add Dialog */}

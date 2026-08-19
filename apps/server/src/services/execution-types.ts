@@ -60,6 +60,24 @@ export type UpdateFeatureStatusFn = (
  */
 export type LoadFeatureFn = (projectPath: string, featureId: string) => Promise<Feature | null>;
 
+export type PersistWorktreeAssignmentFn = (
+  projectPath: string,
+  featureId: string,
+  assignment: Pick<Feature, 'worktreeMode' | 'branchName' | 'worktreeBaseBranch'>
+) => Promise<Feature>;
+
+export type EnsureFeatureWorktreeFn = (
+  projectPath: string,
+  branchName: string,
+  baseBranch?: string
+) => Promise<string>;
+
+export interface ExecutionWorktreeDependencies {
+  persistWorktreeAssignmentFn?: PersistWorktreeAssignmentFn;
+  ensureFeatureWorktreeFn?: EnsureFeatureWorktreeFn;
+  workspaceLeaseManager?: import('./workspace-lease-manager.js').WorkspaceLeaseManager;
+}
+
 /**
  * Function to get the planning prompt prefix based on feature's planning mode
  */

@@ -1942,6 +1942,18 @@ export interface ExtendedElectronAPI extends ElectronAPI {
   isExternalServerMode?: () => Promise<boolean>;
   /** Get system paths (Electron-only) */
   getPath?: (name: 'documents' | 'home' | 'appData' | 'userData') => Promise<string>;
+  /** Get the current desktop update state */
+  getUpdateStatus?: () => Promise<import('./app-update').AppUpdateStatus>;
+  /** Check the configured release feed for a newer version */
+  checkForUpdates?: () => Promise<import('./app-update').AppUpdateStatus>;
+  /** Download an update the user has explicitly selected */
+  downloadUpdate?: () => Promise<import('./app-update').AppUpdateStatus>;
+  /** Install a downloaded update and restart the app */
+  installUpdate?: () => Promise<void>;
+  /** Subscribe to desktop update lifecycle changes */
+  onUpdateStatus?: (
+    callback: (status: import('./app-update').AppUpdateStatus) => void
+  ) => () => void;
 }
 
 declare global {

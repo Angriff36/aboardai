@@ -36,9 +36,12 @@ import {
   getAutoLoadClaudeMdSetting,
   getUseClaudeCodeSystemPromptSetting,
   filterClaudeMdFromContext,
+  resolveProviderContext,
 } from '../../../src/lib/settings-helpers.js';
 import { extractSummary } from '../../../src/services/spec-parser.js';
 import { resolveModelString } from '@aboardai/model-resolver';
+import { simpleQuery } from '../../../src/providers/simple-query-service.js';
+import { verifyModelAccess } from '../../../src/services/model-access-verifier.js';
 
 // Mock pipelineService
 vi.mock('../../../src/services/pipeline-service.js', () => ({
@@ -70,6 +73,9 @@ vi.mock('../../../src/lib/settings-helpers.js', () => ({
   getAutoLoadClaudeMdSetting: vi.fn().mockResolvedValue(true),
   getUseClaudeCodeSystemPromptSetting: vi.fn().mockResolvedValue(true),
   filterClaudeMdFromContext: vi.fn().mockReturnValue('context prompt'),
+  resolveProviderContext: vi.fn().mockResolvedValue({
+    resolvedModel: 'claude-fable-5',
+  }),
 }));
 
 // Mock sdk-options
@@ -97,6 +103,14 @@ vi.mock('../../../src/providers/provider-factory.js', () => ({
   ProviderFactory: {
     getProviderNameForModel: vi.fn().mockReturnValue('anthropic'),
   },
+}));
+
+vi.mock('../../../src/providers/simple-query-service.js', () => ({
+  simpleQuery: vi.fn(),
+}));
+
+vi.mock('../../../src/services/model-access-verifier.js', () => ({
+  verifyModelAccess: vi.fn(),
 }));
 
 // Mock spec-parser
@@ -145,6 +159,8 @@ describe('execution-service.ts', () => {
   let mockRecordSuccessFn: RecordSuccessFn;
   let mockSaveExecutionStateFn: vi.Mock;
   let mockLoadContextFilesFn: vi.Mock;
+  let mockPersistWorktreeAssignmentFn: vi.Mock;
+  let mockEnsureFeatureWorktreeFn: vi.Mock;
 
   let service: ExecutionService;
 
@@ -155,6 +171,7 @@ describe('execution-service.ts', () => {
     category: 'test',
     description: 'Test description',
     status: 'backlog',
+    worktreeMode: 'shared',
     branchName: 'feature/test-1',
   };
 
@@ -188,6 +205,7 @@ describe('execution-service.ts', () => {
 
     mockWorktreeResolver = {
       findWorktreeForBranch: vi.fn().mockResolvedValue('/test/worktree'),
+      getCurrentBranch: vi.fn().mockResolvedValue('main'),
     } as unknown as WorktreeResolver;
 
     mockSettingsService = null;
@@ -209,6 +227,13 @@ describe('execution-service.ts', () => {
       formattedPrompt: 'test context',
       memoryFiles: [],
     });
+    mockPersistWorktreeAssignmentFn = vi
+      .fn()
+      .mockImplementation(async (_projectPath, _featureId, assignment) => ({
+        ...testFeature,
+        ...assignment,
+      }));
+    mockEnsureFeatureWorktreeFn = vi.fn().mockResolvedValue('/test/owned-worktree');
 
     // Default mocks for secureFs
     // Include tool usage markers to simulate meaningful agent output.
@@ -241,12 +266,17 @@ describe('execution-service.ts', () => {
     vi.mocked(getAutoLoadClaudeMdSetting).mockResolvedValue(true);
     vi.mocked(getUseClaudeCodeSystemPromptSetting).mockResolvedValue(true);
     vi.mocked(filterClaudeMdFromContext).mockReturnValue('context prompt');
+    vi.mocked(resolveProviderContext).mockResolvedValue({
+      resolvedModel: 'claude-fable-5',
+    } as Awaited<ReturnType<typeof resolveProviderContext>>);
 
     // Re-setup spec-parser mock
     vi.mocked(extractSummary).mockReturnValue('Test summary');
 
     // Re-setup model-resolver mock
     vi.mocked(resolveModelString).mockReturnValue('claude-sonnet-4');
+    vi.mocked(verifyModelAccess).mockResolvedValue([]);
+    vi.mocked(simpleQuery).mockResolvedValue({ text: 'Implementation brief' });
 
     service = new ExecutionService(
       mockEventBus,
@@ -266,7 +296,12 @@ describe('execution-service.ts', () => {
       mockSignalPauseFn,
       mockRecordSuccessFn,
       mockSaveExecutionStateFn,
-      mockLoadContextFilesFn
+      mockLoadContextFilesFn,
+      undefined,
+      {
+        persistWorktreeAssignmentFn: mockPersistWorktreeAssignmentFn,
+        ensureFeatureWorktreeFn: mockEnsureFeatureWorktreeFn,
+      }
     );
   });
 
@@ -1322,6 +1357,82 @@ describe('execution-service.ts', () => {
   });
 
   describe('worktree resolution', () => {
+    it('serializes feature execution when explicit shared assignments resolve to one checkout', async () => {
+      let releaseFirstAgent!: () => void;
+      const firstAgentGate = new Promise<void>((resolve) => {
+        releaseFirstAgent = resolve;
+      });
+      mockLoadFeatureFn.mockImplementation(async (_projectPath, featureId) => ({
+        ...testFeature,
+        id: featureId,
+        worktreeMode: 'shared',
+        branchName: 'shared-work',
+      }));
+      mockRunAgentFn.mockImplementation(async (_workDir, featureId) => {
+        if (featureId === 'feature-one') await firstAgentGate;
+      });
+
+      const first = service.executeFeature('/test/project', 'feature-one', true);
+      await vi.waitFor(() => expect(mockRunAgentFn).toHaveBeenCalledTimes(1));
+      const second = service.executeFeature('/test/project', 'feature-two', true);
+      await Promise.resolve();
+      expect(mockRunAgentFn).toHaveBeenCalledTimes(1);
+
+      releaseFirstAgent();
+      await Promise.all([first, second]);
+      expect(mockRunAgentFn).toHaveBeenCalledTimes(2);
+    });
+
+    it('migrates legacy assignments and lazily provisions the owned worktree', async () => {
+      const legacyFeature: Feature = {
+        ...testFeature,
+        worktreeMode: undefined,
+        branchName: 'develop',
+      };
+      mockLoadFeatureFn.mockResolvedValue(legacyFeature);
+      mockPersistWorktreeAssignmentFn.mockImplementation(
+        async (_projectPath, _featureId, assignment) => ({ ...legacyFeature, ...assignment })
+      );
+
+      await service.executeFeature('/test/project', 'feature-1', true);
+
+      expect(mockPersistWorktreeAssignmentFn).toHaveBeenCalledWith(
+        '/test/project',
+        'feature-1',
+        expect.objectContaining({
+          worktreeMode: 'isolated',
+          branchName: expect.stringMatching(/^feature\/test-feature-[a-f0-9]{8}$/),
+          worktreeBaseBranch: 'develop',
+        })
+      );
+      expect(mockEnsureFeatureWorktreeFn).toHaveBeenCalledWith(
+        '/test/project',
+        expect.stringMatching(/^feature\/test-feature-[a-f0-9]{8}$/),
+        'develop'
+      );
+      expect(mockRunAgentFn.mock.calls[0][0]).toBe(normalizePath('/test/owned-worktree'));
+    });
+
+    it('recreates an isolated feature checkout instead of failing when it is missing', async () => {
+      const isolatedFeature: Feature = {
+        ...testFeature,
+        worktreeMode: 'isolated',
+        branchName: 'feature/stable-owned-12345678',
+        worktreeBaseBranch: 'main',
+      };
+      mockLoadFeatureFn.mockResolvedValue(isolatedFeature);
+      vi.mocked(mockWorktreeResolver.findWorktreeForBranch).mockResolvedValue(null);
+
+      await service.executeFeature('/test/project', 'feature-1', true);
+
+      expect(mockEnsureFeatureWorktreeFn).toHaveBeenCalledWith(
+        '/test/project',
+        'feature/stable-owned-12345678',
+        'main'
+      );
+      expect(mockRunAgentFn).toHaveBeenCalled();
+    });
+
     it('uses worktree when useWorktrees is true and branch exists', async () => {
       await service.executeFeature('/test/project', 'feature-1', true);
 
@@ -2056,6 +2167,42 @@ describe('execution-service.ts', () => {
         .mocked(mockUpdateFeatureStatusFn)
         .mock.calls.filter((call) => call[2] === 'backlog');
       expect(backlogCalls.length).toBe(1);
+    });
+
+    it('returns an orchestration planning failure to backlog without announcing review-ready work', async () => {
+      const orchestratedFeature: Feature = {
+        ...testFeature,
+        executionMode: 'orchestrated',
+        orchestration: {
+          enabled: true,
+          selectionMode: 'manual',
+          maxReviewRounds: 5,
+          lead: { model: 'claude-fable', providerKey: 'claude' },
+          workhorse: { model: 'cursor-grok-4.6-high-fast', providerKey: 'cursor' },
+          reviewer: { model: 'codex-gpt-5.6-sol', providerKey: 'codex' },
+        },
+      };
+      mockSettingsService = {} as SettingsService;
+      mockLoadFeatureFn = vi.fn().mockResolvedValue(orchestratedFeature);
+      vi.mocked(simpleQuery).mockResolvedValue({ text: '' });
+
+      const svc = createServiceWithMocks();
+      await svc.executeFeature('/test/project', 'feature-1', false, true);
+
+      expect(vi.mocked(mockUpdateFeatureStatusFn).mock.calls.map(([, , status]) => status)).toEqual(
+        ['in_progress', 'backlog']
+      );
+      expect(mockEventBus.emitAutoModeEvent).toHaveBeenCalledWith(
+        'auto_mode_error',
+        expect.objectContaining({
+          featureId: 'feature-1',
+          error: expect.stringMatching(/empty implementation brief/i),
+        })
+      );
+      expect(mockEventBus.emitAutoModeEvent).not.toHaveBeenCalledWith(
+        'auto_mode_feature_complete',
+        expect.objectContaining({ passes: false })
+      );
     });
   });
 });

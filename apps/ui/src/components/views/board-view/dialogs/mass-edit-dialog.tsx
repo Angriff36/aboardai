@@ -159,7 +159,9 @@ export function MassEditDialog({
 
   // Work mode and branch name state
   const [workMode, setWorkMode] = useState<WorkMode>(() => {
-    // Derive initial work mode from first selected feature's branchName
+    if (selectedFeatures[0]?.worktreeMode === 'isolated') {
+      return 'auto';
+    }
     if (selectedFeatures.length > 0 && selectedFeatures[0].branchName) {
       return 'custom';
     }
@@ -212,7 +214,13 @@ export function MassEditDialog({
       // Reset work mode and branch name
       const initialBranchName = getInitialValue(selectedFeatures, 'branchName', '') as string;
       setBranchName(initialBranchName);
-      setWorkMode(initialBranchName ? 'custom' : 'current');
+      setWorkMode(
+        selectedFeatures[0]?.worktreeMode === 'isolated'
+          ? 'auto'
+          : initialBranchName
+            ? 'custom'
+            : 'current'
+      );
       // Reset pipeline exclusions
       setExcludedPipelineSteps(
         getInitialValue(selectedFeatures, 'excludedPipelineSteps', []) as string[]
@@ -256,10 +264,9 @@ export function MassEditDialog({
       updates.orchestration = executionMode === 'orchestrated' ? orchestration : undefined;
     }
     if (applyState.branchName) {
-      // For 'current' mode, use empty string (work on current branch)
-      // For 'auto' mode, use empty string (will be auto-generated)
-      // For 'custom' mode, use the specified branch name
       updates.branchName = workMode === 'custom' ? branchName : '';
+      updates.worktreeMode = workMode === 'auto' ? 'isolated' : 'shared';
+      updates.worktreeBaseBranch = workMode === 'auto' ? currentBranch : undefined;
     }
     if (applyState.excludedPipelineSteps) {
       updates.excludedPipelineSteps =

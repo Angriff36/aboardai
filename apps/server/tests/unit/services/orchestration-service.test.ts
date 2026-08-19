@@ -38,7 +38,7 @@ const feature: Feature = {
   },
 };
 
-function harness(reviewResponses: string[]) {
+function harness(reviewResponses: string[], leadPlanResponse = 'Implementation brief') {
   const calls: string[] = [];
   const savedRuns: OrchestrationRunRecord[] = [];
   let reviewIndex = 0;
@@ -49,7 +49,7 @@ function harness(reviewResponses: string[]) {
     }),
     queryRole: vi.fn(async (role) => {
       calls.push(role);
-      if (role === 'lead-plan') return 'Implementation brief';
+      if (role === 'lead-plan') return leadPlanResponse;
       if (role === 'lead-revision') return 'Revised implementation instructions';
       return reviewResponses[reviewIndex++];
     }),
@@ -138,5 +138,16 @@ describe('OrchestrationService', () => {
     expect(result.approved).toBe(false);
     expect(result.run.phase).toBe('waiting_approval');
     expect(result.run.terminalReason).toMatch(/valid structured verdict/i);
+  });
+
+  it('reports a planning provider failure as failed instead of reviewable work', async () => {
+    const { service } = harness([], '');
+
+    const result = await service.execute({ feature, basePrompt: 'Build it' });
+
+    expect(result.approved).toBe(false);
+    expect(result.failed).toBe(true);
+    expect(result.run.phase).toBe('failed');
+    expect(result.run.terminalReason).toMatch(/empty implementation brief/i);
   });
 });

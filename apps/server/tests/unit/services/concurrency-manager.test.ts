@@ -338,6 +338,28 @@ describe('ConcurrencyManager', () => {
   });
 
   describe('getRunningCountForWorktree', () => {
+    it('can count child worktrees against the main control-plane limit', async () => {
+      manager.acquire({
+        featureId: 'feature-main',
+        projectPath: '/test/project',
+        isAutoMode: true,
+      });
+      manager.acquire({
+        featureId: 'feature-isolated',
+        projectPath: '/test/project',
+        isAutoMode: true,
+      });
+      manager.updateRunningFeature('feature-isolated', {
+        branchName: 'feature/feature-isolated-12345678',
+      });
+
+      const count = await manager.getRunningCountForWorktree('/test/project', null, {
+        includeChildWorktrees: true,
+      });
+
+      expect(count).toBe(2);
+    });
+
     it('should return 0 when no features are running', async () => {
       const count = await manager.getRunningCountForWorktree('/test/project', null);
       expect(count).toBe(0);

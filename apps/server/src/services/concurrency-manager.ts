@@ -171,6 +171,8 @@ export class ConcurrencyManager {
    * @param branchName - The branch name, or null for main worktree
    *                     (features without branchName or matching primary branch)
    * @param options.autoModeOnly - If true, only count features started by auto mode.
+   * @param options.includeChildWorktrees - If true for the primary worktree, count
+   *                                        every running feature in the project.
    *                               Note: The auto-loop coordinator now counts ALL
    *                               running features (not just auto-mode) to ensure
    *                               total system load is respected. This option is
@@ -180,7 +182,7 @@ export class ConcurrencyManager {
   async getRunningCountForWorktree(
     projectPath: string,
     branchName: string | null,
-    options?: { autoModeOnly?: boolean }
+    options?: { autoModeOnly?: boolean; includeChildWorktrees?: boolean }
   ): Promise<number> {
     // Get the actual primary branch name for the project
     const primaryBranch = await this.getCurrentBranch(projectPath);
@@ -189,6 +191,13 @@ export class ConcurrencyManager {
     for (const [, feature] of this.runningFeatures) {
       // If autoModeOnly is set, skip manually started features
       if (options?.autoModeOnly && !feature.isAutoMode) {
+        continue;
+      }
+
+      if (feature.projectPath !== projectPath) continue;
+
+      if (branchName === null && options?.includeChildWorktrees) {
+        count++;
         continue;
       }
 
@@ -232,13 +241,20 @@ export class ConcurrencyManager {
    */
   async getRunningFeaturesForWorktree(
     projectPath: string,
-    branchName: string | null
+    branchName: string | null,
+    options?: { includeChildWorktrees?: boolean }
   ): Promise<string[]> {
     const primaryBranch = await this.getCurrentBranch(projectPath);
     const featureIds: string[] = [];
 
     for (const [, feature] of this.runningFeatures) {
       if (feature.projectPath !== projectPath) continue;
+
+      if (branchName === null && options?.includeChildWorktrees) {
+        featureIds.push(feature.featureId);
+        continue;
+      }
+
       const featureBranch = feature.branchName ?? null;
 
       if (branchName === null) {

@@ -136,7 +136,8 @@ export function createApplyHandler(settingsService?: SettingsService) {
             providerId: change.feature.providerId ?? resolvedDefaultModel.providerId,
             planningMode: effectivePlanningMode,
             requirePlanApproval: effectiveRequirePlanApproval,
-            branchName,
+            worktreeMode: 'isolated',
+            worktreeBaseBranch: branchName,
           });
 
           appliedChanges.push(`added:${newFeature.id}`);

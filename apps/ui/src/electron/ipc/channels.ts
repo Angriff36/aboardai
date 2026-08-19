@@ -22,6 +22,13 @@ export const IPC_CHANNELS = {
     IS_PACKAGED: 'app:isPackaged',
     QUIT: 'app:quit',
   },
+  UPDATE: {
+    GET_STATUS: 'update:getStatus',
+    CHECK: 'update:check',
+    DOWNLOAD: 'update:download',
+    INSTALL: 'update:install',
+    STATUS_CHANGED: 'update:statusChanged',
+  },
   AUTH: {
     GET_API_KEY: 'auth:getApiKey',
     IS_EXTERNAL_SERVER_MODE: 'auth:isExternalServerMode',

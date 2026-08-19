@@ -132,6 +132,7 @@ export async function simpleQuery(options: SimpleQueryOptions): Promise<SimpleQu
     systemPrompt: options.systemPrompt,
     maxTurns: options.maxTurns ?? 1,
     allowedTools: options.allowedTools ?? [],
+    tools: options.allowedTools ?? [],
     abortController: options.abortController,
     outputFormat: options.outputFormat,
     thinkingLevel: options.thinkingLevel,
@@ -171,7 +172,10 @@ export async function simpleQuery(options: SimpleQueryOptions): Promise<SimpleQu
           structuredOutput = msg.structured_output;
         }
       } else if (msg.subtype === 'error_max_turns') {
-        // Max turns reached - return what we have
+        if (!responseText.trim()) {
+          throw new Error('Provider ended before producing text (error_max_turns)');
+        }
+        // Max turns reached after producing text - return the partial response.
         break;
       } else if (msg.subtype === 'error_max_structured_output_retries') {
         throw new Error('Could not produce valid structured output after retries');

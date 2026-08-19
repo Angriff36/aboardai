@@ -14,7 +14,13 @@
  */
 
 import path from 'path';
-import type { Feature, FeatureStatusWithPipeline, ParsedTask, PlanSpec } from '@aboardai/types';
+import type {
+  Feature,
+  FeatureStatusWithPipeline,
+  OrchestrationRunRecord,
+  ParsedTask,
+  PlanSpec,
+} from '@aboardai/types';
 import { isPipelineStatus } from '@aboardai/types';
 import {
   atomicWriteJson,
@@ -276,7 +282,8 @@ export class FeatureStateManager {
    */
   private async scanAndResetFeatures(
     projectPath: string,
-    callerLabel: string
+    callerLabel: string,
+    recoverLegacyOrchestrationFailures = false
   ): Promise<{
     reconciledFeatures: Array<{
       id: string;
@@ -315,6 +322,43 @@ export class FeatureStateManager {
 
         let needsUpdate = false;
         const originalStatus = feature.status;
+
+        // Versions before 1.1.3 incorrectly routed an orchestration planning
+        // failure to waiting_approval. Repair only that exact persisted shape on
+        // startup: no workhorse/reviewer round ran, and the lead returned no brief.
+        // Ordinary review outcomes must remain waiting for the user.
+        if (recoverLegacyOrchestrationFailures && originalStatus === 'waiting_approval') {
+          const runPath = path.join(featuresDir, entry.name, 'orchestration', 'run.json');
+          const runResult = await readJsonWithRecovery<OrchestrationRunRecord | null>(
+            runPath,
+            null,
+            {
+              maxBackups: DEFAULT_BACKUP_COUNT,
+              autoRestore: true,
+            }
+          );
+          const run = runResult.data;
+          const isLegacyEmptyBriefFailure =
+            run?.currentRound === 0 &&
+            run.reviews.length === 0 &&
+            run.terminalReason === 'Lead orchestrator returned an empty implementation brief' &&
+            (run.phase === 'waiting_approval' || run.phase === 'failed');
+
+          if (isLegacyEmptyBriefFailure) {
+            const recoveredAt = new Date().toISOString();
+            run.phase = 'failed';
+            run.updatedAt = recoveredAt;
+            await atomicWriteJson(runPath, run, { backupCount: DEFAULT_BACKUP_COUNT });
+
+            feature.status = 'backlog';
+            feature.updatedAt = recoveredAt;
+            delete feature.justFinishedAt;
+            needsUpdate = true;
+            logger.info(
+              `[${callerLabel}] Requeued legacy empty-brief orchestration failure ${feature.id}`
+            );
+          }
+        }
 
         // Reset features in active execution states back to a resting state
         // After a server restart, no processes are actually running
@@ -434,7 +478,7 @@ export class FeatureStateManager {
     logger.info(`[reconcileAllFeatureStates] Starting reconciliation for ${projectPath}`);
 
     const { reconciledFeatures, reconciledFeatureIds, reconciledCount, scanned } =
-      await this.scanAndResetFeatures(projectPath, 'reconcileAllFeatureStates');
+      await this.scanAndResetFeatures(projectPath, 'reconcileAllFeatureStates', true);
 
     // Emit per-feature status change events so UI invalidates its cache
     for (const { id, previousStatus, newStatus } of reconciledFeatures) {

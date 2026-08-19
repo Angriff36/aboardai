@@ -161,59 +161,24 @@ export function useBoardActions({
     }) => {
       const workMode = featureData.workMode || 'current';
 
-      // For auto worktree mode, we need a title for the branch name.
-      // If no title provided, generate one from the description first.
-      let titleForBranch = featureData.title;
-      let titleWasGenerated = false;
-
-      if (workMode === 'auto' && !featureData.title.trim() && featureData.description.trim()) {
-        // Generate title first so we can use it for the branch name
-        const api = getElectronAPI();
-        if (api?.features?.generateTitle) {
-          try {
-            const result = await api.features.generateTitle(featureData.description);
-            if (result.success && result.title) {
-              titleForBranch = result.title;
-              titleWasGenerated = true;
-            }
-          } catch (error) {
-            logger.error('Error generating title for branch name:', error);
-          }
-        }
-        // If title generation failed, fall back to first part of description
-        if (!titleForBranch.trim()) {
-          titleForBranch = featureData.description.substring(0, 60);
-        }
-      }
-
       // Determine final branch name based on work mode:
-      // - 'current': Use current worktree's branch (or undefined if on main)
-      // - 'auto': Auto-generate branch name based on feature title
-      // - 'custom': Use the provided branch name
+      // - 'current' and 'custom' are explicit shared checkouts
+      // - 'auto' leaves the owned branch to the server and records only its base
       let finalBranchName: string | undefined;
+      const selectedBranch = normalizeFeatureBranchName(currentWorktreeBranch);
 
       if (workMode === 'current') {
-        // Work directly on current branch - use the current worktree's branch if not on main
-        // This ensures features created on a non-main worktree are associated with that worktree
-        finalBranchName = normalizeFeatureBranchName(currentWorktreeBranch);
+        finalBranchName = selectedBranch;
       } else if (workMode === 'auto') {
-        // Auto-generate a branch name based on feature title and timestamp
-        // Create a slug from the title: lowercase, replace non-alphanumeric with hyphens
-        const titleSlug =
-          titleForBranch
-            .toLowerCase()
-            .replace(/[^a-z0-9]+/g, '-') // Replace non-alphanumeric sequences with hyphens
-            .substring(0, 50) // Limit length first
-            .replace(/^-|-$/g, '') || 'untitled'; // Then remove leading/trailing hyphens, with fallback
-        const randomSuffix = Math.random().toString(36).substring(2, 6);
-        finalBranchName = `feature/${titleSlug}-${randomSuffix}`;
+        finalBranchName = undefined;
       } else {
-        // Custom mode - use provided branch name
         finalBranchName = normalizeFeatureBranchName(featureData.branchName);
       }
+      const worktreeMode = workMode === 'auto' ? 'isolated' : 'shared';
+      const worktreeBaseBranch = workMode === 'auto' ? selectedBranch : undefined;
 
-      // Create worktree for 'auto' or 'custom' modes when we have a branch name
-      if ((workMode === 'auto' || workMode === 'custom') && finalBranchName && currentProject) {
+      // Custom branches remain eagerly validated; isolated feature worktrees are lazy.
+      if (workMode === 'custom' && finalBranchName && currentProject) {
         try {
           const api = getElectronAPI();
           if (api?.worktree?.create) {
@@ -250,8 +215,7 @@ export function useBoardActions({
       }
 
       // Check if we need to generate a title (only if we didn't already generate it for the branch name)
-      const needsTitleGeneration =
-        !titleWasGenerated && !featureData.title.trim() && featureData.description.trim();
+      const needsTitleGeneration = !featureData.title.trim() && featureData.description.trim();
 
       const {
         initialStatus: requestedStatus,
@@ -262,10 +226,12 @@ export function useBoardActions({
       const initialStatus = requestedStatus || 'backlog';
       const newFeatureData = {
         ...restFeatureData,
-        title: titleWasGenerated ? titleForBranch : featureData.title,
+        title: featureData.title,
         titleGenerating: needsTitleGeneration,
         status: initialStatus,
         branchName: finalBranchName,
+        worktreeMode,
+        worktreeBaseBranch,
         dependencies: featureData.dependencies || [],
         createdAt: new Date().toISOString(),
         ...(initialStatus === 'in_progress' ? { startedAt: new Date().toISOString() } : {}),
@@ -371,60 +337,31 @@ export function useBoardActions({
     ) => {
       const workMode = updates.workMode || 'current';
 
-      // For auto worktree mode, we need a title for the branch name.
-      // If no title provided, generate one from the description first.
-      let titleForBranch = updates.title;
-      let titleWasGenerated = false;
-
-      if (workMode === 'auto' && !updates.title.trim() && updates.description.trim()) {
-        // Generate title first so we can use it for the branch name
-        const api = getElectronAPI();
-        if (api?.features?.generateTitle) {
-          try {
-            const result = await api.features.generateTitle(updates.description);
-            if (result.success && result.title) {
-              titleForBranch = result.title;
-              titleWasGenerated = true;
-            }
-          } catch (error) {
-            logger.error('Error generating title for branch name:', error);
-          }
-        }
-        // If title generation failed, fall back to first part of description
-        if (!titleForBranch.trim()) {
-          titleForBranch = updates.description.substring(0, 60);
-        }
-      }
-
       // Determine final branch name based on work mode
       let finalBranchName: string | undefined;
+      const existingFeature = features.find((feature) => feature.id === featureId);
+      const selectedBranch = normalizeFeatureBranchName(currentWorktreeBranch);
 
       if (workMode === 'current') {
-        // Work directly on current branch - use the current worktree's branch if not on main
-        // This ensures features updated on a non-main worktree are associated with that worktree
-        finalBranchName = normalizeFeatureBranchName(currentWorktreeBranch);
+        finalBranchName = selectedBranch;
       } else if (workMode === 'auto') {
-        // Preserve existing branch name if one exists (avoid orphaning worktrees on edit)
-        if (updates.branchName?.trim()) {
-          finalBranchName = normalizeFeatureBranchName(updates.branchName);
-        } else {
-          // Auto-generate a branch name based on feature title
-          // Create a slug from the title: lowercase, replace non-alphanumeric with hyphens
-          const titleSlug =
-            titleForBranch
-              .toLowerCase()
-              .replace(/[^a-z0-9]+/g, '-') // Replace non-alphanumeric sequences with hyphens
-              .substring(0, 50) // Limit length first
-              .replace(/^-|-$/g, '') || 'untitled'; // Then remove leading/trailing hyphens, with fallback
-          const randomSuffix = Math.random().toString(36).substring(2, 6);
-          finalBranchName = `feature/${titleSlug}-${randomSuffix}`;
-        }
+        finalBranchName =
+          existingFeature?.worktreeMode === 'isolated'
+            ? (normalizeFeatureBranchName(updates.branchName) ?? existingFeature.branchName)
+            : undefined;
       } else {
         finalBranchName = normalizeFeatureBranchName(updates.branchName);
       }
+      const worktreeMode = workMode === 'auto' ? 'isolated' : 'shared';
+      const worktreeBaseBranch =
+        workMode === 'auto'
+          ? existingFeature?.worktreeMode === 'isolated'
+            ? (existingFeature.worktreeBaseBranch ?? selectedBranch)
+            : selectedBranch
+          : undefined;
 
-      // Create worktree for 'auto' or 'custom' modes when we have a branch name
-      if ((workMode === 'auto' || workMode === 'custom') && finalBranchName && currentProject) {
+      // Explicit custom branches are eagerly validated; owned worktrees remain lazy.
+      if (workMode === 'custom' && finalBranchName && currentProject) {
         try {
           const api = getElectronAPI();
           if (api?.worktree?.create) {
@@ -460,8 +397,10 @@ export function useBoardActions({
 
       const finalUpdates = {
         ...restUpdates,
-        title: titleWasGenerated ? titleForBranch : updates.title,
+        title: updates.title,
         branchName: finalBranchName,
+        worktreeMode,
+        worktreeBaseBranch,
       };
 
       updateFeature(featureId, finalUpdates);
@@ -1240,6 +1179,8 @@ export function useBoardActions({
       } = feature;
       const duplicatedFeatureData = {
         ...featureData,
+        workMode: worktreesEnabled ? ('auto' as const) : ('current' as const),
+        branchName: '',
         // If duplicating as child, set source as dependency; otherwise keep existing
         ...(asChild && { dependencies: [feature.id] }),
       };
@@ -1251,7 +1192,7 @@ export function useBoardActions({
         description: `Created copy of: ${truncateDescription(feature.description || feature.title || '')}`,
       });
     },
-    [handleAddFeature]
+    [handleAddFeature, worktreesEnabled]
   );
 
   const handleDuplicateAsChildMultiple = useCallback(
@@ -1290,6 +1231,8 @@ export function useBoardActions({
 
         const duplicatedFeatureData = {
           ...featureData,
+          workMode: worktreesEnabled ? ('auto' as const) : ('current' as const),
+          branchName: '',
           // Each duplicate depends on the previous one in the chain
           dependencies: [parentFeature.id],
         };
@@ -1328,7 +1271,7 @@ export function useBoardActions({
         );
       }
     },
-    [handleAddFeature]
+    [handleAddFeature, worktreesEnabled]
   );
 
   return {

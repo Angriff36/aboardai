@@ -55,6 +55,20 @@ contextBridge.exposeInMainWorld('electronAPI', {
   getVersion: (): Promise<string> => ipcRenderer.invoke(IPC_CHANNELS.APP.GET_VERSION),
   isPackaged: (): Promise<boolean> => ipcRenderer.invoke(IPC_CHANNELS.APP.IS_PACKAGED),
 
+  // Desktop application updates
+  getUpdateStatus: () => ipcRenderer.invoke(IPC_CHANNELS.UPDATE.GET_STATUS),
+  checkForUpdates: () => ipcRenderer.invoke(IPC_CHANNELS.UPDATE.CHECK),
+  downloadUpdate: () => ipcRenderer.invoke(IPC_CHANNELS.UPDATE.DOWNLOAD),
+  installUpdate: () => ipcRenderer.invoke(IPC_CHANNELS.UPDATE.INSTALL),
+  onUpdateStatus: (callback: (status: import('./types/app-update').AppUpdateStatus) => void) => {
+    const listener = (
+      _event: Electron.IpcRendererEvent,
+      status: import('./types/app-update').AppUpdateStatus
+    ) => callback(status);
+    ipcRenderer.on(IPC_CHANNELS.UPDATE.STATUS_CHANGED, listener);
+    return () => ipcRenderer.removeListener(IPC_CHANNELS.UPDATE.STATUS_CHANGED, listener);
+  },
+
   // Window management
   updateMinWidth: (sidebarExpanded: boolean): Promise<void> =>
     ipcRenderer.invoke(IPC_CHANNELS.WINDOW.UPDATE_MIN_WIDTH, sidebarExpanded),

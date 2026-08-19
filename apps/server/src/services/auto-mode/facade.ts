@@ -55,6 +55,7 @@ import { AgentExecutor } from '../agent-executor.js';
 import { TestRunnerService } from '../test-runner-service.js';
 import { ProviderFactory } from '../../providers/provider-factory.js';
 import { FeatureLoader } from '../feature-loader.js';
+import { ensureWorktree } from '../worktree-creation.js';
 import type { SettingsService } from '../settings-service.js';
 import type { EventEmitter } from '../../lib/events.js';
 import type {
@@ -116,8 +117,14 @@ export class AutoModeServiceFacade {
 
     // Filter by branch/worktree alignment
     if (branchName === null) {
-      // For main worktree, include features with no branch or matching primary branch
-      return !feature.branchName || (primaryBranch != null && feature.branchName === primaryBranch);
+      // Main is the control-plane dispatcher for feature-owned worktrees. It
+      // must be able to pick isolated features so execution can lazily create
+      // their worktrees.
+      return (
+        feature.worktreeMode === 'isolated' ||
+        !feature.branchName ||
+        (primaryBranch != null && feature.branchName === primaryBranch)
+      );
     } else {
       // For named worktrees, only include features matching that branch
       return feature.branchName === branchName;
@@ -561,7 +568,13 @@ export class AutoModeServiceFacade {
       },
       (_pPath) => getFacade().saveExecutionState(),
       loadContextFiles,
-      (context) => pipelineOrchestrator.attemptMerge(context)
+      (context) => pipelineOrchestrator.attemptMerge(context),
+      {
+        persistWorktreeAssignmentFn: (pPath, featureId, assignment) =>
+          featureLoader.update(pPath, featureId, assignment),
+        ensureFeatureWorktreeFn: async (pPath, branchName, baseBranch) =>
+          (await ensureWorktree(pPath, branchName, { baseBranch })).path,
+      }
     );
 
     // RecoveryService
@@ -973,7 +986,8 @@ export class AutoModeServiceFacade {
     // are correctly matched when querying for the main worktree (null)
     const runningFeatures = await this.concurrencyManager.getRunningFeaturesForWorktree(
       this.projectPath,
-      branchName
+      branchName,
+      { includeChildWorktrees: branchName === null }
     );
 
     return {
@@ -1053,7 +1067,8 @@ export class AutoModeServiceFacade {
     );
     const currentAgents = await this.concurrencyManager.getRunningCountForWorktree(
       this.projectPath,
-      branchName
+      branchName,
+      { includeChildWorktrees: branchName === null }
     );
 
     return {

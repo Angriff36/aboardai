@@ -19,6 +19,7 @@ import { WorktreesSection } from './settings-view/worktrees';
 import { AccountSection } from './settings-view/account';
 import { SecuritySection } from './settings-view/security';
 import { DeveloperSection } from './settings-view/developer/developer-section';
+import { ApplicationUpdatesSection } from './settings-view/application-updates';
 import {
   ClaudeSettingsTab,
   CursorSettingsTab,
@@ -217,6 +218,8 @@ export function SettingsView() {
         );
       case 'developer':
         return <DeveloperSection />;
+      case 'application-updates':
+        return <ApplicationUpdatesSection />;
       default:
         return <ApiKeysSection />;
     }
