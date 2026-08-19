@@ -109,6 +109,33 @@ export async function performMerge(
     };
   }
 
+  // Agents frequently finish their run without committing: the branch stays
+  // identical to its base and merging it is a silent no-op while the actual
+  // work sits uncommitted in the worktree. Commit any pending work on the
+  // feature branch first so the merge carries the real changes.
+  if (worktreePath !== projectPath) {
+    try {
+      const pending = await execGitCommand(['status', '--porcelain'], worktreePath);
+      if (pending.trim().length > 0) {
+        await execGitCommand(['add', '-A'], worktreePath);
+        await execGitCommand(
+          ['commit', '-m', `[feature] ${branchName}: agent work auto-committed at merge`],
+          worktreePath
+        );
+        logger.info('Committed pending worktree changes before merge', {
+          branchName,
+          worktreePath,
+        });
+      }
+    } catch (commitError) {
+      logger.warn('Failed to auto-commit pending worktree changes before merge', {
+        branchName,
+        worktreePath,
+        error: (commitError as Error).message,
+      });
+    }
+  }
+
   // Fetch latest from remote before merging to ensure we have up-to-date refs
   try {
     await execGitCommand(['fetch', remote], projectPath);

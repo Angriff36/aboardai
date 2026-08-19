@@ -64,7 +64,7 @@ describe('performMerge clean-only worktree cleanup', () => {
     await expect(git(repository.worktreePath, 'status', '--porcelain')).rejects.toThrow();
   });
 
-  it('retains both the checkout and branch when the merged worktree is dirty', async () => {
+  it('auto-commits dirty worktree changes so the merge carries them, then cleans up', async () => {
     const repository = await createRepository();
     await writeFile(path.join(repository.worktreePath, 'uncommitted.txt'), 'do not discard\n');
 
@@ -78,12 +78,10 @@ describe('performMerge clean-only worktree cleanup', () => {
 
     expect(result).toMatchObject({
       success: true,
-      deleted: { worktreeDeleted: false, branchDeleted: false },
+      deleted: { worktreeDeleted: true, branchDeleted: true },
     });
-    expect(await git(repository.projectPath, 'branch', '--list', repository.branchName)).toContain(
-      repository.branchName
-    );
-    expect(await git(repository.worktreePath, 'status', '--porcelain')).toContain(
+    // The previously-uncommitted work must have reached the target branch.
+    expect(await git(repository.projectPath, 'ls-files', 'uncommitted.txt')).toContain(
       'uncommitted.txt'
     );
   });
