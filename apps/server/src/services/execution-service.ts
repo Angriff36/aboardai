@@ -11,7 +11,7 @@ import type {
 } from '@aboardai/types';
 import { createLogger, classifyError, loadContextFiles, recordMemoryUsage } from '@aboardai/utils';
 import { resolveModelString, DEFAULT_MODELS } from '@aboardai/model-resolver';
-import { getGitRepositoryDiffs } from '@aboardai/git-utils';
+import { getGitRepositoryDiffs, execGitCommand } from '@aboardai/git-utils';
 import { getFeatureDir } from '@aboardai/platform';
 import { ProviderFactory } from '../providers/provider-factory.js';
 import * as secureFs from '../lib/secure-fs.js';
@@ -108,6 +108,64 @@ export class ExecutionService {
     private finalizePipelineFn?: FinalizePipelineFn,
     private worktreeDependencies: ExecutionWorktreeDependencies = {}
   ) {}
+
+  /**
+   * Bring a feature worktree up to date with the primary branch before an
+   * agent starts working in it. Never throws and never blocks the run.
+   */
+  private async refreshWorktreeFromPrimary(
+    projectPath: string,
+    worktreePath: string,
+    branchName: string,
+    primaryBranch: string
+  ): Promise<void> {
+    if (branchName === primaryBranch) return;
+    try {
+      const [status, aheadRaw] = await Promise.all([
+        execGitCommand(['status', '--porcelain'], worktreePath),
+        execGitCommand(['rev-list', '--count', `${primaryBranch}..${branchName}`], projectPath),
+      ]);
+      const behindRaw = await execGitCommand(
+        ['rev-list', '--count', `${branchName}..${primaryBranch}`],
+        projectPath
+      );
+      const dirty = status.trim().length > 0;
+      const ahead = parseInt(aheadRaw.trim(), 10) || 0;
+      const behind = parseInt(behindRaw.trim(), 10) || 0;
+      if (behind === 0) return; // already current
+      if (!dirty && ahead === 0) {
+        // Pristine worktree: recreate the branch on the current primary tip.
+        await execGitCommand(['reset', '--hard', primaryBranch], worktreePath);
+        logger.info(
+          `Refreshed worktree branch "${branchName}" onto ${primaryBranch} (was ${behind} behind)`
+        );
+        return;
+      }
+      // Branch carries work: merge the primary in; abandon on conflict.
+      try {
+        await execGitCommand(
+          [
+            'merge',
+            primaryBranch,
+            '-m',
+            `Merge ${primaryBranch} into ${branchName} (pre-run refresh)`,
+          ],
+          worktreePath,
+          { LC_ALL: 'C' }
+        );
+        logger.info(`Merged ${primaryBranch} into worktree branch "${branchName}" before run`);
+      } catch {
+        await execGitCommand(['merge', '--abort'], worktreePath).catch(() => {});
+        logger.warn(
+          `Pre-run refresh of "${branchName}" conflicted with ${primaryBranch}; proceeding on the stale base`
+        );
+      }
+    } catch (error) {
+      logger.warn(
+        `Pre-run worktree refresh skipped for "${branchName}": ${(error as Error).message}`
+      );
+    }
+  }
 
   private async executeOrchestratedFeature(options: {
     projectPath: string;
@@ -470,6 +528,19 @@ ${feature.spec}
       tempRunningFeature.branchName = branchName ?? null;
       if (worktreePath) {
         logger.info(`Using worktree for branch "${branchName}": ${worktreePath}`);
+        // Worktrees are assigned once at feature creation; a feature that sat
+        // in the backlog runs on a base that may be far behind the primary
+        // branch. Refresh before execution: a pristine branch (no commits, no
+        // local changes) is reset onto the current primary tip; a branch with
+        // work gets the primary merged in. A conflicted refresh is abandoned
+        // (merge --abort) and the run proceeds on the old base rather than
+        // blocking.
+        await this.refreshWorktreeFromPrimary(
+          projectPath,
+          worktreePath,
+          branchName!,
+          primaryBranch
+        );
       }
 
       // Update status to in_progress immediately after acquiring the feature.
