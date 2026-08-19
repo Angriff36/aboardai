@@ -2,7 +2,9 @@
  * ProviderSupervisor — fault-tolerant stream supervisor
  *
  * Wraps a BaseProvider's executeQuery in retry/resume logic:
- * - Detects stalls (no message within stallTimeoutMs) and resumes with session_id
+ * - Detects stalls (no provider activity within stallTimeoutMs) and resumes
+ *   with session_id. Any yielded ProviderMessage is activity — including
+ *   tool_use / tool_result / thinking with no assistant text (see StreamActivity).
  * - Classifies thrown errors and retries retryable ones with exponential backoff
  * - Detects error result messages (is_error=true) and retries those too
  * - Handles rate-limit retry-after headers for precise delay
@@ -25,6 +27,7 @@ import {
   isStaleSessionError,
   ErrorType,
 } from '../lib/error-handler.js';
+import { StreamActivity } from './stream-activity.js';
 
 export type SupervisorStatusCallback = (status: SupervisorStatusMessage) => void;
 
@@ -278,6 +281,15 @@ export async function* superviseQuery(
         }
 
         const msg = iterResult.value;
+
+        // Receiving any iterator value already cleared the stall timer above.
+        // StreamActivity documents the contract: tool_use / tool_result / etc.
+        // count as liveness the same as assistant text.
+        if (!StreamActivity.isLivenessSignal(msg)) {
+          // Defensive: skip non-liveness shapes if they ever appear on the
+          // inner stream (providers should not emit supervisor_status).
+          continue messageLoop;
+        }
 
         // Capture session_id (first occurrence wins, later updates allowed for same stream)
         if (msg.session_id) {

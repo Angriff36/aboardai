@@ -9,7 +9,7 @@ import {
 describe('supervisor-types.ts', () => {
   describe('DEFAULT_SUPERVISOR_POLICY', () => {
     it('should have correct stallTimeoutMs value', () => {
-      expect(DEFAULT_SUPERVISOR_POLICY.stallTimeoutMs).toBe(120_000);
+      expect(DEFAULT_SUPERVISOR_POLICY.stallTimeoutMs).toBe(300_000);
     });
 
     it('should have correct maxAttempts value', () => {

@@ -334,13 +334,15 @@ export interface SupervisorPolicy {
 
 /**
  * Default supervision policy for stream reliability
- * - stallTimeoutMs: 120 seconds (detect stalled streams)
+ * - stallTimeoutMs: 300 seconds — long enough for silent tool runs (build/test)
+ *   that emit tool_use at start then nothing until tool_result; any yielded
+ *   provider message still resets the timer sooner
  * - maxAttempts: 4 retry attempts
  * - baseDelayMs: 2 seconds (initial retry delay)
  * - maxDelayMs: 60 seconds (cap exponential backoff)
  */
 export const DEFAULT_SUPERVISOR_POLICY: SupervisorPolicy = {
-  stallTimeoutMs: 120_000,
+  stallTimeoutMs: 300_000,
   maxAttempts: 4,
   baseDelayMs: 2_000,
   maxDelayMs: 60_000,
