@@ -19,6 +19,8 @@ const branchSlug = (title?: string): string => {
   return slug || 'feature';
 };
 
+const FEATURE_INTEGRATION_BRANCH = 'main';
+
 export function createFeatureBranchName(featureId: string, title?: string): string {
   const identity = createHash('sha256').update(featureId).digest('hex').slice(0, 8);
   return `feature/${branchSlug(title)}-${identity}`;
@@ -26,7 +28,7 @@ export function createFeatureBranchName(featureId: string, title?: string): stri
 
 export function buildDefaultWorktreeAssignment(
   feature: Pick<Feature, 'id' | 'title' | 'worktreeMode' | 'branchName' | 'worktreeBaseBranch'>,
-  baseBranch?: string | null
+  _baseBranch?: string | null
 ): FeatureWorktreeAssignment {
   if (feature.worktreeMode === 'shared') {
     return {
@@ -43,24 +45,24 @@ export function buildDefaultWorktreeAssignment(
       explicitlyIsolated && feature.branchName
         ? feature.branchName
         : createFeatureBranchName(feature.id, feature.title),
-    worktreeBaseBranch:
-      feature.worktreeBaseBranch ??
-      (!explicitlyIsolated ? feature.branchName : undefined) ??
-      baseBranch,
+    // Feature isolation is never allowed to turn the currently selected
+    // worktree into a long-lived integration branch. All feature branches
+    // start from and ultimately merge back into literal main.
+    worktreeBaseBranch: FEATURE_INTEGRATION_BRANCH,
   };
 }
 
 export function normalizeFeatureWorktreeAssignment(
   feature: Pick<Feature, 'id' | 'title' | 'worktreeMode' | 'branchName' | 'worktreeBaseBranch'>,
-  primaryBranch: string
+  _primaryBranch: string
 ): FeatureWorktreeAssignment {
   if (feature.worktreeMode) {
-    return buildDefaultWorktreeAssignment(feature, primaryBranch);
+    return buildDefaultWorktreeAssignment(feature, FEATURE_INTEGRATION_BRANCH);
   }
 
   return {
     worktreeMode: 'isolated',
     branchName: createFeatureBranchName(feature.id, feature.title),
-    worktreeBaseBranch: feature.branchName ?? primaryBranch,
+    worktreeBaseBranch: FEATURE_INTEGRATION_BRANCH,
   };
 }

@@ -519,7 +519,10 @@ ${feature.spec}
       feature = await this.loadFeatureFn(projectPath, featureId);
       if (!feature) throw new Error(`Feature ${featureId} not found`);
 
-      const primaryBranch = (await this.worktreeResolver.getCurrentBranch(projectPath)) ?? 'main';
+      // Isolated feature work is always based on and finalized into main.
+      // The branch currently checked out at projectPath is a UI/workspace concern,
+      // not an integration target.
+      const primaryBranch = 'main';
       const assignment = normalizeFeatureWorktreeAssignment(feature, primaryBranch);
       const assignmentChanged =
         feature.worktreeMode !== assignment.worktreeMode ||

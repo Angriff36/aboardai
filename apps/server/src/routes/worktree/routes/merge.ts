@@ -15,11 +15,11 @@ import { performMerge } from '../../../services/merge-service.js';
 export function createMergeHandler(events: EventEmitter) {
   return async (req: Request, res: Response): Promise<void> => {
     try {
-      const { projectPath, branchName, worktreePath, targetBranch, options } = req.body as {
+      const { projectPath, branchName, worktreePath, options } = req.body as {
         projectPath: string;
         branchName: string;
         worktreePath: string;
-        targetBranch?: string; // Branch to merge into (defaults to 'main')
+        targetBranch?: string; // Deprecated: feature integration always targets main
         options?: {
           squash?: boolean;
           message?: string;
@@ -37,7 +37,7 @@ export function createMergeHandler(events: EventEmitter) {
       }
 
       // Determine the target branch (default to 'main')
-      const mergeTo = targetBranch || 'main';
+      const mergeTo = 'main';
 
       // Delegate all merge logic to the service
       const result = await performMerge(

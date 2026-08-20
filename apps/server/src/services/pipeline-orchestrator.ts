@@ -582,15 +582,12 @@ export class PipelineOrchestrator {
 
     logger.info(`Attempting auto-merge for feature ${featureId} (branch: ${branchName})`);
     try {
-      // Get the primary branch dynamically instead of hardcoding 'main'
-      const targetBranch = await this.worktreeResolver.getCurrentBranch(projectPath);
-
       // Call merge service directly instead of HTTP fetch
       const result = await performMerge(
         projectPath,
         branchName,
         worktreePath || projectPath,
-        targetBranch || 'main',
+        'main',
         {
           deleteWorktreeAndBranch: feature.worktreeMode === 'isolated',
         },

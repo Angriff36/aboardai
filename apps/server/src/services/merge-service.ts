@@ -7,7 +7,66 @@
 import { createLogger, isValidBranchName, isValidRemoteName } from '@aboardai/utils';
 import { type EventEmitter } from '../lib/events.js';
 import { execGitCommand } from '@aboardai/git-utils';
+import { randomUUID } from 'node:crypto';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { KeyedMutex } from '../lib/keyed-mutex.js';
 const logger = createLogger('MergeService');
+
+const MAIN_BRANCH = 'main';
+const mergeMutex = new KeyedMutex();
+
+interface MergeWorkspace {
+  path: string;
+  temporary: boolean;
+}
+
+function parseWorktreeForBranch(output: string, branchName: string): string | null {
+  let worktreePath: string | null = null;
+  for (const line of `${output}\n`.split('\n')) {
+    if (line.startsWith('worktree ')) {
+      worktreePath = line.slice('worktree '.length);
+    } else if (line === `branch refs/heads/${branchName}` && worktreePath) {
+      return worktreePath;
+    } else if (line.length === 0) {
+      worktreePath = null;
+    }
+  }
+  return null;
+}
+
+async function resolveMainMergeWorkspace(projectPath: string): Promise<MergeWorkspace> {
+  const worktreeList = await execGitCommand(['worktree', 'list', '--porcelain'], projectPath);
+  const existingMainWorktree = parseWorktreeForBranch(worktreeList, MAIN_BRANCH);
+  if (existingMainWorktree) {
+    const trackedStatus = await execGitCommand(
+      ['status', '--porcelain', '--untracked-files=no'],
+      existingMainWorktree
+    );
+    if (trackedStatus.trim().length > 0) {
+      throw new Error(`Cannot merge feature work into dirty ${MAIN_BRANCH} worktree`);
+    }
+    return { path: existingMainWorktree, temporary: false };
+  }
+
+  const temporaryPath = join(tmpdir(), `aboardai-main-merge-${randomUUID()}`);
+  await execGitCommand(['worktree', 'add', temporaryPath, MAIN_BRANCH], projectPath);
+  return { path: temporaryPath, temporary: true };
+}
+
+async function cleanupTemporaryMergeWorkspace(
+  projectPath: string,
+  workspace: MergeWorkspace | null
+): Promise<void> {
+  if (!workspace?.temporary) return;
+  await execGitCommand(['merge', '--abort'], workspace.path).catch(() => {});
+  await execGitCommand(['worktree', 'remove', workspace.path], projectPath).catch(async (error) => {
+    await execGitCommand(['worktree', 'prune'], projectPath).catch(() => {});
+    logger.warn(`Failed to remove temporary main merge worktree: ${workspace.path}`, {
+      error: error instanceof Error ? error.message : String(error),
+    });
+  });
+}
 
 export interface MergeOptions {
   squash?: boolean;
@@ -36,7 +95,7 @@ export interface MergeServiceResult {
  * @param projectPath - Path to the git repository
  * @param branchName - Source branch to merge
  * @param worktreePath - Path to the worktree (used for deletion if requested)
- * @param targetBranch - Branch to merge into (defaults to 'main')
+ * @param targetBranch - Deprecated request field; feature integration always targets main
  * @param options - Merge options
  * @param options.squash - If true, perform a squash merge
  * @param options.message - Custom merge commit message
@@ -51,6 +110,19 @@ export async function performMerge(
   options?: MergeOptions,
   emitter?: EventEmitter
 ): Promise<MergeServiceResult> {
+  return mergeMutex.run(projectPath, () =>
+    performMergeLocked(projectPath, branchName, worktreePath, targetBranch, options, emitter)
+  );
+}
+
+async function performMergeLocked(
+  projectPath: string,
+  branchName: string,
+  worktreePath: string,
+  targetBranch: string,
+  options?: MergeOptions,
+  emitter?: EventEmitter
+): Promise<MergeServiceResult> {
   if (!projectPath || !branchName || !worktreePath) {
     return {
       success: false,
@@ -58,7 +130,14 @@ export async function performMerge(
     };
   }
 
-  const mergeTo = targetBranch || 'main';
+  if (targetBranch && targetBranch !== MAIN_BRANCH) {
+    logger.warn('Ignoring non-main merge target; feature integration always targets main', {
+      requestedTargetBranch: targetBranch,
+      projectPath,
+      branchName,
+    });
+  }
+  const mergeTo = MAIN_BRANCH;
 
   // Validate branch names early to reject invalid input before any git operations
   if (!isValidBranchName(branchName)) {
@@ -158,6 +237,21 @@ export async function performMerge(
     // Non-fatal: proceed with local refs if fetch fails (e.g. offline)
   }
 
+  let mergeWorkspace: MergeWorkspace | null = null;
+  try {
+    mergeWorkspace = await resolveMainMergeWorkspace(projectPath);
+  } catch (workspaceError) {
+    const errorMessage =
+      workspaceError instanceof Error ? workspaceError.message : String(workspaceError);
+    emitter?.emit('merge:error', {
+      branchName,
+      targetBranch: mergeTo,
+      error: errorMessage,
+    });
+    return { success: false, error: errorMessage };
+  }
+  const mergeProjectPath = mergeWorkspace.path;
+
   // Emit merge:start after validating inputs
   emitter?.emit('merge:start', { branchName, targetBranch: mergeTo, worktreePath });
 
@@ -170,7 +264,7 @@ export async function performMerge(
   try {
     // Set LC_ALL=C so git always emits English output regardless of the system
     // locale, making text-based conflict detection reliable.
-    await execGitCommand(mergeArgs, projectPath, { LC_ALL: 'C' });
+    await execGitCommand(mergeArgs, mergeProjectPath, { LC_ALL: 'C' });
   } catch (mergeError: unknown) {
     // Check if this is a merge conflict.  We use a multi-layer strategy so
     // that detection is reliable even when locale settings vary or git's text
@@ -203,7 +297,7 @@ export async function performMerge(
     try {
       const diffOutput = await execGitCommand(
         ['diff', '--name-only', '--diff-filter=U'],
-        projectPath,
+        mergeProjectPath,
         { LC_ALL: 'C' }
       );
       const files = diffOutput
@@ -222,7 +316,7 @@ export async function performMerge(
     // Layer 3: check for unmerged paths via machine-readable git status.
     let hasUnmergedPaths = false;
     try {
-      const statusOutput = await execGitCommand(['status', '--porcelain'], projectPath, {
+      const statusOutput = await execGitCommand(['status', '--porcelain'], mergeProjectPath, {
         LC_ALL: 'C',
       });
       // Unmerged status codes occupy the first two characters of each line.
@@ -254,6 +348,8 @@ export async function performMerge(
       // Emit merge:conflict event with conflict details
       emitter?.emit('merge:conflict', { branchName, targetBranch: mergeTo, conflictFiles });
 
+      await cleanupTemporaryMergeWorkspace(projectPath, mergeWorkspace);
+
       return {
         success: false,
         error: `Merge CONFLICT: Automatic merge of "${branchName}" into "${mergeTo}" failed. Please resolve conflicts manually.`,
@@ -270,6 +366,7 @@ export async function performMerge(
     });
 
     // Re-throw non-conflict errors
+    await cleanupTemporaryMergeWorkspace(projectPath, mergeWorkspace);
     throw mergeError;
   }
 
@@ -277,7 +374,7 @@ export async function performMerge(
   if (options?.squash) {
     const squashMessage = options?.message || `Merge ${branchName} (squash)`;
     try {
-      await execGitCommand(['commit', '-m', squashMessage], projectPath);
+      await execGitCommand(['commit', '-m', squashMessage], mergeProjectPath);
     } catch (commitError: unknown) {
       const err = commitError as { message?: string };
       // Emit merge:error so subscribers always receive either merge:success or merge:error
@@ -286,9 +383,12 @@ export async function performMerge(
         targetBranch: mergeTo,
         error: err.message || String(commitError),
       });
+      await cleanupTemporaryMergeWorkspace(projectPath, mergeWorkspace);
       throw commitError;
     }
   }
+
+  await cleanupTemporaryMergeWorkspace(projectPath, mergeWorkspace);
 
   // Optionally delete the worktree and branch after merging
   let worktreeDeleted = false;

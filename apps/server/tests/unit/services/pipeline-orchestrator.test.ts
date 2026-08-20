@@ -486,8 +486,9 @@ describe('PipelineOrchestrator', () => {
       vi.mocked(performMerge).mockReset();
     });
 
-    it('should call performMerge with correct parameters', async () => {
+    it('always asks the merge service to target main even when another branch is checked out', async () => {
       vi.mocked(performMerge).mockResolvedValue({ success: true });
+      vi.mocked(mockWorktreeResolver.getCurrentBranch).mockResolvedValue('temp-feature');
 
       const context = createMergeContext();
       await orchestrator.attemptMerge(context);

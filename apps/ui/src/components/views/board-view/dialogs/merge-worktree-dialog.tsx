@@ -14,8 +14,7 @@ import { GitMerge, AlertTriangle, Trash2, Wrench, Sparkles, XCircle } from 'luci
 import { Spinner } from '@/components/ui/spinner';
 import { getElectronAPI } from '@/lib/electron';
 import { toast } from 'sonner';
-import { BranchAutocomplete } from '@/components/ui/branch-autocomplete';
-import type { WorktreeInfo, BranchInfo, MergeConflictInfo } from '../worktree-panel/types';
+import type { WorktreeInfo, MergeConflictInfo } from '../worktree-panel/types';
 
 export type { MergeConflictInfo } from '../worktree-panel/types';
 
@@ -38,46 +37,13 @@ export function MergeWorktreeDialog({
   onCreateConflictResolutionFeature,
 }: MergeWorktreeDialogProps) {
   const [isLoading, setIsLoading] = useState(false);
-  const [targetBranch, setTargetBranch] = useState('main');
-  const [availableBranches, setAvailableBranches] = useState<string[]>([]);
-  const [loadingBranches, setLoadingBranches] = useState(false);
   const [deleteWorktreeAndBranch, setDeleteWorktreeAndBranch] = useState(false);
   const [mergeConflict, setMergeConflict] = useState<MergeConflictInfo | null>(null);
-
-  // Fetch available branches when dialog opens
-  useEffect(() => {
-    if (open && worktree && projectPath) {
-      setLoadingBranches(true);
-      const api = getElectronAPI();
-      if (api?.worktree?.listBranches) {
-        api.worktree
-          .listBranches(projectPath, false)
-          .then((result) => {
-            if (result.success && result.result?.branches) {
-              // Filter out the source branch (can't merge into itself) and remote branches
-              const branches = result.result.branches
-                .filter((b: BranchInfo) => !b.isRemote && b.name !== worktree.branch)
-                .map((b: BranchInfo) => b.name);
-              setAvailableBranches(branches);
-            }
-          })
-          .catch((err) => {
-            console.error('Failed to fetch branches:', err);
-          })
-          .finally(() => {
-            setLoadingBranches(false);
-          });
-      } else {
-        setLoadingBranches(false);
-      }
-    }
-  }, [open, worktree, projectPath]);
 
   // Reset state when dialog opens
   useEffect(() => {
     if (open) {
       setIsLoading(false);
-      setTargetBranch('main');
       setDeleteWorktreeAndBranch(false);
       setMergeConflict(null);
     }
@@ -99,15 +65,15 @@ export function MergeWorktreeDialog({
         projectPath,
         worktree.branch,
         worktree.path,
-        targetBranch,
+        'main',
         { deleteWorktreeAndBranch }
       );
 
       if (result.success) {
         const description = deleteWorktreeAndBranch
-          ? `Branch "${worktree.branch}" has been integrated into "${targetBranch}" and the worktree and branch were deleted`
-          : `Branch "${worktree.branch}" has been integrated into "${targetBranch}"`;
-        toast.success(`Branch integrated into ${targetBranch}`, { description });
+          ? `Branch "${worktree.branch}" has been integrated into "main" and the worktree and branch were deleted`
+          : `Branch "${worktree.branch}" has been integrated into "main"`;
+        toast.success('Branch integrated into main', { description });
         onIntegrated(worktree, deleteWorktreeAndBranch);
         onOpenChange(false);
       } else {
@@ -123,7 +89,7 @@ export function MergeWorktreeDialog({
           // Set merge conflict state to show the conflict resolution UI
           setMergeConflict({
             sourceBranch: worktree.branch,
-            targetBranch: targetBranch,
+            targetBranch: 'main',
             targetWorktreePath: projectPath, // The merge happens in the target branch's worktree
             conflictFiles: result.conflictFiles || [],
             operationType: 'merge',
@@ -148,7 +114,7 @@ export function MergeWorktreeDialog({
       if (hasConflicts) {
         setMergeConflict({
           sourceBranch: worktree.branch,
-          targetBranch: targetBranch,
+          targetBranch: 'main',
           targetWorktreePath: projectPath,
           conflictFiles: [],
           operationType: 'merge',
@@ -280,28 +246,8 @@ export function MergeWorktreeDialog({
             <div className="space-y-4">
               <span className="block">
                 Integrate <code className="font-mono bg-muted px-1 rounded">{worktree.branch}</code>{' '}
-                into:
+                into <code className="font-mono bg-muted px-1 rounded">main</code>.
               </span>
-
-              <div className="space-y-2">
-                <Label htmlFor="target-branch" className="text-sm text-foreground">
-                  Target Branch
-                </Label>
-                {loadingBranches ? (
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <Spinner size="sm" />
-                    Loading branches...
-                  </div>
-                ) : (
-                  <BranchAutocomplete
-                    value={targetBranch}
-                    onChange={setTargetBranch}
-                    branches={availableBranches}
-                    placeholder="Select target branch..."
-                    data-testid="merge-target-branch"
-                  />
-                )}
-              </div>
 
               {worktree.hasChanges && (
                 <div className="flex items-start gap-2 p-3 rounded-md bg-yellow-500/10 border border-yellow-500/20">
@@ -347,7 +293,7 @@ export function MergeWorktreeDialog({
           </Button>
           <Button
             onClick={handleMerge}
-            disabled={worktree.hasChanges || !targetBranch || loadingBranches || isLoading}
+            disabled={worktree.hasChanges || isLoading}
             className="bg-green-600 hover:bg-green-700 text-white"
           >
             {isLoading ? (

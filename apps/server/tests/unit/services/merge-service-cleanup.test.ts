@@ -45,6 +45,50 @@ afterEach(async () => {
 });
 
 describe('performMerge clean-only worktree cleanup', () => {
+  it('merges into main without changing the branch checked out at the project path', async () => {
+    const repository = await createRepository();
+    await git(repository.projectPath, 'checkout', '-b', 'temp-feature');
+    await writeFile(path.join(repository.projectPath, 'temp-only.txt'), 'do not merge here\n');
+    await git(repository.projectPath, 'add', 'temp-only.txt');
+    await git(repository.projectPath, 'commit', '-m', 'temp branch work');
+
+    const result = await performMerge(
+      repository.projectPath,
+      repository.branchName,
+      repository.worktreePath,
+      'temp-feature'
+    );
+
+    expect(result).toMatchObject({ success: true, targetBranch: 'main' });
+    expect(await git(repository.projectPath, 'branch', '--show-current')).toBe('temp-feature');
+    expect(await git(repository.projectPath, 'ls-tree', '-r', '--name-only', 'main')).toContain(
+      'feature.txt'
+    );
+    expect(
+      await git(repository.projectPath, 'ls-tree', '-r', '--name-only', 'temp-feature')
+    ).not.toContain('feature.txt');
+  }, 15000);
+
+  it('fails instead of merging into another branch when main does not exist', async () => {
+    const repository = await createRepository();
+    await git(repository.projectPath, 'branch', '-m', 'main', 'develop');
+
+    const result = await performMerge(
+      repository.projectPath,
+      repository.branchName,
+      repository.worktreePath,
+      'develop'
+    );
+
+    expect(result).toMatchObject({
+      success: false,
+      error: expect.stringContaining('main'),
+    });
+    expect(
+      await git(repository.projectPath, 'ls-tree', '-r', '--name-only', 'develop')
+    ).not.toContain('feature.txt');
+  }, 15000);
+
   it('removes a clean merged feature worktree and branch', async () => {
     const repository = await createRepository();
 

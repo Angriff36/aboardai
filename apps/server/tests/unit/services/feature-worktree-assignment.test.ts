@@ -22,12 +22,12 @@ describe('feature worktree assignment', () => {
     expect(first).toEqual({
       worktreeMode: 'isolated',
       branchName: createFeatureBranchName('feature-one', 'Build Login'),
-      worktreeBaseBranch: 'develop',
+      worktreeBaseBranch: 'main',
     });
     expect(second.branchName).not.toBe(first.branchName);
   });
 
-  it('keeps an isolated branch stable after its title changes', () => {
+  it('keeps an isolated branch stable but normalizes its base to main', () => {
     const assignment = normalizeFeatureWorktreeAssignment(
       feature({
         title: 'A New Title',
@@ -39,7 +39,7 @@ describe('feature worktree assignment', () => {
     );
 
     expect(assignment.branchName).toBe('feature/build-login-existing');
-    expect(assignment.worktreeBaseBranch).toBe('develop');
+    expect(assignment.worktreeBaseBranch).toBe('main');
   });
 
   it('leaves explicit shared assignments unchanged', () => {
@@ -56,7 +56,7 @@ describe('feature worktree assignment', () => {
   });
 
   it.each(['main', 'legacy-feature-branch'])(
-    'migrates a legacy %s assignment while retaining it as the base',
+    'migrates a legacy %s assignment onto main',
     (legacyBranch) => {
       const assignment = normalizeFeatureWorktreeAssignment(
         feature({ branchName: legacyBranch }),
@@ -66,7 +66,7 @@ describe('feature worktree assignment', () => {
       expect(assignment).toEqual({
         worktreeMode: 'isolated',
         branchName: createFeatureBranchName('feature-one', 'Build Login'),
-        worktreeBaseBranch: legacyBranch,
+        worktreeBaseBranch: 'main',
       });
     }
   );

@@ -542,6 +542,25 @@ describe('execution-service.ts', () => {
       );
     });
 
+    it('bases an isolated feature worktree on main when another branch is checked out', async () => {
+      const isolatedFeature: Feature = {
+        ...testFeature,
+        worktreeMode: 'isolated',
+        branchName: 'feature/test-1',
+        worktreeBaseBranch: undefined,
+      };
+      mockLoadFeatureFn.mockResolvedValue(isolatedFeature);
+      vi.mocked(mockWorktreeResolver.getCurrentBranch).mockResolvedValue('temp-feature');
+
+      await service.executeFeature('/test/project', 'feature-1', true);
+
+      expect(mockEnsureFeatureWorktreeFn).toHaveBeenCalledWith(
+        '/test/project',
+        'feature/test-1',
+        'main'
+      );
+    });
+
     it('merges an isolated worktree before marking a feature verified without pipeline steps', async () => {
       const isolatedFeature: Feature = {
         ...testFeature,
@@ -1462,13 +1481,13 @@ describe('execution-service.ts', () => {
         expect.objectContaining({
           worktreeMode: 'isolated',
           branchName: expect.stringMatching(/^feature\/test-feature-[a-f0-9]{8}$/),
-          worktreeBaseBranch: 'develop',
+          worktreeBaseBranch: 'main',
         })
       );
       expect(mockEnsureFeatureWorktreeFn).toHaveBeenCalledWith(
         '/test/project',
         expect.stringMatching(/^feature\/test-feature-[a-f0-9]{8}$/),
-        'develop'
+        'main'
       );
       expect(mockRunAgentFn.mock.calls[0][0]).toBe(normalizePath('/test/owned-worktree'));
     });

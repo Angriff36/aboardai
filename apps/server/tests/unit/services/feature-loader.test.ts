@@ -329,7 +329,7 @@ describe('feature-loader.ts', () => {
       expect(result).toMatchObject({
         worktreeMode: 'isolated',
         branchName: expect.stringMatching(/^feature\/ship-it-[a-f0-9]{8}$/),
-        worktreeBaseBranch: 'develop',
+        worktreeBaseBranch: 'main',
       });
     });
 
