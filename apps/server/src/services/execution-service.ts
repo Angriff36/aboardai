@@ -167,6 +167,53 @@ export class ExecutionService {
     }
   }
 
+  /**
+   * Integrate successful isolated-worktree work before exposing a successful
+   * terminal feature status. Shared worktrees are intentionally excluded: a
+   * shared branch can contain work from multiple features and cannot be safely
+   * finalized as one feature's branch.
+   */
+  private async finalizeIsolatedFeatureBranch(
+    context: Parameters<FinalizePipelineFn>[0],
+    primaryBranch: string
+  ): Promise<boolean> {
+    const { projectPath, featureId, feature, branchName, worktreePath } = context;
+    if (
+      feature.worktreeMode !== 'isolated' ||
+      !branchName ||
+      !worktreePath ||
+      branchName === primaryBranch
+    ) {
+      return true;
+    }
+
+    let mergeError = 'Feature branch integration is unavailable';
+    try {
+      if (!this.finalizePipelineFn) {
+        throw new Error(mergeError);
+      }
+      const result = await this.finalizePipelineFn(context);
+      if (result.success) return true;
+      mergeError = result.error ?? 'Feature branch integration failed';
+    } catch (error) {
+      mergeError = error instanceof Error ? error.message : String(error);
+    }
+
+    const currentFeature = await this.loadFeatureFn(projectPath, featureId).catch(() => null);
+    if (currentFeature?.status !== 'merge_conflict') {
+      await this.updateFeatureStatusFn(projectPath, featureId, 'merge_conflict');
+    }
+    this.eventBus.emitAutoModeEvent('auto_mode_error', {
+      featureId,
+      featureName: feature.title,
+      branchName,
+      error: mergeError,
+      errorType: 'merge_failed',
+      projectPath,
+    });
+    return false;
+  }
+
   private async executeOrchestratedFeature(options: {
     projectPath: string;
     feature: Feature;
@@ -823,6 +870,7 @@ Please continue from where you left off and complete all remaining tasks. Use th
           useClaudeCodeSystemPrompt,
           testAttempts: 0,
           maxTestAttempts: 5,
+          deferMerge: true,
         });
         pipelineCompleted = true;
         // Check if pipeline set a terminal status (e.g., merge_conflict) — don't overwrite it
@@ -865,6 +913,28 @@ Please continue from where you left off and complete all remaining tasks. Use th
         );
       } else {
         finalStatus = 'verified';
+      }
+
+      if (finalStatus === 'verified') {
+        const mergeSucceeded = await this.finalizeIsolatedFeatureBranch(
+          {
+            projectPath,
+            featureId,
+            feature,
+            steps: sortedSteps,
+            workDir,
+            worktreePath,
+            branchName: branchName ?? null,
+            abortController,
+            autoLoadClaudeMd,
+            useClaudeCodeSystemPrompt,
+            testAttempts: 0,
+            maxTestAttempts: 5,
+            deferMerge: false,
+          },
+          primaryBranch
+        );
+        if (!mergeSucceeded) return;
       }
 
       await this.updateFeatureStatusFn(projectPath, featureId, finalStatus);

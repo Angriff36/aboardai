@@ -569,6 +569,39 @@ describe('auto-loop-coordinator.ts', () => {
       );
     });
 
+    it('does not pick a dependent while its completed dependency is still running', async () => {
+      const completedButRunningDep: Feature = {
+        ...testFeature,
+        id: 'feature-dep',
+        status: 'completed',
+        title: 'Dependency Still Finalizing',
+      };
+      const blockedFeature: Feature = {
+        ...testFeature,
+        id: 'feature-blocked',
+        dependencies: ['feature-dep'],
+        title: 'Blocked Feature',
+      };
+
+      vi.mocked(mockLoadPendingFeatures).mockResolvedValue([blockedFeature]);
+      vi.mocked(mockLoadAllFeatures).mockResolvedValue([completedButRunningDep, blockedFeature]);
+      vi.mocked(mockIsFeatureRunning as ReturnType<typeof vi.fn>).mockImplementation(
+        (featureId: string) => featureId === 'feature-dep'
+      );
+      vi.mocked(mockConcurrencyManager.getRunningCountForWorktree).mockResolvedValue(0);
+
+      await coordinator.startAutoLoopForProject('/test/project', null, 1);
+      await vi.advanceTimersByTimeAsync(3000);
+      await coordinator.stopAutoLoopForProject('/test/project', null);
+
+      expect(mockExecuteFeature).not.toHaveBeenCalledWith(
+        '/test/project',
+        'feature-blocked',
+        true,
+        true
+      );
+    });
+
     it('picks features whose dependencies are verified', async () => {
       const verifiedDep: Feature = {
         ...testFeature,

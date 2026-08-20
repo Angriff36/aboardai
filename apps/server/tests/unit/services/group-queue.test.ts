@@ -258,6 +258,75 @@ describe('GroupQueue — dependency ordering', () => {
     expect(bStart).toBeGreaterThanOrEqual(0);
     expect(aEnd).toBeLessThan(bStart);
   });
+
+  it('does not run a dependent when its dependency is only waiting for approval', async () => {
+    h = await makeHarness();
+    const featureIds = ['feat-a', 'feat-b'];
+    await setupGroup(h, { featureIds, maxConcurrency: 1, retryLimit: 0 });
+
+    h.executeFeature.mockResolvedValue(undefined);
+    h.loadFeature.mockImplementation(async (_p, featureId) =>
+      makeFeature(featureId, featureId === 'feat-a' ? 'waiting_approval' : 'verified')
+    );
+    h.loadAllFeatures.mockImplementation(async () => [
+      makeFeature('feat-a', 'waiting_approval'),
+      makeFeature('feat-b', 'ready', { dependencies: ['feat-a'] }),
+    ]);
+
+    await h.queue.startGroup(h.projectPath, 'grp-1');
+    await vi.waitFor(
+      async () => {
+        const snapshot = await h.engine.getSnapshot('grp-1');
+        expect(snapshot.status).toBe('failed');
+      },
+      { timeout: 2000 }
+    );
+    await sleep(50);
+
+    expect(h.executeFeature).toHaveBeenCalledTimes(1);
+    expect(h.executeFeature).toHaveBeenCalledWith(h.projectPath, 'feat-a', true, false);
+  });
+
+  it('does not run a dependent before its completed dependency execution settles', async () => {
+    h = await makeHarness();
+    const featureIds = ['feat-a', 'feat-b'];
+    await setupGroup(h, { featureIds, maxConcurrency: 2, retryLimit: 0 });
+
+    let releaseDependency!: () => void;
+    const dependencyGate = new Promise<void>((resolve) => {
+      releaseDependency = resolve;
+    });
+    h.executeFeature.mockImplementation(async (_p, featureId) => {
+      if (featureId === 'feat-a') await dependencyGate;
+    });
+    h.loadFeature.mockImplementation(async (_p, featureId) => makeFeature(featureId, 'verified'));
+    h.loadAllFeatures.mockImplementation(async () => [
+      makeFeature('feat-a', 'completed'),
+      makeFeature('feat-b', 'ready', { dependencies: ['feat-a'] }),
+    ]);
+
+    await h.queue.startGroup(h.projectPath, 'grp-1');
+    await sleep(50);
+
+    expect(h.executeFeature).toHaveBeenCalledTimes(1);
+    expect(h.executeFeature).not.toHaveBeenCalledWith(h.projectPath, 'feat-b', true, false);
+
+    releaseDependency();
+    await vi.waitFor(
+      () => {
+        expect(h.executeFeature).toHaveBeenCalledWith(h.projectPath, 'feat-b', true, false);
+      },
+      { timeout: 2000 }
+    );
+    await vi.waitFor(
+      async () => {
+        const snapshot = await h.engine.getSnapshot('grp-1');
+        expect(snapshot.status).toBe('review');
+      },
+      { timeout: 2000 }
+    );
+    await sleep(50);
+  });
 });
 
 // ── 3. retry ──────────────────────────────────────────────────────────────────

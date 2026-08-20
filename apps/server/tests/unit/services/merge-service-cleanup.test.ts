@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it } from 'vitest';
 import { execFile } from 'node:child_process';
-import { mkdtemp, rm, writeFile } from 'node:fs/promises';
+import { chmod, mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { promisify } from 'node:util';
@@ -40,7 +40,7 @@ async function createRepository(): Promise<{
 
 afterEach(async () => {
   for (const directory of tempDirectories.splice(0).reverse()) {
-    await rm(directory, { recursive: true, force: true });
+    await rm(directory, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 });
   }
 });
 
@@ -62,7 +62,7 @@ describe('performMerge clean-only worktree cleanup', () => {
     });
     expect(await git(repository.projectPath, 'branch', '--list', repository.branchName)).toBe('');
     await expect(git(repository.worktreePath, 'status', '--porcelain')).rejects.toThrow();
-  });
+  }, 15000);
 
   it('auto-commits dirty worktree changes so the merge carries them, then cleans up', async () => {
     const repository = await createRepository();
@@ -84,5 +84,32 @@ describe('performMerge clean-only worktree cleanup', () => {
     expect(await git(repository.projectPath, 'ls-files', 'uncommitted.txt')).toContain(
       'uncommitted.txt'
     );
-  });
+  }, 15000);
+
+  it('fails integration when dirty worktree changes cannot be committed', async () => {
+    const repository = await createRepository();
+    await writeFile(path.join(repository.worktreePath, 'uncommitted.txt'), 'must not be omitted\n');
+    const hooksDir = path.join(repository.projectPath, '.git', 'hooks');
+    await mkdir(hooksDir, { recursive: true });
+    const preCommitHook = path.join(hooksDir, 'pre-commit');
+    await writeFile(preCommitHook, '#!/bin/sh\nexit 1\n');
+    await chmod(preCommitHook, 0o755);
+
+    const result = await performMerge(
+      repository.projectPath,
+      repository.branchName,
+      repository.worktreePath,
+      'main',
+      { deleteWorktreeAndBranch: true }
+    );
+
+    expect(result).toMatchObject({
+      success: false,
+      error: expect.stringContaining('commit pending worktree changes'),
+    });
+    expect(await git(repository.projectPath, 'ls-files', 'uncommitted.txt')).toBe('');
+    expect(await git(repository.projectPath, 'branch', '--list', repository.branchName)).toContain(
+      repository.branchName
+    );
+  }, 15000);
 });

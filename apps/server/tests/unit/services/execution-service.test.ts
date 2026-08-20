@@ -20,6 +20,7 @@ import {
   type TrackFailureFn,
   type SignalPauseFn,
   type RecordSuccessFn,
+  type FinalizePipelineFn,
 } from '../../../src/services/execution-service.js';
 import type { TypedEventBus } from '../../../src/services/typed-event-bus.js';
 import type {
@@ -161,6 +162,7 @@ describe('execution-service.ts', () => {
   let mockLoadContextFilesFn: vi.Mock;
   let mockPersistWorktreeAssignmentFn: vi.Mock;
   let mockEnsureFeatureWorktreeFn: vi.Mock;
+  let mockFinalizePipelineFn: vi.Mock<FinalizePipelineFn>;
 
   let service: ExecutionService;
 
@@ -234,6 +236,7 @@ describe('execution-service.ts', () => {
         ...assignment,
       }));
     mockEnsureFeatureWorktreeFn = vi.fn().mockResolvedValue('/test/owned-worktree');
+    mockFinalizePipelineFn = vi.fn().mockResolvedValue({ success: true });
 
     // Default mocks for secureFs
     // Include tool usage markers to simulate meaningful agent output.
@@ -297,7 +300,7 @@ describe('execution-service.ts', () => {
       mockRecordSuccessFn,
       mockSaveExecutionStateFn,
       mockLoadContextFilesFn,
-      undefined,
+      mockFinalizePipelineFn,
       {
         persistWorktreeAssignmentFn: mockPersistWorktreeAssignmentFn,
         ensureFeatureWorktreeFn: mockEnsureFeatureWorktreeFn,
@@ -537,6 +540,63 @@ describe('execution-service.ts', () => {
         'feature-1',
         'verified'
       );
+    });
+
+    it('merges an isolated worktree before marking a feature verified without pipeline steps', async () => {
+      const isolatedFeature: Feature = {
+        ...testFeature,
+        worktreeMode: 'isolated',
+        branchName: 'feature/test-1',
+        worktreeBaseBranch: 'main',
+      };
+      mockLoadFeatureFn.mockResolvedValue(isolatedFeature);
+
+      await service.executeFeature('/test/project', 'feature-1', true);
+
+      expect(mockFinalizePipelineFn).toHaveBeenCalledWith(
+        expect.objectContaining({
+          projectPath: '/test/project',
+          featureId: 'feature-1',
+          branchName: 'feature/test-1',
+          worktreePath: '/test/owned-worktree',
+          deferMerge: false,
+        })
+      );
+      const verifiedCallIndex = mockUpdateFeatureStatusFn.mock.calls.findIndex(
+        (call) => call[2] === 'verified'
+      );
+      expect(verifiedCallIndex).toBeGreaterThanOrEqual(0);
+      expect(mockFinalizePipelineFn.mock.invocationCallOrder[0]).toBeLessThan(
+        mockUpdateFeatureStatusFn.mock.invocationCallOrder[verifiedCallIndex]
+      );
+    });
+
+    it('blocks successful completion when isolated worktree integration fails', async () => {
+      const isolatedFeature: Feature = {
+        ...testFeature,
+        worktreeMode: 'isolated',
+        branchName: 'feature/test-1',
+        worktreeBaseBranch: 'main',
+      };
+      mockLoadFeatureFn.mockResolvedValue(isolatedFeature);
+      mockFinalizePipelineFn.mockResolvedValue({
+        success: false,
+        error: 'Target branch is unavailable',
+      });
+
+      await service.executeFeature('/test/project', 'feature-1', true);
+
+      expect(mockUpdateFeatureStatusFn).toHaveBeenCalledWith(
+        '/test/project',
+        'feature-1',
+        'merge_conflict'
+      );
+      expect(mockUpdateFeatureStatusFn).not.toHaveBeenCalledWith(
+        '/test/project',
+        'feature-1',
+        'verified'
+      );
+      expect(mockRecordSuccessFn).not.toHaveBeenCalled();
     });
 
     it('updates status to waiting_approval when skipTests is true', async () => {

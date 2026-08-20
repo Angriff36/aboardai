@@ -546,6 +546,37 @@ describe('PipelineOrchestrator', () => {
       );
     });
 
+    it('should set merge_conflict status for a non-conflict merge failure', async () => {
+      vi.mocked(performMerge).mockResolvedValue({
+        success: false,
+        error: 'Target branch does not exist',
+      });
+
+      const context = createMergeContext();
+      const result = await orchestrator.attemptMerge(context);
+
+      expect(result.success).toBe(false);
+      expect(mockUpdateFeatureStatusFn).toHaveBeenCalledWith(
+        '/test/project',
+        'feature-1',
+        'merge_conflict'
+      );
+    });
+
+    it('should set merge_conflict status when the merge service throws', async () => {
+      vi.mocked(performMerge).mockRejectedValue(new Error('Git process crashed'));
+
+      const context = createMergeContext();
+      const result = await orchestrator.attemptMerge(context);
+
+      expect(result).toMatchObject({ success: false, error: 'Git process crashed' });
+      expect(mockUpdateFeatureStatusFn).toHaveBeenCalledWith(
+        '/test/project',
+        'feature-1',
+        'merge_conflict'
+      );
+    });
+
     it('should emit pipeline_merge_conflict event on conflict', async () => {
       vi.mocked(performMerge).mockResolvedValue({
         success: false,

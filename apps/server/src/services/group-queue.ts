@@ -5,15 +5,14 @@
  * Slot accounting is purely via Manifest guards: claimSlot denial = backpressure.
  *
  * Dependency satisfaction: a child can run when all its feature deps are in
- * SUCCESS_STATUSES (verified|waiting_approval|completed).  This is intentionally
- * broader than areDependenciesSatisfied (completed|verified only) so that a dep
- * that finished as waiting_approval still unblocks its dependents.
+ * SUCCESS_STATUSES (verified|completed). A feature waiting for approval has not
+ * completed integration and must not unblock dependent work.
  * A child whose deps can NEVER be satisfied (a dep feature is failed/lost) is
  * claimed and immediately reportedFailure — no executeFeature call.
  *
  * executeFeature success/failure rule:
  *   Success = resolved without throwing AND reloaded feature status ∈
- *             { 'verified', 'waiting_approval', 'completed' }
+ *             { 'verified', 'completed' }
  *   Failure = anything else after resolve (backlog, interrupted, merge_conflict…)
  *             OR executeFeature threw (shouldn't happen — it swallows errors — but
  *             we catch defensively anyway).
@@ -41,7 +40,7 @@ const logger = createLogger('GroupQueue');
 
 // ── Terminal feature statuses that count as success ──────────────────────────
 
-const SUCCESS_STATUSES = new Set(['verified', 'waiting_approval', 'completed']);
+const SUCCESS_STATUSES = new Set(['verified', 'completed']);
 
 /** True if the feature landed in a successful terminal state */
 function isFeatureSuccess(feature: Feature | null): boolean {
@@ -320,15 +319,16 @@ export class GroupQueue {
           }
 
           // Deps present — check if currently satisfied.
-          // Use SUCCESS_STATUSES (verified|waiting_approval|completed) as the
-          // "dep done" criterion — this matches the same set used by isFeatureSuccess
-          // so a dep that completed via mock-agent (waiting_approval) unblocks its
-          // dependents correctly.  areDependenciesSatisfied only accepts
-          // completed|verified, which excludes waiting_approval and would leave
-          // dependents stuck forever.
+          // A dependency is done only after it reaches an integrated success
+          // status. waiting_approval deliberately remains blocked.
           const depsSatisfied = (childFeature.dependencies ?? []).every((depId) => {
             const dep = allFeatures.find((f) => f.id === depId);
-            return dep != null && SUCCESS_STATUSES.has(dep.status ?? '');
+            const depChild = snapshot.children.find((candidate) => candidate.featureId === depId);
+            return (
+              dep != null &&
+              SUCCESS_STATUSES.has(dep.status ?? '') &&
+              (!depChild || depChild.status === 'completed')
+            );
           });
           if (!depsSatisfied) {
             continue; // Blocked, skip for now

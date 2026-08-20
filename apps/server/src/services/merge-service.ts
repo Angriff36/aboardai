@@ -128,11 +128,21 @@ export async function performMerge(
         });
       }
     } catch (commitError) {
+      const errorMessage = `Failed to commit pending worktree changes before merge: ${(commitError as Error).message}`;
       logger.warn('Failed to auto-commit pending worktree changes before merge', {
         branchName,
         worktreePath,
         error: (commitError as Error).message,
       });
+      emitter?.emit('merge:error', {
+        branchName,
+        targetBranch: mergeTo,
+        error: errorMessage,
+      });
+      return {
+        success: false,
+        error: errorMessage,
+      };
     }
   }
 

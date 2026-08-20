@@ -154,7 +154,7 @@ export class PipelineOrchestrator {
     }
     if (ctx.branchName && !ctx.deferMerge) {
       const mergeResult = await this.attemptMerge(ctx);
-      if (!mergeResult.success && mergeResult.hasConflicts) return;
+      if (!mergeResult.success) return;
     }
   }
 
@@ -598,16 +598,19 @@ export class PipelineOrchestrator {
       );
 
       if (!result.success) {
-        if (result.hasConflicts) {
-          await this.updateFeatureStatusFn(projectPath, featureId, 'merge_conflict');
-          this.eventBus.emitAutoModeEvent('pipeline_merge_conflict', {
-            featureId,
-            branchName,
-            projectPath,
-          });
-          return { success: false, hasConflicts: true, needsAgentResolution: true };
-        }
-        return { success: false, error: result.error };
+        await this.updateFeatureStatusFn(projectPath, featureId, 'merge_conflict');
+        this.eventBus.emitAutoModeEvent('pipeline_merge_conflict', {
+          featureId,
+          branchName,
+          projectPath,
+          error: result.error,
+        });
+        return {
+          success: false,
+          hasConflicts: result.hasConflicts,
+          needsAgentResolution: true,
+          error: result.error,
+        };
       }
 
       logger.info(`Auto-merge successful for feature ${featureId}`);
@@ -626,7 +629,15 @@ export class PipelineOrchestrator {
       return { success: true };
     } catch (error) {
       logger.error(`Merge failed for ${featureId}:`, error);
-      return { success: false, error: (error as Error).message };
+      const errorMessage = (error as Error).message;
+      await this.updateFeatureStatusFn(projectPath, featureId, 'merge_conflict');
+      this.eventBus.emitAutoModeEvent('pipeline_merge_conflict', {
+        featureId,
+        branchName,
+        projectPath,
+        error: errorMessage,
+      });
+      return { success: false, needsAgentResolution: true, error: errorMessage };
     }
   }
 

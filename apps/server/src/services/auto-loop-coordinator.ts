@@ -232,7 +232,10 @@ export class AutoLoopCoordinator {
           (f) =>
             !this.isFeatureRunningFn(f.id) &&
             !this.isFeatureFinishedFn(f) &&
-            (this.loadAllFeaturesFn ? areDependenciesSatisfied(f, allFeatures!) : true)
+            (this.loadAllFeaturesFn
+              ? areDependenciesSatisfied(f, allFeatures!) &&
+                (f.dependencies ?? []).every((depId) => !this.isFeatureRunningFn(depId))
+              : true)
         );
 
         // Sort eligible features by priority (lower number = higher priority, default 2)
