@@ -484,17 +484,32 @@ export class FeatureLoader {
     }
 
     const normalizedUpdates = { ...updates };
+    if (
+      feature.worktreeMode === 'isolated' &&
+      updates.worktreeMode !== 'shared' &&
+      feature.worktreeBaseBranch !== 'main'
+    ) {
+      throw new Error(
+        `Legacy isolated feature branch "${feature.branchName ?? '(missing)'}" is based on "${feature.worktreeBaseBranch ?? '(unknown)'}", not main. Rebase or migrate it onto main before editing.`
+      );
+    }
     if (updates.worktreeMode === 'shared') {
       // Switching out of isolation must not retain the owned branch or its base.
       normalizedUpdates.branchName = updates.branchName;
       normalizedUpdates.worktreeBaseBranch = undefined;
     } else if (updates.worktreeMode === 'isolated' && feature.worktreeMode !== 'isolated') {
       // A shared branch belongs to its checkout, not to this feature. Allocate a
-      // stable feature-owned branch while retaining the shared branch as its base.
-      normalizedUpdates.branchName =
-        updates.branchName || createFeatureBranchName(feature.id, updates.title ?? feature.title);
-      normalizedUpdates.worktreeBaseBranch =
-        updates.worktreeBaseBranch ?? feature.worktreeBaseBranch ?? feature.branchName;
+      // stable feature-owned branch from main. Caller-selected branches are
+      // checkout UI state and must never become isolated feature branches.
+      normalizedUpdates.branchName = createFeatureBranchName(
+        feature.id,
+        updates.title ?? feature.title
+      );
+      normalizedUpdates.worktreeBaseBranch = 'main';
+    } else if (feature.worktreeMode === 'isolated') {
+      // Once isolated, the owned branch and literal-main base are immutable.
+      normalizedUpdates.branchName = feature.branchName;
+      normalizedUpdates.worktreeBaseBranch = 'main';
     }
 
     // Merge updates

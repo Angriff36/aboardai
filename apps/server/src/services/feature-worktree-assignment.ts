@@ -38,13 +38,9 @@ export function buildDefaultWorktreeAssignment(
     };
   }
 
-  const explicitlyIsolated = feature.worktreeMode === 'isolated';
   return {
     worktreeMode: 'isolated',
-    branchName:
-      explicitlyIsolated && feature.branchName
-        ? feature.branchName
-        : createFeatureBranchName(feature.id, feature.title),
+    branchName: createFeatureBranchName(feature.id, feature.title),
     // Feature isolation is never allowed to turn the currently selected
     // worktree into a long-lived integration branch. All feature branches
     // start from and ultimately merge back into literal main.
@@ -56,8 +52,24 @@ export function normalizeFeatureWorktreeAssignment(
   feature: Pick<Feature, 'id' | 'title' | 'worktreeMode' | 'branchName' | 'worktreeBaseBranch'>,
   _primaryBranch: string
 ): FeatureWorktreeAssignment {
-  if (feature.worktreeMode) {
+  if (feature.worktreeMode === 'shared') {
     return buildDefaultWorktreeAssignment(feature, FEATURE_INTEGRATION_BRANCH);
+  }
+
+  if (feature.worktreeMode === 'isolated') {
+    if (feature.worktreeBaseBranch !== FEATURE_INTEGRATION_BRANCH) {
+      throw new Error(
+        `Legacy isolated feature branch "${feature.branchName ?? '(missing)'}" is based on "${feature.worktreeBaseBranch ?? '(unknown)'}", not main. Rebase or migrate it onto main before execution.`
+      );
+    }
+    if (!feature.branchName || feature.branchName === 'main' || feature.branchName === 'master') {
+      throw new Error('An isolated feature must use its own feature branch, not main or master.');
+    }
+    return {
+      worktreeMode: 'isolated',
+      branchName: feature.branchName,
+      worktreeBaseBranch: FEATURE_INTEGRATION_BRANCH,
+    };
   }
 
   return {

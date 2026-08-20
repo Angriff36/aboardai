@@ -70,11 +70,20 @@ export function MergeWorktreeDialog({
       );
 
       if (result.success) {
-        const description = deleteWorktreeAndBranch
-          ? `Branch "${worktree.branch}" has been integrated into "main" and the worktree and branch were deleted`
-          : `Branch "${worktree.branch}" has been integrated into "main"`;
+        const worktreeDeleted = result.deleted?.worktreeDeleted === true;
+        const branchDeleted = result.deleted?.branchDeleted === true;
+        let description = `Branch "${worktree.branch}" has been integrated into "main"`;
+        if (deleteWorktreeAndBranch) {
+          if (worktreeDeleted && branchDeleted) {
+            description += ' and the worktree and branch were deleted';
+          } else if (worktreeDeleted) {
+            description += ', the worktree was deleted, but the branch was retained';
+          } else {
+            description += ', but cleanup was incomplete and the worktree and branch were retained';
+          }
+        }
         toast.success('Branch integrated into main', { description });
-        onIntegrated(worktree, deleteWorktreeAndBranch);
+        onIntegrated(worktree, branchDeleted);
         onOpenChange(false);
       } else {
         // Check if the error indicates merge conflicts
@@ -140,8 +149,8 @@ export function MergeWorktreeDialog({
   };
 
   const handleResolveManually = () => {
-    toast.info('Conflict markers left in place', {
-      description: 'Edit the conflicting files to resolve conflicts manually.',
+    toast.info('Merge attempt was safely aborted', {
+      description: 'No conflict markers were left in main. Retry the merge when ready.',
       duration: 6000,
     });
     onOpenChange(false);
@@ -162,7 +171,7 @@ export function MergeWorktreeDialog({
             <DialogDescription asChild>
               <div className="space-y-4">
                 <span className="block">
-                  There are conflicts when integrating{' '}
+                  Conflicts were detected while integrating{' '}
                   <code className="font-mono bg-muted px-1 rounded">
                     {mergeConflict.sourceBranch}
                   </code>{' '}
@@ -170,7 +179,7 @@ export function MergeWorktreeDialog({
                   <code className="font-mono bg-muted px-1 rounded">
                     {mergeConflict.targetBranch}
                   </code>
-                  .
+                  . The merge was safely aborted, so main was left clean.
                 </span>
 
                 {mergeConflict.conflictFiles && mergeConflict.conflictFiles.length > 0 && (
@@ -198,12 +207,12 @@ export function MergeWorktreeDialog({
                   </p>
                   <ul className="text-sm text-muted-foreground list-disc list-inside space-y-1">
                     <li>
-                      <strong>Resolve with AI</strong> &mdash; Creates a task to analyze and resolve
-                      conflicts automatically
+                      <strong>Retry with AI</strong> &mdash; Creates an isolated main-based task
+                      that retries the merge and resolves the reported conflicts
                     </li>
                     <li>
-                      <strong>Resolve Manually</strong> &mdash; Leaves conflict markers in place for
-                      you to edit directly
+                      <strong>Close</strong> &mdash; Leaves both branches unchanged so you can retry
+                      later
                     </li>
                   </ul>
                 </div>
@@ -217,7 +226,7 @@ export function MergeWorktreeDialog({
             </Button>
             <Button variant="outline" onClick={handleResolveManually}>
               <Wrench className="w-4 h-4 mr-2" />
-              Resolve Manually
+              Close
             </Button>
             {onCreateConflictResolutionFeature && (
               <Button
@@ -225,7 +234,7 @@ export function MergeWorktreeDialog({
                 className="bg-purple-600 hover:bg-purple-700 text-white"
               >
                 <Sparkles className="w-4 h-4 mr-2" />
-                Resolve with AI
+                Retry with AI
               </Button>
             )}
           </DialogFooter>

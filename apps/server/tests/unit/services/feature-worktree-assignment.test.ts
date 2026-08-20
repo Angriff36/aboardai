@@ -27,19 +27,35 @@ describe('feature worktree assignment', () => {
     expect(second.branchName).not.toBe(first.branchName);
   });
 
-  it('keeps an isolated branch stable but normalizes its base to main', () => {
-    const assignment = normalizeFeatureWorktreeAssignment(
+  it('rejects an isolated branch whose recorded base is not main', () => {
+    expect(() =>
+      normalizeFeatureWorktreeAssignment(
+        feature({
+          title: 'A New Title',
+          worktreeMode: 'isolated',
+          branchName: 'feature/build-login-existing',
+          worktreeBaseBranch: 'develop',
+        }),
+        'main'
+      )
+    ).toThrow(/develop.*main/i);
+  });
+
+  it('does not adopt a caller-selected branch for a new isolated feature', () => {
+    const assignment = buildDefaultWorktreeAssignment(
       feature({
-        title: 'A New Title',
         worktreeMode: 'isolated',
-        branchName: 'feature/build-login-existing',
+        branchName: 'develop',
         worktreeBaseBranch: 'develop',
       }),
-      'main'
+      'develop'
     );
 
-    expect(assignment.branchName).toBe('feature/build-login-existing');
-    expect(assignment.worktreeBaseBranch).toBe('main');
+    expect(assignment).toEqual({
+      worktreeMode: 'isolated',
+      branchName: createFeatureBranchName('feature-one', 'Build Login'),
+      worktreeBaseBranch: 'main',
+    });
   });
 
   it('leaves explicit shared assignments unchanged', () => {

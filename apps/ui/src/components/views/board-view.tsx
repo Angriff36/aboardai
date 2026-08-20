@@ -1523,7 +1523,7 @@ export function BoardView({ initialFeatureId, initialProjectPath }: BoardViewPro
         description = `Resolve cherry-pick conflicts when cherry-picking commits from "${conflictInfo.sourceBranch}" into "${conflictInfo.targetBranch}". The cherry-pick was attempted but encountered conflicts that need to be resolved manually. Cherry-pick the commits again using "git cherry-pick <commit-hashes>", resolve any conflicts, then use "git cherry-pick --continue" after fixing each conflict. After completing the cherry-pick, ensure the code compiles and tests pass.${conflictFilesInfo}`;
         title = `Resolve Cherry-Pick Conflicts: ${conflictInfo.sourceBranch} → ${conflictInfo.targetBranch}`;
       } else {
-        description = `Resolve merge conflicts when merging "${conflictInfo.sourceBranch}" into "${conflictInfo.targetBranch}". The merge was started but encountered conflicts that need to be resolved manually. After resolving all conflicts, ensure the code compiles and tests pass, then complete the merge by committing the resolved changes.${conflictFilesInfo}`;
+        description = `Retry the merge of "${conflictInfo.sourceBranch}" into "${conflictInfo.targetBranch}" from this isolated main-based feature worktree. The previous merge attempt detected conflicts and was safely aborted, so no conflict markers remain in main. Merge the source branch here, resolve the reported conflicts, commit the resolution, and ensure the code compiles and tests pass. This feature will then integrate the resolved result back into main.${conflictFilesInfo}`;
         title = `Resolve Merge Conflicts: ${conflictInfo.sourceBranch} → ${conflictInfo.targetBranch}`;
       }
 

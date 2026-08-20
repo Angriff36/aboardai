@@ -385,13 +385,58 @@ describe('feature-loader.ts', () => {
 
       const result = await loader.update(testProjectPath, 'feature-123', {
         worktreeMode: 'isolated',
+        branchName: 'develop',
         worktreeBaseBranch: 'develop',
       });
 
       expect(result.worktreeMode).toBe('isolated');
       expect(result.branchName).toMatch(/^feature\/build-login-[a-f0-9]{8}$/);
       expect(result.branchName).not.toBe('release/shared');
-      expect(result.worktreeBaseBranch).toBe('develop');
+      expect(result.worktreeBaseBranch).toBe('main');
+    });
+
+    it('keeps an existing main-based isolated feature on main on every update', async () => {
+      vi.mocked(fs.readFile).mockResolvedValue(
+        JSON.stringify({
+          id: 'feature-123',
+          title: 'Build Login',
+          category: 'ui',
+          description: 'Old description',
+          worktreeMode: 'isolated',
+          branchName: 'feature/build-login-deadbeef',
+          worktreeBaseBranch: 'main',
+        })
+      );
+      vi.mocked(fs.writeFile).mockResolvedValue(undefined);
+
+      const result = await loader.update(testProjectPath, 'feature-123', {
+        description: 'New description',
+        branchName: 'develop',
+        worktreeBaseBranch: 'release/wrong-target',
+      });
+
+      expect(result.description).toBe('New description');
+      expect(result.branchName).toBe('feature/build-login-deadbeef');
+      expect(result.worktreeBaseBranch).toBe('main');
+    });
+
+    it('rejects updates to a legacy isolated feature based on another branch', async () => {
+      vi.mocked(fs.readFile).mockResolvedValue(
+        JSON.stringify({
+          id: 'feature-123',
+          title: 'Build Login',
+          category: 'ui',
+          description: 'Old description',
+          worktreeMode: 'isolated',
+          branchName: 'feature/build-login-deadbeef',
+          worktreeBaseBranch: 'develop',
+        })
+      );
+
+      await expect(
+        loader.update(testProjectPath, 'feature-123', { description: 'New description' })
+      ).rejects.toThrow(/develop.*main/i);
+      expect(fs.writeFile).not.toHaveBeenCalled();
     });
 
     it('clears the isolated base branch when switching to a shared checkout', async () => {

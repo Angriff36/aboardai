@@ -542,7 +542,7 @@ describe('execution-service.ts', () => {
       );
     });
 
-    it('bases an isolated feature worktree on main when another branch is checked out', async () => {
+    it('rejects a legacy isolated feature whose base branch is unknown', async () => {
       const isolatedFeature: Feature = {
         ...testFeature,
         worktreeMode: 'isolated',
@@ -554,10 +554,11 @@ describe('execution-service.ts', () => {
 
       await service.executeFeature('/test/project', 'feature-1', true);
 
-      expect(mockEnsureFeatureWorktreeFn).toHaveBeenCalledWith(
+      expect(mockEnsureFeatureWorktreeFn).not.toHaveBeenCalled();
+      expect(mockUpdateFeatureStatusFn).toHaveBeenCalledWith(
         '/test/project',
-        'feature/test-1',
-        'main'
+        'feature-1',
+        'backlog'
       );
     });
 
