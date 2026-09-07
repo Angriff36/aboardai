@@ -15,6 +15,12 @@
 import { query, type Options, type SDKUserMessage } from '@anthropic-ai/claude-agent-sdk';
 import type { ContentBlockParam } from '@anthropic-ai/sdk/resources';
 import { BaseProvider } from './base-provider.js';
+import {
+  clearClaudeModelCache,
+  getCachedClaudeModels,
+  hasCachedClaudeModels,
+  refreshClaudeModels,
+} from './claude-model-discovery.js';
 import { classifyError, getUserFriendlyErrorMessage, createLogger } from '@aboardai/utils';
 import { getClaudeAuthIndicators } from '@aboardai/platform';
 import {
@@ -678,7 +684,7 @@ export class ClaudeProvider extends BaseProvider {
    * behavior — so the catalog and runtime behavior can never drift apart.
    */
   getAvailableModels(): ModelDefinition[] {
-    return MODEL_CAPABILITIES.map((cap) => ({
+    const staticModels = MODEL_CAPABILITIES.map((cap) => ({
       id: cap.id,
       name: cap.name,
       modelString: cap.id,
@@ -693,6 +699,54 @@ export class ClaudeProvider extends BaseProvider {
       // hasReasoning surfaces effort/adaptive-thinking capability to consumers.
       hasReasoning: cap.supportsEffort || cap.adaptiveThinking,
     })) satisfies ModelDefinition[];
+
+    // Append models discovered from the Anthropic API that the table does not
+    // list. Capabilities come from the nearest table entry (prefix match) or
+    // the conservative defaults, so runtime behavior stays consistent.
+    const discovered = getCachedClaudeModels();
+    if (!discovered) return staticModels;
+
+    const knownIds = new Set(staticModels.map((m) => m.id));
+    const extra: ModelDefinition[] = discovered
+      .filter((m) => !knownIds.has(m.id))
+      .map((m) => {
+        const cap = getModelCapability(m.id);
+        return {
+          id: m.id,
+          name: m.displayName,
+          modelString: m.id,
+          provider: 'anthropic',
+          description:
+            cap.id === m.id
+              ? cap.description
+              : `Discovered from the Anthropic API. ${cap.description}`,
+          contextWindow: cap.contextWindow,
+          maxOutputTokens: cap.maxOutputTokens,
+          supportsVision: true,
+          supportsTools: true,
+          tier: cap.tier,
+          hasReasoning: cap.supportsEffort || cap.adaptiveThinking,
+        };
+      });
+
+    return [...staticModels, ...extra];
+  }
+
+  /**
+   * Refresh the model list from the Anthropic API.
+   * Falls back to the static table when no API key is available.
+   */
+  async refreshModels(apiKey?: string): Promise<ModelDefinition[]> {
+    await refreshClaudeModels(apiKey ?? process.env.ANTHROPIC_API_KEY);
+    return this.getAvailableModels();
+  }
+
+  hasCachedModels(): boolean {
+    return hasCachedClaudeModels();
+  }
+
+  clearModelCache(): void {
+    clearClaudeModelCache();
   }
 
   /**

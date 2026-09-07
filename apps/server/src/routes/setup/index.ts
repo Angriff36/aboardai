@@ -47,6 +47,18 @@ import {
   createClearCursorCacheHandler,
 } from './routes/cursor-models.js';
 import {
+  createGetClaudeModelsHandler,
+  createRefreshClaudeModelsHandler,
+  createClearClaudeCacheHandler,
+} from './routes/claude-models.js';
+import {
+  createGetGeminiModelsHandler,
+  createRefreshGeminiModelsHandler,
+  createClearGeminiCacheHandler,
+} from './routes/gemini-models.js';
+import { createDiscoverClaudeCompatibleModelsHandler } from './routes/claude-compatible-models.js';
+import type { SettingsService } from '../../services/settings-service.js';
+import {
   createGetCursorConfigHandler,
   createSetCursorDefaultModelHandler,
   createSetCursorModelsHandler,
@@ -57,7 +69,7 @@ import {
   createGetExampleConfigHandler,
 } from './routes/cursor-config.js';
 
-export function createSetupRoutes(): Router {
+export function createSetupRoutes(settingsService: SettingsService): Router {
   const router = Router();
 
   router.get('/claude-status', createClaudeStatusHandler());
@@ -110,6 +122,22 @@ export function createSetupRoutes(): Router {
   router.post('/opencode/cache/clear', createClearOpencodeCacheHandler());
   router.get('/cursor/models', createGetCursorModelsHandler());
   router.post('/cursor/models/refresh', createRefreshCursorModelsHandler());
+
+  // Claude (Anthropic API) dynamic model routes
+  router.get('/claude/models', createGetClaudeModelsHandler(settingsService));
+  router.post('/claude/models/refresh', createRefreshClaudeModelsHandler(settingsService));
+  router.post('/claude/cache/clear', createClearClaudeCacheHandler());
+
+  // Gemini API dynamic model routes
+  router.get('/gemini/models', createGetGeminiModelsHandler(settingsService));
+  router.post('/gemini/models/refresh', createRefreshGeminiModelsHandler(settingsService));
+  router.post('/gemini/cache/clear', createClearGeminiCacheHandler());
+
+  // Claude-compatible provider (GLM, MiniMax, OpenRouter, custom) model discovery
+  router.post(
+    '/claude-compatible/models',
+    createDiscoverClaudeCompatibleModelsHandler(settingsService)
+  );
   router.post('/cursor/cache/clear', createClearCursorCacheHandler());
   router.get('/cursor-config', createGetCursorConfigHandler());
   router.post('/cursor-config/default-model', createSetCursorDefaultModelHandler());
