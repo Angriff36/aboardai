@@ -5,6 +5,7 @@ import type {
   ReasoningEffort,
 } from '@aboardai/types';
 import {
+  CLAUDE_CANONICAL_MAP,
   CURSOR_MODEL_MAP,
   CODEX_MODEL_MAP,
   OPENCODE_MODELS as OPENCODE_MODEL_CONFIGS,
@@ -64,6 +65,27 @@ export const CLAUDE_MODELS: ModelOption[] = [
     provider: 'claude',
   },
 ];
+
+/** Full model ids the canonical Claude aliases already resolve to. */
+const CLAUDE_ALIAS_TARGETS = new Set(Object.values(CLAUDE_CANONICAL_MAP));
+
+/**
+ * Claude catalog: the canonical alias entries plus any model discovered from
+ * the Anthropic API that no alias already covers (older snapshots, new releases).
+ */
+export function getAvailableClaudeModels(dynamicModels: ModelDefinition[] = []): ModelOption[] {
+  const extra: ModelOption[] = dynamicModels
+    .filter((model) => model.id.startsWith('claude-') && !CLAUDE_ALIAS_TARGETS.has(model.id))
+    .map((model) => ({
+      id: model.id,
+      label: model.name,
+      description: model.description,
+      badge: model.tier === 'premium' ? 'Premium' : model.tier === 'basic' ? 'Speed' : 'Balanced',
+      provider: 'claude' as ModelProvider,
+      hasThinking: model.hasReasoning,
+    }));
+  return extra.length > 0 ? [...CLAUDE_MODELS, ...extra] : CLAUDE_MODELS;
+}
 
 /**
  * Cursor models derived from CURSOR_MODEL_MAP
@@ -176,6 +198,29 @@ export const GEMINI_MODELS: ModelOption[] = Object.entries(GEMINI_MODEL_MAP).map
     hasThinking: config.supportsThinking,
   })
 );
+
+/** Use the live Gemini inventory when available, with static models as an offline fallback. */
+export function getAvailableGeminiModels(
+  enabledGeminiModels: string[],
+  dynamicModels: ModelDefinition[] = []
+): ModelOption[] {
+  const dynamicOptions: ModelOption[] = dynamicModels.map((model) => ({
+    id: model.id,
+    label: model.name,
+    description: model.description,
+    badge: model.hasReasoning ? 'Thinking' : 'Speed',
+    provider: 'gemini' as ModelProvider,
+    hasThinking: model.hasReasoning,
+  }));
+
+  const allModels = dynamicOptions.length > 0 ? dynamicOptions : GEMINI_MODELS;
+
+  if (enabledGeminiModels.length === 0) {
+    return allModels;
+  }
+
+  return allModels.filter((model) => enabledGeminiModels.includes(model.id));
+}
 
 /**
  * Copilot models derived from COPILOT_MODEL_MAP

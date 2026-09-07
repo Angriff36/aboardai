@@ -54,6 +54,10 @@ export interface BaseModelConfigurationProps<T extends string> {
   onModelToggle: (model: T, enabled: boolean) => void;
   /** Function to determine if a model should show a feature badge */
   getFeatureBadge?: (model: BaseModelInfo<T>) => FeatureBadge | null;
+  /** Optional control rendered on the right side of the header (e.g. a refresh button) */
+  headerAction?: ReactNode;
+  /** Optional header description override */
+  description?: string;
 }
 
 /**
@@ -75,6 +79,8 @@ export function BaseModelConfiguration<T extends string>({
   onDefaultModelChange,
   onModelToggle,
   getFeatureBadge,
+  headerAction,
+  description,
 }: BaseModelConfigurationProps<T>) {
   return (
     <div
@@ -86,22 +92,26 @@ export function BaseModelConfiguration<T extends string>({
       )}
     >
       <div className="p-6 border-b border-border/50 bg-gradient-to-r from-transparent via-accent/5 to-transparent">
-        <div className="flex items-center gap-3 mb-2">
-          <div
-            className={cn(
-              'w-9 h-9 rounded-xl flex items-center justify-center border',
-              `bg-gradient-to-br ${iconGradient}`,
-              iconBorder
-            )}
-          >
-            {icon}
+        <div className="flex items-center justify-between gap-3 mb-2">
+          <div className="flex items-center gap-3">
+            <div
+              className={cn(
+                'w-9 h-9 rounded-xl flex items-center justify-center border',
+                `bg-gradient-to-br ${iconGradient}`,
+                iconBorder
+              )}
+            >
+              {icon}
+            </div>
+            <h2 className="text-lg font-semibold text-foreground tracking-tight">
+              Model Configuration
+            </h2>
           </div>
-          <h2 className="text-lg font-semibold text-foreground tracking-tight">
-            Model Configuration
-          </h2>
+          {headerAction}
         </div>
         <p className="text-sm text-muted-foreground/80 ml-12">
-          Configure which {providerName} models are available in the feature modal
+          {description ??
+            `Configure which ${providerName} models are available in the feature modal`}
         </p>
       </div>
       <div className="p-6 space-y-6">

@@ -90,6 +90,7 @@ const SETTINGS_FIELDS_TO_SYNC = [
   'enabledDynamicModelIds',
   'knownDynamicModelIds',
   'knownCursorModelIds',
+  'knownGeminiModelIds',
   'disabledProviders',
   'autoLoadClaudeMd',
   'useClaudeCodeSystemPrompt',
@@ -677,6 +678,8 @@ export async function refreshSettingsFromServer(): Promise<boolean> {
 
     const sanitizedKnownCursorModelIds =
       serverSettings.knownCursorModelIds ?? currentAppState.knownCursorModelIds;
+    const sanitizedKnownGeminiModelIds =
+      serverSettings.knownGeminiModelIds ?? currentAppState.knownGeminiModelIds;
 
     // Migrate OpenCode models to canonical format
     const migratedOpencodeModels = migrateOpencodeModelIds(
@@ -849,6 +852,7 @@ export async function refreshSettingsFromServer(): Promise<boolean> {
       enabledDynamicModelIds: sanitizedDynamicModelIds,
       knownDynamicModelIds: sanitizedKnownDynamicModelIds,
       knownCursorModelIds: sanitizedKnownCursorModelIds,
+      knownGeminiModelIds: sanitizedKnownGeminiModelIds,
       disabledProviders: serverSettings.disabledProviders ?? [],
       autoLoadClaudeMd: serverSettings.autoLoadClaudeMd ?? true,
       useClaudeCodeSystemPrompt: serverSettings.useClaudeCodeSystemPrompt ?? true,

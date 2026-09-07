@@ -1854,6 +1854,55 @@ interface SetupAPI {
     message?: string;
     error?: string;
   }>;
+  // Claude (Anthropic API) dynamic model methods
+  getClaudeModels?: (refresh?: boolean) => Promise<{
+    success: boolean;
+    models?: ModelDefinition[];
+    count?: number;
+    cached?: boolean;
+    source?: 'api' | 'static';
+    error?: string;
+  }>;
+  refreshClaudeModels?: () => Promise<{
+    success: boolean;
+    models?: ModelDefinition[];
+    count?: number;
+    source?: 'api' | 'static';
+    error?: string;
+  }>;
+  // Gemini API dynamic model methods
+  getGeminiModels?: (refresh?: boolean) => Promise<{
+    success: boolean;
+    models?: ModelDefinition[];
+    count?: number;
+    cached?: boolean;
+    source?: 'api' | 'static';
+    error?: string;
+  }>;
+  refreshGeminiModels?: () => Promise<{
+    success: boolean;
+    models?: ModelDefinition[];
+    count?: number;
+    source?: 'api' | 'static';
+    error?: string;
+  }>;
+  // Claude-compatible provider model discovery
+  discoverClaudeCompatibleModels?: (params: {
+    baseUrl: string;
+    apiKey?: string;
+    apiKeySource?: string;
+    providerId?: string;
+    providerType?: string;
+  }) => Promise<{
+    success: boolean;
+    models?: Array<{
+      id: string;
+      displayName: string;
+      mapsToClaudeModel?: 'haiku' | 'sonnet' | 'opus';
+    }>;
+    count?: number;
+    error?: string;
+  }>;
   // Gemini CLI methods
   getGeminiStatus?: () => Promise<{
     success: boolean;
@@ -2191,6 +2240,31 @@ function createMockSetupAPI(): SetupAPI {
         success: true,
         message: 'Cache cleared',
       };
+    },
+
+    getClaudeModels: async () => {
+      console.log('[Mock] Getting Claude models');
+      return { success: true, models: [], count: 0, cached: false, source: 'static' as const };
+    },
+
+    refreshClaudeModels: async () => {
+      console.log('[Mock] Refreshing Claude models');
+      return { success: true, models: [], count: 0, source: 'static' as const };
+    },
+
+    getGeminiModels: async () => {
+      console.log('[Mock] Getting Gemini models');
+      return { success: true, models: [], count: 0, cached: false, source: 'static' as const };
+    },
+
+    refreshGeminiModels: async () => {
+      console.log('[Mock] Refreshing Gemini models');
+      return { success: true, models: [], count: 0, source: 'static' as const };
+    },
+
+    discoverClaudeCompatibleModels: async () => {
+      console.log('[Mock] Discovering Claude-compatible models');
+      return { success: true, models: [], count: 0 };
     },
 
     // Gemini CLI mock methods

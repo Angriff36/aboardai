@@ -680,6 +680,7 @@ export function hydrateStoreFromSettings(settings: GlobalSettings): void {
   }
 
   const sanitizedKnownCursorModelIds = settings.knownCursorModelIds ?? current.knownCursorModelIds;
+  const sanitizedKnownGeminiModelIds = settings.knownGeminiModelIds ?? current.knownGeminiModelIds;
 
   const validOpencodeModelIds = new Set(getAllOpencodeModelIds());
   const incomingEnabledOpencodeModels =
@@ -803,6 +804,7 @@ export function hydrateStoreFromSettings(settings: GlobalSettings): void {
         : allStaticCursorModels,
     cursorDefaultModel: sanitizedCursorDefaultModel,
     knownCursorModelIds: sanitizedKnownCursorModelIds,
+    knownGeminiModelIds: sanitizedKnownGeminiModelIds,
     enabledOpencodeModels: sanitizedEnabledOpencodeModels,
     opencodeDefaultModel: sanitizedOpencodeDefaultModel,
     enabledDynamicModelIds: sanitizedDynamicModelIds,

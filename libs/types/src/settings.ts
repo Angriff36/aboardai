@@ -1367,6 +1367,8 @@ export interface GlobalSettings {
   knownDynamicModelIds?: string[];
   /** All Cursor CLI model IDs ever seen - used to distinguish new models from explicitly deselected ones */
   knownCursorModelIds?: string[];
+  /** All Gemini API model IDs ever seen - used to distinguish new models from explicitly deselected ones */
+  knownGeminiModelIds?: string[];
 
   // Gemini CLI Settings (global)
   /** Which Gemini models are available in feature modal (empty = all) */
@@ -1905,6 +1907,7 @@ export const DEFAULT_GLOBAL_SETTINGS: GlobalSettings = {
   enabledDynamicModelIds: [],
   knownDynamicModelIds: [],
   knownCursorModelIds: [],
+  knownGeminiModelIds: [],
   enabledGeminiModels: getAllGeminiModelIds(), // Returns prefixed IDs
   geminiDefaultModel: DEFAULT_GEMINI_MODEL, // Already prefixed
   enabledCopilotModels: getAllCopilotModelIds(), // Returns prefixed IDs

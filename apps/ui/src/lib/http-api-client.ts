@@ -1671,6 +1671,64 @@ export class HttpApiClient implements ElectronAPI {
       error?: string;
     }> => this.post('/api/setup/cursor/cache/clear'),
 
+    // Claude (Anthropic API) dynamic models
+    getClaudeModels: (
+      refresh?: boolean
+    ): Promise<{
+      success: boolean;
+      models?: ModelDefinition[];
+      count?: number;
+      cached?: boolean;
+      source?: 'api' | 'static';
+      error?: string;
+    }> => this.get(`/api/setup/claude/models${refresh ? '?refresh=true' : ''}`),
+
+    refreshClaudeModels: (): Promise<{
+      success: boolean;
+      models?: ModelDefinition[];
+      count?: number;
+      source?: 'api' | 'static';
+      error?: string;
+    }> => this.post('/api/setup/claude/models/refresh'),
+
+    // Gemini API dynamic models
+    getGeminiModels: (
+      refresh?: boolean
+    ): Promise<{
+      success: boolean;
+      models?: ModelDefinition[];
+      count?: number;
+      cached?: boolean;
+      source?: 'api' | 'static';
+      error?: string;
+    }> => this.get(`/api/setup/gemini/models${refresh ? '?refresh=true' : ''}`),
+
+    refreshGeminiModels: (): Promise<{
+      success: boolean;
+      models?: ModelDefinition[];
+      count?: number;
+      source?: 'api' | 'static';
+      error?: string;
+    }> => this.post('/api/setup/gemini/models/refresh'),
+
+    // Claude-compatible provider (GLM, MiniMax, OpenRouter, custom) model discovery
+    discoverClaudeCompatibleModels: (params: {
+      baseUrl: string;
+      apiKey?: string;
+      apiKeySource?: string;
+      providerId?: string;
+      providerType?: string;
+    }): Promise<{
+      success: boolean;
+      models?: Array<{
+        id: string;
+        displayName: string;
+        mapsToClaudeModel?: 'haiku' | 'sonnet' | 'opus';
+      }>;
+      count?: number;
+      error?: string;
+    }> => this.post('/api/setup/claude-compatible/models', params),
+
     setCursorDefaultModel: (
       projectPath: string,
       model: string

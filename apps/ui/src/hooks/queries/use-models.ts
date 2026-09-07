@@ -114,6 +114,52 @@ export function useCursorModels(refresh = false) {
 }
 
 /**
+ * Fetch Claude models discovered from the Anthropic API.
+ * Falls back to the static catalog on the server when no API key is configured.
+ */
+export function useClaudeModels(refresh = false) {
+  return useQuery({
+    queryKey: queryKeys.models.claude(),
+    queryFn: async (): Promise<ModelDefinition[]> => {
+      const api = getElectronAPI();
+      if (!api.setup?.getClaudeModels) {
+        throw new Error('Claude models API not available');
+      }
+      const result = await api.setup.getClaudeModels(refresh);
+      if (!result.success) {
+        throw new Error(result.error || 'Failed to fetch Claude models');
+      }
+      return (result.models ?? []) as ModelDefinition[];
+    },
+    staleTime: STALE_TIMES.MODELS,
+    refetchOnMount: refresh ? 'always' : true,
+  });
+}
+
+/**
+ * Fetch Gemini models discovered from the Gemini API.
+ * Falls back to the static catalog on the server when no API key is configured.
+ */
+export function useGeminiModels(refresh = false) {
+  return useQuery({
+    queryKey: queryKeys.models.gemini(),
+    queryFn: async (): Promise<ModelDefinition[]> => {
+      const api = getElectronAPI();
+      if (!api.setup?.getGeminiModels) {
+        throw new Error('Gemini models API not available');
+      }
+      const result = await api.setup.getGeminiModels(refresh);
+      if (!result.success) {
+        throw new Error(result.error || 'Failed to fetch Gemini models');
+      }
+      return (result.models ?? []) as ModelDefinition[];
+    },
+    staleTime: STALE_TIMES.MODELS,
+    refetchOnMount: refresh ? 'always' : true,
+  });
+}
+
+/**
  * Fetch OpenCode providers
  *
  * @returns Query result with OpenCode providers

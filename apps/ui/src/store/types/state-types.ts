@@ -201,6 +201,7 @@ export interface AppState {
   cursorDefaultModel: CursorModelId; // Default Cursor model selection
   dynamicCursorModels: ModelDefinition[]; // Dynamically discovered from cursor-agent --list-models
   knownCursorModelIds: string[]; // Track seen Cursor models to avoid re-enabling deselected ones
+  knownGeminiModelIds: string[]; // Track seen Gemini API models to avoid re-enabling deselected ones
 
   // Codex CLI Settings (global)
   enabledCodexModels: CodexModelId[]; // Which Codex models are available in feature modal
@@ -649,6 +650,7 @@ export interface AppActions {
   setEnabledGeminiModels: (models: GeminiModelId[]) => void;
   setGeminiDefaultModel: (model: GeminiModelId) => void;
   toggleGeminiModel: (model: GeminiModelId, enabled: boolean) => void;
+  syncGeminiModelsDiscovery: (models: ModelDefinition[]) => Promise<void>;
 
   // Copilot SDK Settings actions
   setEnabledCopilotModels: (models: CopilotModelId[]) => void;

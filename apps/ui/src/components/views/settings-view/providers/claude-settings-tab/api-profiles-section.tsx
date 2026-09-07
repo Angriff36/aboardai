@@ -1,5 +1,8 @@
 import { useState } from 'react';
+import { toast } from 'sonner';
 import { useAppStore } from '@/store/app-store';
+import { getElectronAPI } from '@/lib/electron';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -29,6 +32,7 @@ import {
   Pencil,
   Plus,
   Server,
+  RefreshCw,
   Settings2,
   Trash2,
   Zap,
@@ -92,6 +96,16 @@ interface ModelFormEntry {
   mapsToClaudeModel: ClaudeModelAlias;
 }
 
+/** Model entry returned by the discovery endpoint */
+interface DiscoveredModel {
+  id: string;
+  displayName: string;
+  mapsToClaudeModel?: ClaudeModelAlias;
+}
+
+/** Above this many discovered models, show a picker instead of adding all of them */
+const LARGE_MODEL_LIST = 40;
+
 interface ProviderFormData {
   name: string;
   providerType: ClaudeCompatibleProviderType;
@@ -142,6 +156,105 @@ export function ApiProfilesSection() {
     (typeof CLAUDE_PROVIDER_TEMPLATES)[0] | null
   >(null);
   const [showModelMappings, setShowModelMappings] = useState(false);
+
+  // Dynamic model discovery (GET {baseUrl}/v1/models)
+  const [isFetchingModels, setIsFetchingModels] = useState(false);
+  const [discoveredModels, setDiscoveredModels] = useState<DiscoveredModel[] | null>(null);
+  const [pickerFilter, setPickerFilter] = useState('');
+  const [pickerSelected, setPickerSelected] = useState<Set<string>>(new Set());
+
+  const applyDiscoveredModels = (models: DiscoveredModel[]) => {
+    const existing = new Set(formData.models.map((m) => m.id.toLowerCase()));
+    const additions: ModelFormEntry[] = models
+      .filter((m) => !existing.has(m.id.toLowerCase()))
+      .map((m) => ({
+        id: m.id,
+        displayName: m.displayName,
+        mapsToClaudeModel: m.mapsToClaudeModel ?? 'sonnet',
+      }));
+    if (additions.length === 0) {
+      toast.info('All discovered models are already in the list');
+      return;
+    }
+    setFormData((prev) => ({ ...prev, models: [...prev.models, ...additions] }));
+    if (hasFixedSettings(formData.providerType)) setShowModelMappings(true);
+    toast.success(`Added ${additions.length} model${additions.length === 1 ? '' : 's'}`);
+  };
+
+  const handleFetchModels = async () => {
+    if (!formData.baseUrl.trim()) {
+      toast.error('Enter the base URL first');
+      return;
+    }
+    setIsFetchingModels(true);
+    try {
+      const api = getElectronAPI();
+      if (!api.setup?.discoverClaudeCompatibleModels) {
+        throw new Error('Model discovery is not available');
+      }
+      const result = await api.setup.discoverClaudeCompatibleModels({
+        baseUrl: formData.baseUrl.trim(),
+        apiKey: formData.apiKey || undefined,
+        apiKeySource: hasFixedSettings(formData.providerType) ? 'inline' : formData.apiKeySource,
+        providerId: editingProviderId ?? undefined,
+        providerType: formData.providerType,
+      });
+      if (!result.success) {
+        throw new Error(result.error || 'Failed to fetch models');
+      }
+      const models = result.models ?? [];
+      if (models.length === 0) {
+        toast.info('The provider returned no models');
+        return;
+      }
+      if (models.length <= LARGE_MODEL_LIST) {
+        applyDiscoveredModels(models);
+      } else {
+        // Big catalogs (OpenRouter) get a picker instead of a 400-row dump
+        setDiscoveredModels(models);
+        setPickerSelected(new Set());
+        setPickerFilter('');
+      }
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Failed to fetch models');
+    } finally {
+      setIsFetchingModels(false);
+    }
+  };
+
+  const filteredDiscovered = (discoveredModels ?? []).filter((m) => {
+    const q = pickerFilter.trim().toLowerCase();
+    return !q || m.id.toLowerCase().includes(q) || m.displayName.toLowerCase().includes(q);
+  });
+
+  const togglePickerModel = (id: string, checked: boolean) => {
+    setPickerSelected((prev) => {
+      const next = new Set(prev);
+      if (checked) next.add(id);
+      else next.delete(id);
+      return next;
+    });
+  };
+
+  const handleAddSelectedDiscovered = () => {
+    const chosen = (discoveredModels ?? []).filter((m) => pickerSelected.has(m.id));
+    applyDiscoveredModels(chosen);
+    setDiscoveredModels(null);
+  };
+
+  const fetchModelsButton = (
+    <Button
+      type="button"
+      variant="outline"
+      size="sm"
+      onClick={handleFetchModels}
+      disabled={isFetchingModels || !formData.baseUrl.trim()}
+      title="Fetch the model list from the provider"
+    >
+      <RefreshCw className={cn('w-4 h-4 mr-1', isFetchingModels && 'animate-spin')} />
+      {isFetchingModels ? 'Fetching…' : 'Fetch Models'}
+    </Button>
+  );
 
   const handleOpenAddDialog = (templateName?: string) => {
     const template = templateName
@@ -569,6 +682,83 @@ export function ApiProfilesSection() {
               />
             </div>
 
+            {/* Discovered model picker (large catalogs only) */}
+            <Dialog
+              open={discoveredModels !== null}
+              onOpenChange={(open) => {
+                if (!open) setDiscoveredModels(null);
+              }}
+            >
+              <DialogContent className="max-w-lg">
+                <DialogHeader>
+                  <DialogTitle>Select models to add</DialogTitle>
+                  <DialogDescription>
+                    {discoveredModels?.length ?? 0} models found. Pick the ones you want in the
+                    model selectors.
+                  </DialogDescription>
+                </DialogHeader>
+                <Input
+                  placeholder="Search models…"
+                  value={pickerFilter}
+                  onChange={(e) => setPickerFilter(e.target.value)}
+                  autoFocus
+                />
+                <div className="flex items-center justify-between text-xs text-muted-foreground">
+                  <span>{pickerSelected.size} selected</span>
+                  <button
+                    type="button"
+                    className="underline hover:text-foreground"
+                    onClick={() =>
+                      setPickerSelected((prev) => {
+                        const next = new Set(prev);
+                        const allShownSelected = filteredDiscovered.every((m) => next.has(m.id));
+                        filteredDiscovered.forEach((m) =>
+                          allShownSelected ? next.delete(m.id) : next.add(m.id)
+                        );
+                        return next;
+                      })
+                    }
+                  >
+                    Toggle all shown ({filteredDiscovered.length})
+                  </button>
+                </div>
+                <div className="max-h-80 overflow-y-auto space-y-1 pr-1">
+                  {filteredDiscovered.map((model) => (
+                    <label
+                      key={model.id}
+                      className="flex items-center gap-2 p-2 rounded-md hover:bg-accent/30 cursor-pointer"
+                    >
+                      <Checkbox
+                        checked={pickerSelected.has(model.id)}
+                        onCheckedChange={(checked) => togglePickerModel(model.id, !!checked)}
+                      />
+                      <div className="min-w-0">
+                        <div className="text-sm font-medium truncate">{model.displayName}</div>
+                        {model.displayName !== model.id && (
+                          <div className="text-xs text-muted-foreground truncate">{model.id}</div>
+                        )}
+                      </div>
+                    </label>
+                  ))}
+                  {filteredDiscovered.length === 0 && (
+                    <p className="text-sm text-muted-foreground p-2">No models match.</p>
+                  )}
+                </div>
+                <DialogFooter>
+                  <Button type="button" variant="outline" onClick={() => setDiscoveredModels(null)}>
+                    Cancel
+                  </Button>
+                  <Button
+                    type="button"
+                    onClick={handleAddSelectedDiscovered}
+                    disabled={pickerSelected.size === 0}
+                  >
+                    Add {pickerSelected.size > 0 ? pickerSelected.size : ''} selected
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+
             {/* Models */}
             <div className="space-y-3">
               {/* For fixed providers, show collapsible section */}
@@ -664,16 +854,19 @@ export function ApiProfilesSection() {
                           </Button>
                         </div>
                       ))}
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        onClick={handleAddModel}
-                        className="w-full"
-                      >
-                        <Plus className="w-4 h-4 mr-1" />
-                        Add Model
-                      </Button>
+                      <div className="flex gap-2">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={handleAddModel}
+                          className="flex-1"
+                        >
+                          <Plus className="w-4 h-4 mr-1" />
+                          Add Model
+                        </Button>
+                        {fetchModelsButton}
+                      </div>
                     </div>
                   )}
                 </>
@@ -687,10 +880,13 @@ export function ApiProfilesSection() {
                         Map provider models to Claude equivalents (Haiku, Sonnet, Opus)
                       </p>
                     </div>
-                    <Button type="button" variant="outline" size="sm" onClick={handleAddModel}>
-                      <Plus className="w-4 h-4 mr-1" />
-                      Add Model
-                    </Button>
+                    <div className="flex gap-2">
+                      {fetchModelsButton}
+                      <Button type="button" variant="outline" size="sm" onClick={handleAddModel}>
+                        <Plus className="w-4 h-4 mr-1" />
+                        Add Model
+                      </Button>
+                    </div>
                   </div>
 
                   {/* Coverage warning - only for non-fixed providers */}

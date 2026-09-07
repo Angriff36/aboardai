@@ -8,14 +8,14 @@ import { useSetupStore } from '@/store/setup-store';
 import { getModelProvider } from '@aboardai/types';
 import type { ModelProvider } from '@aboardai/types';
 import {
-  CLAUDE_MODELS,
   OPENCODE_MODELS,
   ModelOption,
+  getAvailableClaudeModels,
   getAvailableCursorModels,
 } from './model-constants';
 import { useEffect, useRef, useMemo } from 'react';
 import { Spinner } from '@/components/ui/spinner';
-import { useOpencodeModels, useCursorModels } from '@/hooks/queries';
+import { useOpencodeModels, useCursorModels, useClaudeModels } from '@/hooks/queries';
 
 interface ModelSelectorProps {
   selectedModel: string; // Can be ModelAlias or "cursor-{id}"
@@ -53,6 +53,11 @@ export function ModelSelector({
   } = useOpencodeModels();
 
   const { data: dynamicCursorModelsList = [] } = useCursorModels();
+  const { data: dynamicClaudeModelsList = [] } = useClaudeModels();
+  const availableClaudeModels = useMemo(
+    () => getAvailableClaudeModels(dynamicClaudeModelsList),
+    [dynamicClaudeModelsList]
+  );
 
   const selectedProvider = getModelProvider(selectedModel);
 
@@ -277,7 +282,7 @@ export function ModelSelector({
             </span>
           </div>
           <div className="flex gap-2 flex-wrap">
-            {CLAUDE_MODELS.map((option) => {
+            {availableClaudeModels.map((option) => {
               const isSelected = selectedModel === option.id;
               const shortName = option.label.replace('Claude ', '');
               return (
