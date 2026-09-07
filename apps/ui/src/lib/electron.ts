@@ -1887,13 +1887,7 @@ interface SetupAPI {
     error?: string;
   }>;
   // Claude-compatible provider model discovery
-  discoverClaudeCompatibleModels?: (params: {
-    baseUrl: string;
-    apiKey?: string;
-    apiKeySource?: string;
-    providerId?: string;
-    providerType?: string;
-  }) => Promise<{
+  discoverClaudeCompatibleModels?: (params: { baseUrl: string; apiKey?: string }) => Promise<{
     success: boolean;
     models?: Array<{
       id: string;

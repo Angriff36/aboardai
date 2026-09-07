@@ -192,12 +192,11 @@ export function ApiProfilesSection() {
       if (!api.setup?.discoverClaudeCompatibleModels) {
         throw new Error('Model discovery is not available');
       }
+      // A key typed in the form is sent as-is; otherwise the server uses the key
+      // of the saved provider (or template) that owns this base URL.
       const result = await api.setup.discoverClaudeCompatibleModels({
         baseUrl: formData.baseUrl.trim(),
         apiKey: formData.apiKey || undefined,
-        apiKeySource: hasFixedSettings(formData.providerType) ? 'inline' : formData.apiKeySource,
-        providerId: editingProviderId ?? undefined,
-        providerType: formData.providerType,
       });
       if (!result.success) {
         throw new Error(result.error || 'Failed to fetch models');

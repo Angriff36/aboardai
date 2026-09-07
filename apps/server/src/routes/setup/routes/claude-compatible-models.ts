@@ -2,13 +2,19 @@
  * Claude-compatible provider model discovery
  *
  * - POST /api/setup/claude-compatible/models
- *   Body: { baseUrl, apiKey?, apiKeySource?, providerId?, providerType? }
- *   Fetches `GET {baseUrl}/v1/models` with the resolved key and returns
- *   ProviderModel entries ready to store on the provider.
+ *   Body: { baseUrl, apiKey? }
+ *   Fetches `GET {baseUrl}/v1/models` and returns ProviderModel entries ready
+ *   to store on the provider.
+ *
+ * Key resolution: a key in the body is the caller's own and is used as-is.
+ * Otherwise the key comes ONLY from the saved provider (or built-in template)
+ * whose base URL matches the request — the setup routes are unauthenticated,
+ * so server-held secrets must never be routed to a URL they were not
+ * configured for.
  */
 
 import type { Request, Response } from 'express';
-import type { ApiKeySource, ClaudeCompatibleProviderType, ProviderModel } from '@aboardai/types';
+import type { Credentials, ProviderModel } from '@aboardai/types';
 import { CLAUDE_PROVIDER_TEMPLATES } from '@aboardai/types';
 import {
   fetchClaudeCompatibleModels,
@@ -20,9 +26,6 @@ import { getErrorMessage, logError } from '../common.js';
 interface DiscoverModelsBody {
   baseUrl?: string;
   apiKey?: string;
-  apiKeySource?: ApiKeySource;
-  providerId?: string;
-  providerType?: ClaudeCompatibleProviderType;
 }
 
 interface DiscoverModelsResponse {
@@ -36,56 +39,61 @@ function normalizeBaseUrl(url: string): string {
   return url.trim().replace(/\/+$/, '').toLowerCase();
 }
 
-/**
- * Server-held keys (credentials file, env, saved providers) may only be sent to
- * endpoints the user already configured or the built-in templates. The setup
- * routes are unauthenticated, so an arbitrary baseUrl must never receive them.
- */
+/** Saved provider or built-in template that owns this base URL, if any. */
+export function findProviderForBaseUrl<T extends { baseUrl: string }>(
+  baseUrl: string,
+  candidates: ReadonlyArray<T>
+): T | undefined {
+  const target = normalizeBaseUrl(baseUrl);
+  if (!target) return undefined;
+  return candidates.find((c) => normalizeBaseUrl(c.baseUrl) === target);
+}
+
+/** Server-held keys may only go to a saved provider or template that owns the URL. */
 export function isTrustedBaseUrl(
   baseUrl: string,
   savedProviders: ReadonlyArray<{ baseUrl: string }>
 ): boolean {
-  const target = normalizeBaseUrl(baseUrl);
-  if (!target) return false;
   return (
-    savedProviders.some((p) => normalizeBaseUrl(p.baseUrl) === target) ||
-    CLAUDE_PROVIDER_TEMPLATES.some((t) => normalizeBaseUrl(t.baseUrl) === target)
+    findProviderForBaseUrl(baseUrl, savedProviders) !== undefined ||
+    findProviderForBaseUrl(baseUrl, CLAUDE_PROVIDER_TEMPLATES) !== undefined
   );
 }
 
-const UNTRUSTED_URL_ERROR =
-  'Enter the API key in the form to fetch models from a custom URL. Server-stored keys are only sent to saved providers or built-in templates.';
+const NO_KEY_ERROR = 'Enter the API key first, then fetch models.';
 
-/** Resolve the key the same way the provider env builder does, plus saved-provider and z.ai fallbacks. */
-async function resolveCompatibleApiKey(
-  body: DiscoverModelsBody,
+/**
+ * Resolve the key for a saved provider from ITS OWN configured source.
+ * A GLM template URL with no saved provider may use the z.ai key stored
+ * for usage tracking, since that key belongs to the same service.
+ */
+export function resolveServerHeldKey(
   baseUrl: string,
-  settingsService: SettingsService
-): Promise<{ apiKey?: string; error?: string }> {
-  // A key typed into the form belongs to the caller; no server secret is involved.
-  const source = body.apiKeySource ?? 'inline';
-  if (source === 'inline' && body.apiKey?.trim()) return { apiKey: body.apiKey.trim() };
-
-  const settings = await settingsService.getGlobalSettings().catch(() => null);
-  const savedProviders = settings?.claudeCompatibleProviders ?? [];
-  if (!isTrustedBaseUrl(baseUrl, savedProviders)) return { error: UNTRUSTED_URL_ERROR };
-
-  if (source === 'env') return { apiKey: process.env.ANTHROPIC_API_KEY || undefined };
-
-  const credentials = await settingsService.getCredentials().catch(() => null);
-  if (source === 'credentials') return { apiKey: credentials?.apiKeys.anthropic || undefined };
-
-  if (body.providerId) {
-    const saved = savedProviders.find((p) => p.id === body.providerId);
-    if (saved?.apiKey) return { apiKey: saved.apiKey };
+  savedProviders: ReadonlyArray<{
+    baseUrl: string;
+    apiKeySource?: string;
+    apiKey?: string;
+  }>,
+  credentials: Credentials | null,
+  env: NodeJS.ProcessEnv = process.env
+): string | undefined {
+  const saved = findProviderForBaseUrl(baseUrl, savedProviders);
+  if (saved) {
+    switch (saved.apiKeySource ?? 'inline') {
+      case 'env':
+        return env.ANTHROPIC_API_KEY || undefined;
+      case 'credentials':
+        return credentials?.apiKeys.anthropic || undefined;
+      default:
+        return saved.apiKey || undefined;
+    }
   }
 
-  // The z.ai key stored for usage tracking also works for GLM discovery.
-  if (body.providerType === 'glm' && credentials?.apiKeys.zai) {
-    return { apiKey: credentials.apiKeys.zai };
+  const template = findProviderForBaseUrl(baseUrl, CLAUDE_PROVIDER_TEMPLATES);
+  if (template?.providerType === 'glm' && credentials?.apiKeys.zai) {
+    return credentials.apiKeys.zai;
   }
-
-  return {};
+  return undefined;
 }
 
 export function createDiscoverClaudeCompatibleModelsHandler(settingsService: SettingsService) {
@@ -100,16 +108,20 @@ export function createDiscoverClaudeCompatibleModelsHandler(settingsService: Set
         return;
       }
 
-      const { apiKey, error } = await resolveCompatibleApiKey(body, baseUrl, settingsService);
-      if (error) {
-        res.status(403).json({ success: false, error } satisfies DiscoverModelsResponse);
-        return;
+      let apiKey = body.apiKey?.trim() || undefined;
+      if (!apiKey) {
+        const settings = await settingsService.getGlobalSettings().catch(() => null);
+        const credentials = await settingsService.getCredentials().catch(() => null);
+        apiKey = resolveServerHeldKey(
+          baseUrl,
+          settings?.claudeCompatibleProviders ?? [],
+          credentials
+        );
       }
       if (!apiKey) {
-        res.status(400).json({
-          success: false,
-          error: 'No API key available for this provider. Enter the key first, then fetch models.',
-        } satisfies DiscoverModelsResponse);
+        res
+          .status(400)
+          .json({ success: false, error: NO_KEY_ERROR } satisfies DiscoverModelsResponse);
         return;
       }
 

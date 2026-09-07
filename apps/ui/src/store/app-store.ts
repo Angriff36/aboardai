@@ -1469,7 +1469,11 @@ export const useAppStore = create<AppState & AppActions>()((set, get) => ({
   syncGeminiModelsDiscovery: async (models) => {
     const allIds = models.map((m) => m.id);
     const currentEnabled = get().enabledGeminiModels;
-    const currentKnown = get().knownGeminiModelIds;
+    // Existing installs have no known list yet: treat the built-in catalog as
+    // already seen so earlier opt-outs are not silently re-enabled.
+    const storedKnown = get().knownGeminiModelIds;
+    const currentKnown: string[] =
+      storedKnown.length > 0 ? storedKnown : (getAllGeminiModelIds() as string[]);
     const trulyNew = allIds.filter((id) => !currentKnown.includes(id));
     const updatedEnabled: GeminiModelId[] =
       trulyNew.length > 0

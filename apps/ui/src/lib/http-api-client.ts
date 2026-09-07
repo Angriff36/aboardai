@@ -1715,9 +1715,6 @@ export class HttpApiClient implements ElectronAPI {
     discoverClaudeCompatibleModels: (params: {
       baseUrl: string;
       apiKey?: string;
-      apiKeySource?: string;
-      providerId?: string;
-      providerType?: string;
     }): Promise<{
       success: boolean;
       models?: Array<{

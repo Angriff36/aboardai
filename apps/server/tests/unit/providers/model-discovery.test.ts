@@ -7,7 +7,10 @@ import {
   parseCompatibleModelsResponse,
   toProviderModels,
 } from '../../../src/providers/claude-compatible-model-discovery.js';
-import { isTrustedBaseUrl } from '../../../src/routes/setup/routes/claude-compatible-models.js';
+import {
+  isTrustedBaseUrl,
+  resolveServerHeldKey,
+} from '../../../src/routes/setup/routes/claude-compatible-models.js';
 
 describe('claude-model-discovery', () => {
   it('parses the Anthropic /v1/models payload and dedupes ids', () => {
@@ -142,6 +145,41 @@ describe('claude-compatible-model-discovery', () => {
     expect(isTrustedBaseUrl('https://attacker.example.com/v1', saved)).toBe(false);
     expect(isTrustedBaseUrl('http://169.254.169.254', saved)).toBe(false);
     expect(isTrustedBaseUrl('', saved)).toBe(false);
+  });
+
+  it('resolves server-held keys only from the provider that owns the URL', () => {
+    const credentials = {
+      version: 1,
+      apiKeys: { anthropic: 'anthropic-secret', google: '', openai: '', zai: 'zai-secret' },
+    };
+    const saved = [
+      { baseUrl: 'https://proxy.example.com/anthropic', apiKeySource: 'credentials' },
+      { baseUrl: 'https://api.minimax.io/anthropic', apiKeySource: 'inline', apiKey: 'mm-key' },
+      { baseUrl: 'https://envprov.example.com', apiKeySource: 'env' },
+    ];
+    const env = { ANTHROPIC_API_KEY: 'env-secret' } as NodeJS.ProcessEnv;
+
+    // Each saved provider yields only its own configured key
+    expect(
+      resolveServerHeldKey('https://proxy.example.com/anthropic/', saved, credentials, env)
+    ).toBe('anthropic-secret');
+    expect(resolveServerHeldKey('https://api.minimax.io/anthropic', saved, credentials, env)).toBe(
+      'mm-key'
+    );
+    expect(resolveServerHeldKey('https://envprov.example.com', saved, credentials, env)).toBe(
+      'env-secret'
+    );
+
+    // Template URLs without a saved provider: only the GLM template may use the z.ai key
+    expect(resolveServerHeldKey('https://api.z.ai/api/anthropic', [], credentials, env)).toBe(
+      'zai-secret'
+    );
+    expect(resolveServerHeldKey('https://openrouter.ai/api', [], credentials, env)).toBeUndefined();
+
+    // Unknown URLs never receive a server-held key
+    expect(
+      resolveServerHeldKey('https://attacker.example.com/v1', saved, credentials, env)
+    ).toBeUndefined();
   });
 
   it('converts discovered models to ProviderModel entries', () => {
