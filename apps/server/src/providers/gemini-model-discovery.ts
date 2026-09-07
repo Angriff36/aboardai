@@ -95,6 +95,7 @@ export async function fetchGeminiModelsFromApi(
 ): Promise<ModelDefinition[]> {
   const response = await fetch(endpoint, {
     headers: { 'x-goog-api-key': apiKey },
+    redirect: 'manual', // never carry the key to a redirected host
     signal: AbortSignal.timeout(15_000),
   });
   if (!response.ok) {

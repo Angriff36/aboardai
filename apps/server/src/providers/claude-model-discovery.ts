@@ -53,6 +53,7 @@ export async function fetchClaudeModelsFromApi(
       'x-api-key': apiKey,
       'anthropic-version': '2023-06-01',
     },
+    redirect: 'manual', // never carry the key to a redirected host
     signal: AbortSignal.timeout(15_000),
   });
   if (!response.ok) {

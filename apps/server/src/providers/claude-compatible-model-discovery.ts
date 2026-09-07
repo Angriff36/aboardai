@@ -107,7 +107,18 @@ export async function fetchClaudeCompatibleModels(
   };
 
   const request = async (headers: Record<string, string>) => {
-    const response = await fetch(url, { headers, signal: AbortSignal.timeout(20_000) });
+    // Never follow redirects: Node keeps custom headers (x-api-key) on a
+    // cross-origin redirect, which would hand the key to another host.
+    const response = await fetch(url, {
+      headers,
+      redirect: 'manual',
+      signal: AbortSignal.timeout(20_000),
+    });
+    if (response.status >= 300 && response.status < 400) {
+      throw new Error(
+        `Model list endpoint redirected (HTTP ${response.status}). Use the final URL as the base URL.`
+      );
+    }
     let payload: unknown;
     try {
       payload = await response.json();

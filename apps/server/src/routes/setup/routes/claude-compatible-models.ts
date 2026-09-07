@@ -39,6 +39,16 @@ function normalizeBaseUrl(url: string): string {
   return url.trim().replace(/\/+$/, '').toLowerCase();
 }
 
+/** Only http(s) targets are proxied; no file:, data:, or other schemes. */
+export function isHttpUrl(url: string): boolean {
+  try {
+    const parsed = new URL(url);
+    return parsed.protocol === 'http:' || parsed.protocol === 'https:';
+  } catch {
+    return false;
+  }
+}
+
 /** Saved provider or built-in template that owns this base URL, if any. */
 export function findProviderForBaseUrl<T extends { baseUrl: string }>(
   baseUrl: string,
@@ -101,10 +111,11 @@ export function createDiscoverClaudeCompatibleModelsHandler(settingsService: Set
     try {
       const body = (req.body ?? {}) as DiscoverModelsBody;
       const baseUrl = body.baseUrl?.trim();
-      if (!baseUrl) {
-        res
-          .status(400)
-          .json({ success: false, error: 'baseUrl is required' } satisfies DiscoverModelsResponse);
+      if (!baseUrl || !isHttpUrl(baseUrl)) {
+        res.status(400).json({
+          success: false,
+          error: 'baseUrl must be an http(s) URL',
+        } satisfies DiscoverModelsResponse);
         return;
       }
 
