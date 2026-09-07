@@ -137,10 +137,25 @@ export async function fetchClaudeCompatibleModels(
   }
 
   if (!result.models) {
-    const detail = extractProviderErrorMessage(result.payload) ?? `HTTP ${result.status}`;
+    const raw = extractProviderErrorMessage(result.payload);
+    const detail = raw ? sanitizeProviderMessage(raw, options.apiKey) : `HTTP ${result.status}`;
     throw new Error(`Provider did not return a model list: ${detail}`);
   }
   return result.models;
+}
+
+/** Looks like a credential: sk-…, Bearer tokens, or any long opaque token. */
+const SECRET_LIKE_PATTERN = /\b(?:sk-[A-Za-z0-9_-]{8,}|Bearer\s+\S+|[A-Za-z0-9_-]{24,})\b/g;
+
+/**
+ * Provider error text is untrusted and ends up in logs and HTTP responses:
+ * drop the caller's key if echoed, mask anything key-shaped, and cap length.
+ */
+export function sanitizeProviderMessage(message: string, apiKey?: string): string {
+  let text = message.replace(/[\r\n]+/g, ' ').trim();
+  if (apiKey) text = text.split(apiKey).join('[redacted]');
+  text = text.replace(SECRET_LIKE_PATTERN, '[redacted]');
+  return text.length > 200 ? `${text.slice(0, 200)}…` : text;
 }
 
 const HAIKU_PATTERN = /(^|[-_/ .:])(haiku|flash|air|mini|lite|small|nano|fast)(?=$|[-_/ .:0-9])/i;

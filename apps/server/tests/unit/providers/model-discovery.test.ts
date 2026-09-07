@@ -5,10 +5,12 @@ import {
   extractProviderErrorMessage,
   inferClaudeAlias,
   parseCompatibleModelsResponse,
+  sanitizeProviderMessage,
   toProviderModels,
 } from '../../../src/providers/claude-compatible-model-discovery.js';
 import {
   isTrustedBaseUrl,
+  normalizeBaseUrl,
   resolveServerHeldKey,
 } from '../../../src/routes/setup/routes/claude-compatible-models.js';
 
@@ -180,6 +182,29 @@ describe('claude-compatible-model-discovery', () => {
     expect(
       resolveServerHeldKey('https://attacker.example.com/v1', saved, credentials, env)
     ).toBeUndefined();
+  });
+
+  it('matches URLs case-insensitively on host but case-sensitively on path', () => {
+    expect(normalizeBaseUrl('HTTPS://Proxy.Example/Anthropic/')).toBe(
+      'https://proxy.example/Anthropic'
+    );
+    const saved = [{ baseUrl: 'https://proxy.example/Anthropic' }];
+    expect(isTrustedBaseUrl('https://PROXY.example/Anthropic', saved)).toBe(true);
+    expect(isTrustedBaseUrl('https://proxy.example/anthropic', saved)).toBe(false);
+  });
+
+  it('redacts key-like text from provider error messages', () => {
+    const key = 'sk-live-abcdefghijklmnopqrstuvwxyz0123';
+    const msg = `invalid key ${key} for token Bearer eyJhbGciOi.payload.sig\nline2 abcdefghijklmnopqrstuvwxyz1234`;
+    const out = sanitizeProviderMessage(msg, key);
+    expect(out).not.toContain(key);
+    expect(out).not.toContain('eyJhbGciOi');
+    expect(out).not.toContain('abcdefghijklmnopqrstuvwxyz1234');
+    expect(out).not.toContain('\n');
+    expect(sanitizeProviderMessage('x'.repeat(500)).length).toBeLessThanOrEqual(201);
+    expect(sanitizeProviderMessage('login fail: carry the API key')).toBe(
+      'login fail: carry the API key'
+    );
   });
 
   it('converts discovered models to ProviderModel entries', () => {

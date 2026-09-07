@@ -35,8 +35,15 @@ interface DiscoverModelsResponse {
   error?: string;
 }
 
-function normalizeBaseUrl(url: string): string {
-  return url.trim().replace(/\/+$/, '').toLowerCase();
+/** Scheme and host are case-insensitive; the path is not (a proxy may route on it). */
+export function normalizeBaseUrl(url: string): string {
+  const trimmed = url.trim().replace(/\/+$/, '');
+  try {
+    const parsed = new URL(trimmed);
+    return `${parsed.protocol}//${parsed.host}${parsed.pathname.replace(/\/+$/, '')}`;
+  } catch {
+    return trimmed;
+  }
 }
 
 /** Only http(s) targets are proxied; no file:, data:, or other schemes. */
