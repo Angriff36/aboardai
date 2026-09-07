@@ -168,16 +168,28 @@ export function ApiProfilesSection() {
   // the base URL invalidates in-flight results so provider A's models can
   // never land in provider B's form.
   const fetchRequestRef = useRef(0);
-  const activeFormRef = useRef({ open: isDialogOpen, providerId: editingProviderId, baseUrl: '' });
+  /** The credential a fetch would use: the inline key when that source is active, else the source name. */
+  const credentialSnapshot = (form: ProviderFormData) =>
+    hasFixedSettings(form.providerType) || form.apiKeySource === 'inline'
+      ? `inline:${form.apiKey}`
+      : `source:${form.apiKeySource}`;
+  const activeFormRef = useRef({
+    open: isDialogOpen,
+    providerId: editingProviderId,
+    baseUrl: '',
+    credential: '',
+  });
   activeFormRef.current = {
     open: isDialogOpen,
     providerId: editingProviderId,
     baseUrl: formData.baseUrl.trim(),
+    credential: credentialSnapshot(formData),
   };
   useEffect(() => {
     if (!isDialogOpen) {
       fetchRequestRef.current += 1;
       setDiscoveredModels(null);
+      setIsFetchingModels(false);
     }
   }, [isDialogOpen]);
 
@@ -217,13 +229,15 @@ export function ApiProfilesSection() {
     }
     const requestId = ++fetchRequestRef.current;
     const requestProviderId = editingProviderId;
+    const requestCredential = credentialSnapshot(formData);
     const isStale = () => {
       const active = activeFormRef.current;
       return (
         requestId !== fetchRequestRef.current ||
         !active.open ||
         active.providerId !== requestProviderId ||
-        active.baseUrl !== requestBaseUrl
+        active.baseUrl !== requestBaseUrl ||
+        active.credential !== requestCredential
       );
     };
     setIsFetchingModels(true);
@@ -232,11 +246,12 @@ export function ApiProfilesSection() {
       if (!api.setup?.discoverClaudeCompatibleModels) {
         throw new Error('Model discovery is not available');
       }
-      // A key typed in the form is sent as-is; otherwise the server uses the key
-      // of the saved provider (or template) that owns this base URL.
+      // The inline key is sent only when that source is active; otherwise the
+      // server uses the key of the saved provider (or template) owning the URL.
+      const useInlineKey = requestCredential.startsWith('inline:');
       const result = await api.setup.discoverClaudeCompatibleModels({
         baseUrl: requestBaseUrl,
-        apiKey: formData.apiKey || undefined,
+        apiKey: useInlineKey ? formData.apiKey || undefined : undefined,
       });
       if (isStale()) return; // dialog closed or form changed while fetching
       if (!result.success) {
@@ -256,9 +271,11 @@ export function ApiProfilesSection() {
         setPickerFilter('');
       }
     } catch (error) {
+      if (isStale()) return; // an unrelated form should not see this error
       toast.error(error instanceof Error ? error.message : 'Failed to fetch models');
     } finally {
-      setIsFetchingModels(false);
+      // Only the newest request owns the loading flag.
+      if (requestId === fetchRequestRef.current) setIsFetchingModels(false);
     }
   };
 

@@ -12,6 +12,8 @@ let discoveredCursorModels: Array<{
 vi.mock('@/hooks/queries', () => ({
   useCursorModels: () => ({ data: discoveredCursorModels }),
   useOpencodeModels: () => ({ data: [] }),
+  useClaudeModels: () => ({ data: [] }),
+  useGeminiModels: () => ({ data: [] }),
 }));
 
 const mockUseAppStore = vi.mocked(useAppStore);
