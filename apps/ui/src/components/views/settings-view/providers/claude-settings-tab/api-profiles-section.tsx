@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import { useAppStore } from '@/store/app-store';
 import { getElectronAPI } from '@/lib/electron';
@@ -163,8 +163,32 @@ export function ApiProfilesSection() {
   const [pickerFilter, setPickerFilter] = useState('');
   const [pickerSelected, setPickerSelected] = useState<Set<string>>(new Set());
 
-  const applyDiscoveredModels = (models: DiscoveredModel[]) => {
-    const existing = new Set(formData.models.map((m) => m.id.toLowerCase()));
+  // A discovery response only applies to the form it was requested for. Each
+  // request gets a token; closing the dialog, switching provider, or editing
+  // the base URL invalidates in-flight results so provider A's models can
+  // never land in provider B's form.
+  const fetchRequestRef = useRef(0);
+  const activeFormRef = useRef({ open: isDialogOpen, providerId: editingProviderId, baseUrl: '' });
+  activeFormRef.current = {
+    open: isDialogOpen,
+    providerId: editingProviderId,
+    baseUrl: formData.baseUrl.trim(),
+  };
+  useEffect(() => {
+    if (!isDialogOpen) {
+      fetchRequestRef.current += 1;
+      setDiscoveredModels(null);
+    }
+  }, [isDialogOpen]);
+
+  const formDataRef = useRef(formData);
+  formDataRef.current = formData;
+
+  const applyDiscoveredModels = (models: DiscoveredModel[], forBaseUrl: string) => {
+    // Read the latest form (not the closure) so the dedupe is current.
+    const current = formDataRef.current;
+    if (current.baseUrl.trim() !== forBaseUrl) return; // form moved on
+    const existing = new Set(current.models.map((m) => m.id.toLowerCase()));
     const additions: ModelFormEntry[] = models
       .filter((m) => !existing.has(m.id.toLowerCase()))
       .map((m) => ({
@@ -176,16 +200,32 @@ export function ApiProfilesSection() {
       toast.info('All discovered models are already in the list');
       return;
     }
-    setFormData((prev) => ({ ...prev, models: [...prev.models, ...additions] }));
-    if (hasFixedSettings(formData.providerType)) setShowModelMappings(true);
+    setFormData((prev) =>
+      prev.baseUrl.trim() === forBaseUrl
+        ? { ...prev, models: [...prev.models, ...additions] }
+        : prev
+    );
+    if (hasFixedSettings(current.providerType)) setShowModelMappings(true);
     toast.success(`Added ${additions.length} model${additions.length === 1 ? '' : 's'}`);
   };
 
   const handleFetchModels = async () => {
-    if (!formData.baseUrl.trim()) {
+    const requestBaseUrl = formData.baseUrl.trim();
+    if (!requestBaseUrl) {
       toast.error('Enter the base URL first');
       return;
     }
+    const requestId = ++fetchRequestRef.current;
+    const requestProviderId = editingProviderId;
+    const isStale = () => {
+      const active = activeFormRef.current;
+      return (
+        requestId !== fetchRequestRef.current ||
+        !active.open ||
+        active.providerId !== requestProviderId ||
+        active.baseUrl !== requestBaseUrl
+      );
+    };
     setIsFetchingModels(true);
     try {
       const api = getElectronAPI();
@@ -195,9 +235,10 @@ export function ApiProfilesSection() {
       // A key typed in the form is sent as-is; otherwise the server uses the key
       // of the saved provider (or template) that owns this base URL.
       const result = await api.setup.discoverClaudeCompatibleModels({
-        baseUrl: formData.baseUrl.trim(),
+        baseUrl: requestBaseUrl,
         apiKey: formData.apiKey || undefined,
       });
+      if (isStale()) return; // dialog closed or form changed while fetching
       if (!result.success) {
         throw new Error(result.error || 'Failed to fetch models');
       }
@@ -207,7 +248,7 @@ export function ApiProfilesSection() {
         return;
       }
       if (models.length <= LARGE_MODEL_LIST) {
-        applyDiscoveredModels(models);
+        applyDiscoveredModels(models, requestBaseUrl);
       } else {
         // Big catalogs (OpenRouter) get a picker instead of a 400-row dump
         setDiscoveredModels(models);
@@ -237,7 +278,7 @@ export function ApiProfilesSection() {
 
   const handleAddSelectedDiscovered = () => {
     const chosen = (discoveredModels ?? []).filter((m) => pickerSelected.has(m.id));
-    applyDiscoveredModels(chosen);
+    applyDiscoveredModels(chosen, formData.baseUrl.trim());
     setDiscoveredModels(null);
   };
 
