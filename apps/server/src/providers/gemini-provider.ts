@@ -22,7 +22,15 @@ import type {
   ModelDefinition,
 } from './types.js';
 import { validateBareModelId } from '@aboardai/types';
-import { GEMINI_MODEL_MAP, type GeminiAuthStatus } from '@aboardai/types';
+import type { GeminiAuthStatus } from '@aboardai/types';
+import {
+  clearGeminiModelCache,
+  getCachedGeminiModels,
+  getStaticGeminiModelDefinitions,
+  hasCachedGeminiModels,
+  isGeminiModelCacheStale,
+  refreshGeminiModels,
+} from './gemini-model-discovery.js';
 import { createLogger, isAbortError } from '@aboardai/utils';
 import { spawnJSONLProcess, type SubprocessOptions } from '@aboardai/platform';
 import { normalizeTodos } from './tool-normalization.js';
@@ -878,16 +886,33 @@ export class GeminiProvider extends CliProvider {
    * Get available Gemini models
    */
   getAvailableModels(): ModelDefinition[] {
-    return Object.entries(GEMINI_MODEL_MAP).map(([id, config]) => ({
-      id, // Full model ID with gemini- prefix (e.g., 'gemini-2.5-flash')
-      name: config.label,
-      modelString: id, // Same as id - CLI uses the full model name
-      provider: 'gemini',
-      description: config.description,
-      supportsTools: true,
-      supportsVision: config.supportsVision,
-      contextWindow: config.contextWindow,
-    }));
+    // Prefer the live list from the Gemini API; fall back to the static map.
+    const discovered = getCachedGeminiModels();
+    if (discovered && discovered.length > 0) {
+      return discovered;
+    }
+    return getStaticGeminiModelDefinitions();
+  }
+
+  /**
+   * Refresh the model list from the Gemini API.
+   * Falls back to the static map when no API key is available.
+   */
+  async refreshModels(apiKey?: string): Promise<ModelDefinition[]> {
+    await refreshGeminiModels(apiKey ?? process.env.GEMINI_API_KEY ?? process.env.GOOGLE_API_KEY);
+    return this.getAvailableModels();
+  }
+
+  hasCachedModels(): boolean {
+    return hasCachedGeminiModels();
+  }
+
+  isModelCacheStale(): boolean {
+    return isGeminiModelCacheStale();
+  }
+
+  clearModelCache(): void {
+    clearGeminiModelCache();
   }
 
   /**

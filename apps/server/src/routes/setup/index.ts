@@ -47,6 +47,19 @@ import {
   createClearCursorCacheHandler,
 } from './routes/cursor-models.js';
 import {
+  createGetClaudeModelsHandler,
+  createRefreshClaudeModelsHandler,
+  createClearClaudeCacheHandler,
+} from './routes/claude-models.js';
+import {
+  createGetGeminiModelsHandler,
+  createRefreshGeminiModelsHandler,
+  createClearGeminiCacheHandler,
+} from './routes/gemini-models.js';
+import { createDiscoverClaudeCompatibleModelsHandler } from './routes/claude-compatible-models.js';
+import type { SettingsService } from '../../services/settings-service.js';
+import { authMiddleware } from '../../lib/auth.js';
+import {
   createGetCursorConfigHandler,
   createSetCursorDefaultModelHandler,
   createSetCursorModelsHandler,
@@ -57,7 +70,7 @@ import {
   createGetExampleConfigHandler,
 } from './routes/cursor-config.js';
 
-export function createSetupRoutes(): Router {
+export function createSetupRoutes(settingsService: SettingsService): Router {
   const router = Router();
 
   router.get('/claude-status', createClaudeStatusHandler());
@@ -110,6 +123,33 @@ export function createSetupRoutes(): Router {
   router.post('/opencode/cache/clear', createClearOpencodeCacheHandler());
   router.get('/cursor/models', createGetCursorModelsHandler());
   router.post('/cursor/models/refresh', createRefreshCursorModelsHandler());
+
+  // Dynamic model routes make outbound requests with stored keys, so unlike the
+  // rest of /api/setup they require authentication.
+  // Claude (Anthropic API)
+  router.get('/claude/models', authMiddleware, createGetClaudeModelsHandler(settingsService));
+  router.post(
+    '/claude/models/refresh',
+    authMiddleware,
+    createRefreshClaudeModelsHandler(settingsService)
+  );
+  router.post('/claude/cache/clear', authMiddleware, createClearClaudeCacheHandler());
+
+  // Gemini API
+  router.get('/gemini/models', authMiddleware, createGetGeminiModelsHandler(settingsService));
+  router.post(
+    '/gemini/models/refresh',
+    authMiddleware,
+    createRefreshGeminiModelsHandler(settingsService)
+  );
+  router.post('/gemini/cache/clear', authMiddleware, createClearGeminiCacheHandler());
+
+  // Claude-compatible provider (GLM, MiniMax, OpenRouter, custom) model discovery
+  router.post(
+    '/claude-compatible/models',
+    authMiddleware,
+    createDiscoverClaudeCompatibleModelsHandler(settingsService)
+  );
   router.post('/cursor/cache/clear', createClearCursorCacheHandler());
   router.get('/cursor-config', createGetCursorConfigHandler());
   router.post('/cursor-config/default-model', createSetCursorDefaultModelHandler());

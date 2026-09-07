@@ -1,11 +1,12 @@
-import { useState, useCallback, useMemo } from 'react';
+import { useState, useCallback, useEffect, useMemo } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { useAppStore } from '@/store/app-store';
+import { getElectronAPI } from '@/lib/electron';
 import { GeminiCliStatus, GeminiCliStatusSkeleton } from '../cli-status/gemini-cli-status';
 import { GeminiModelConfiguration } from './gemini-model-configuration';
 import { ProviderToggle } from './provider-toggle';
-import { useGeminiCliStatus } from '@/hooks/queries';
+import { useGeminiCliStatus, useGeminiModels } from '@/hooks/queries';
 import { queryKeys } from '@/lib/query-keys';
 import type { CliStatus as SharedCliStatus } from '../shared/types';
 import type { GeminiAuthStatus } from '../cli-status/gemini-cli-status';
@@ -13,10 +14,44 @@ import type { GeminiModelId } from '@aboardai/types';
 
 export function GeminiSettingsTab() {
   const queryClient = useQueryClient();
-  const { enabledGeminiModels, geminiDefaultModel, setGeminiDefaultModel, toggleGeminiModel } =
-    useAppStore();
+  const {
+    enabledGeminiModels,
+    geminiDefaultModel,
+    setGeminiDefaultModel,
+    toggleGeminiModel,
+    syncGeminiModelsDiscovery,
+  } = useAppStore();
 
   const [isSaving, setIsSaving] = useState(false);
+
+  // Models discovered from the Gemini API (static catalog when no API key is configured)
+  const {
+    data: dynamicGeminiModels = [],
+    isFetching: isLoadingGeminiModels,
+    refetch: refetchGeminiModels,
+  } = useGeminiModels(true);
+
+  useEffect(() => {
+    if (dynamicGeminiModels.length > 0) {
+      void syncGeminiModelsDiscovery(dynamicGeminiModels);
+    }
+  }, [dynamicGeminiModels, syncGeminiModelsDiscovery]);
+
+  const handleRefreshGeminiModels = useCallback(async () => {
+    const api = getElectronAPI();
+    if (api.setup?.refreshGeminiModels) {
+      const result = await api.setup.refreshGeminiModels();
+      if (!result.success) {
+        toast.error(result.error || 'Failed to refresh Gemini models');
+        return;
+      }
+      if (result.source === 'static') {
+        toast.info('No Gemini API key configured. Showing the built-in catalog.');
+      }
+    }
+    await queryClient.invalidateQueries({ queryKey: queryKeys.models.gemini() });
+    await refetchGeminiModels();
+  }, [queryClient, refetchGeminiModels]);
 
   // React Query hooks for data fetching
   const {
@@ -119,6 +154,9 @@ export function GeminiSettingsTab() {
           enabledGeminiModels={enabledGeminiModels}
           geminiDefaultModel={geminiDefaultModel}
           isSaving={isSaving}
+          dynamicModels={dynamicGeminiModels}
+          isLoadingDynamicModels={isLoadingGeminiModels}
+          onRefreshModels={handleRefreshGeminiModels}
           onDefaultModelChange={handleDefaultModelChange}
           onModelToggle={handleModelToggle}
         />

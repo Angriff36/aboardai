@@ -8,14 +8,19 @@ import type {
   ThinkingLevel,
 } from '@aboardai/types';
 import { getThinkingLevelsForModel, supportsReasoningEffort } from '@aboardai/types';
-import { useCursorModels, useOpencodeModels } from '@/hooks/queries';
+import {
+  useClaudeModels,
+  useCursorModels,
+  useGeminiModels,
+  useOpencodeModels,
+} from '@/hooks/queries';
 import { useAppStore } from '@/store/app-store';
 import {
-  CLAUDE_MODELS,
   COPILOT_MODELS,
-  GEMINI_MODELS,
   OPENCODE_MODELS,
+  getAvailableClaudeModels,
   getAvailableCursorModels,
+  getAvailableGeminiModels,
 } from '@/components/views/board-view/shared/model-constants';
 
 function optionalThinkingLevel(
@@ -65,6 +70,7 @@ export function useFeatureModelCatalog(): {
     codexDefaultModel,
     fetchCodexModels,
     syncCursorModelsDiscovery,
+    syncGeminiModelsDiscovery,
     toggleProviderDisabled,
     updateClaudeCompatibleProvider,
     claudeCompatibleProviders,
@@ -88,6 +94,7 @@ export function useFeatureModelCatalog(): {
       codexDefaultModel: state.codexDefaultModel,
       fetchCodexModels: state.fetchCodexModels,
       syncCursorModelsDiscovery: state.syncCursorModelsDiscovery,
+      syncGeminiModelsDiscovery: state.syncGeminiModelsDiscovery,
       toggleProviderDisabled: state.toggleProviderDisabled,
       updateClaudeCompatibleProvider: state.updateClaudeCompatibleProvider,
       claudeCompatibleProviders: state.claudeCompatibleProviders,
@@ -98,6 +105,14 @@ export function useFeatureModelCatalog(): {
   );
   const cursorQuery = useCursorModels(true);
   const opencodeQuery = useOpencodeModels();
+  const claudeQuery = useClaudeModels();
+  const geminiQuery = useGeminiModels();
+
+  useEffect(() => {
+    if (geminiQuery.data?.length) {
+      void syncGeminiModelsDiscovery(geminiQuery.data);
+    }
+  }, [geminiQuery.data, syncGeminiModelsDiscovery]);
 
   useEffect(() => {
     if (codexModels.length === 0 && !codexModelsLoading) {
@@ -138,7 +153,7 @@ export function useFeatureModelCatalog(): {
       });
     };
 
-    for (const option of CLAUDE_MODELS) {
+    for (const option of getAvailableClaudeModels(claudeQuery.data ?? [])) {
       const selectedThinking =
         defaultFeatureModel.model === option.id
           ? defaultFeatureModel.thinkingLevel
@@ -179,9 +194,7 @@ export function useFeatureModelCatalog(): {
       );
     }
 
-    for (const option of GEMINI_MODELS.filter((item) =>
-      enabledGeminiModels.includes(item.id as (typeof enabledGeminiModels)[number])
-    )) {
+    for (const option of getAvailableGeminiModels(enabledGeminiModels, geminiQuery.data ?? [])) {
       add('gemini', 'Gemini', option.id, option.label, option.id === geminiDefaultModel);
     }
 
@@ -243,6 +256,8 @@ export function useFeatureModelCatalog(): {
     copilotDefaultModel,
     cursorDefaultModel,
     cursorQuery.data,
+    claudeQuery.data,
+    geminiQuery.data,
     defaultFeatureModel,
     defaultReasoningEffort,
     defaultThinkingLevel,
@@ -284,7 +299,11 @@ export function useFeatureModelCatalog(): {
           candidates: [candidate],
           builtInProvider,
           customProviderId,
-          refreshable: builtInProvider === 'cursor' || builtInProvider === 'opencode',
+          refreshable:
+            builtInProvider === 'cursor' ||
+            builtInProvider === 'opencode' ||
+            builtInProvider === 'claude' ||
+            builtInProvider === 'gemini',
         });
       }
     }
@@ -311,12 +330,18 @@ export function useFeatureModelCatalog(): {
     [groups, toggleProviderDisabled, updateClaudeCompatibleProvider]
   );
 
-  const queryError = cursorQuery.error ?? opencodeQuery.error;
+  const queryError =
+    cursorQuery.error ?? opencodeQuery.error ?? claudeQuery.error ?? geminiQuery.error;
   return {
     candidates,
     groups,
     setProviderEnabled,
-    isLoading: codexModelsLoading || cursorQuery.isLoading || opencodeQuery.isLoading,
+    isLoading:
+      codexModelsLoading ||
+      cursorQuery.isLoading ||
+      opencodeQuery.isLoading ||
+      claudeQuery.isLoading ||
+      geminiQuery.isLoading,
     error: queryError instanceof Error ? queryError : null,
   };
 }

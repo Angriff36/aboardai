@@ -90,6 +90,7 @@ const SETTINGS_FIELDS_TO_SYNC = [
   'enabledDynamicModelIds',
   'knownDynamicModelIds',
   'knownCursorModelIds',
+  'knownGeminiModelIds',
   'disabledProviders',
   'autoLoadClaudeMd',
   'useClaudeCodeSystemPrompt',
@@ -677,6 +678,8 @@ export async function refreshSettingsFromServer(): Promise<boolean> {
 
     const sanitizedKnownCursorModelIds =
       serverSettings.knownCursorModelIds ?? currentAppState.knownCursorModelIds;
+    const sanitizedKnownGeminiModelIds =
+      serverSettings.knownGeminiModelIds ?? currentAppState.knownGeminiModelIds;
 
     // Migrate OpenCode models to canonical format
     const migratedOpencodeModels = migrateOpencodeModelIds(
@@ -699,14 +702,14 @@ export async function refreshSettingsFromServer(): Promise<boolean> {
       sanitizedEnabledOpencodeModels.push(sanitizedOpencodeDefaultModel);
     }
 
-    // Sanitize Gemini models
+    // Sanitize Gemini models — allow dynamic gemini-* IDs discovered from the Gemini API
     const validGeminiModelIds = new Set(getAllGeminiModelIds());
+    const isValidGeminiId = (id: string): id is GeminiModelId =>
+      validGeminiModelIds.has(id as GeminiModelId) || /^gemini-[a-zA-Z0-9._-]+$/.test(id);
     const sanitizedEnabledGeminiModels = (serverSettings.enabledGeminiModels ?? []).filter(
-      (id): id is GeminiModelId => validGeminiModelIds.has(id as GeminiModelId)
+      isValidGeminiId
     );
-    const sanitizedGeminiDefaultModel = validGeminiModelIds.has(
-      serverSettings.geminiDefaultModel as GeminiModelId
-    )
+    const sanitizedGeminiDefaultModel = isValidGeminiId(serverSettings.geminiDefaultModel ?? '')
       ? (serverSettings.geminiDefaultModel as GeminiModelId)
       : DEFAULT_GEMINI_MODEL;
 
@@ -849,6 +852,7 @@ export async function refreshSettingsFromServer(): Promise<boolean> {
       enabledDynamicModelIds: sanitizedDynamicModelIds,
       knownDynamicModelIds: sanitizedKnownDynamicModelIds,
       knownCursorModelIds: sanitizedKnownCursorModelIds,
+      knownGeminiModelIds: sanitizedKnownGeminiModelIds,
       disabledProviders: serverSettings.disabledProviders ?? [],
       autoLoadClaudeMd: serverSettings.autoLoadClaudeMd ?? true,
       useClaudeCodeSystemPrompt: serverSettings.useClaudeCodeSystemPrompt ?? true,

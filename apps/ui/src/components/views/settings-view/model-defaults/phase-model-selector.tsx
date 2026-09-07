@@ -3,7 +3,12 @@ import { cn } from '@/lib/utils';
 import { useAppStore } from '@/store/app-store';
 import { useShallow } from 'zustand/react/shallow';
 import { useIsMobile } from '@/hooks/use-media-query';
-import { useOpencodeModels, useCursorModels } from '@/hooks/queries';
+import {
+  useOpencodeModels,
+  useCursorModels,
+  useClaudeModels,
+  useGeminiModels,
+} from '@/hooks/queries';
 import type {
   ModelAlias,
   CursorModelId,
@@ -30,7 +35,9 @@ import {
   OPENCODE_MODELS,
   GEMINI_MODELS,
   COPILOT_MODELS,
+  getAvailableClaudeModels,
   getAvailableCursorModels,
+  getAvailableGeminiModels,
   THINKING_LEVEL_LABELS,
   REASONING_EFFORT_LEVELS,
   REASONING_EFFORT_LABELS,
@@ -213,6 +220,8 @@ export function PhaseModelSelector({
   // without requiring a page refresh.
   const { data: dynamicOpencodeModels = [] } = useOpencodeModels();
   const { data: dynamicCursorModels = [] } = useCursorModels();
+  const { data: dynamicClaudeModels = [] } = useClaudeModels();
+  const { data: dynamicGeminiModels = [] } = useGeminiModels();
   const { candidates: featureModelCatalog } = useFeatureModelCatalog();
   const catalogCandidateKeys = useMemo(
     () => new Set(featureModelCatalog.map((candidate) => candidate.key)),
@@ -359,13 +368,20 @@ export function PhaseModelSelector({
     [catalogCandidateKeys, enabledCursorModels, dynamicCursorModels]
   );
 
-  // Filter Gemini models to only show enabled ones
-  const availableGeminiModels = GEMINI_MODELS.filter((model) => {
-    return (
-      enabledGeminiModels.includes(model.id as GeminiModelId) &&
-      catalogCandidateKeys.has(`gemini:${model.id}`)
-    );
-  });
+  // Claude catalog: alias entries plus models discovered from the Anthropic API
+  const availableClaudeModels = useMemo(
+    () => getAvailableClaudeModels(dynamicClaudeModels),
+    [dynamicClaudeModels]
+  );
+
+  // Filter Gemini models (live API list when available) to only show enabled ones
+  const availableGeminiModels = useMemo(
+    () =>
+      getAvailableGeminiModels(enabledGeminiModels, dynamicGeminiModels).filter((model) =>
+        catalogCandidateKeys.has(`gemini:${model.id}`)
+      ),
+    [catalogCandidateKeys, enabledGeminiModels, dynamicGeminiModels]
+  );
 
   // Filter Copilot models to only show enabled ones
   const availableCopilotModels = COPILOT_MODELS.filter((model) => {
@@ -377,7 +393,7 @@ export function PhaseModelSelector({
 
   // Helper to find current selected model details
   const currentModel = useMemo(() => {
-    const claudeModel = CLAUDE_MODELS.find((m) => m.id === selectedModel);
+    const claudeModel = availableClaudeModels.find((m) => m.id === selectedModel);
     if (claudeModel) {
       // Add thinking level to label if not 'none'
       const thinkingLabel =
@@ -541,6 +557,7 @@ export function PhaseModelSelector({
     selectedProviderId,
     selectedThinkingLevel,
     selectedReasoningEffort,
+    availableClaudeModels,
     availableCursorModels,
     availableGeminiModels,
     availableCopilotModels,
@@ -644,15 +661,15 @@ export function PhaseModelSelector({
 
     // Process Claude Models (skip if provider is disabled)
     if (!isClaudeDisabled) {
-      CLAUDE_MODELS.filter((model) => catalogCandidateKeys.has(`claude:${model.id}`)).forEach(
-        (model) => {
+      availableClaudeModels
+        .filter((model) => catalogCandidateKeys.has(`claude:${model.id}`))
+        .forEach((model) => {
           if (favoriteModels.includes(model.id)) {
             favs.push(model);
           } else {
             cModels.push(model);
           }
-        }
-      );
+        });
     }
 
     // Process Cursor Models (skip if provider is disabled)
@@ -720,6 +737,7 @@ export function PhaseModelSelector({
     };
   }, [
     favoriteModels,
+    availableClaudeModels,
     availableCursorModels,
     availableGeminiModels,
     availableCopilotModels,

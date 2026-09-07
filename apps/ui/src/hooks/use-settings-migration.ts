@@ -35,6 +35,9 @@ import {
   DEFAULT_PHASE_MODELS,
   getAllOpencodeModelIds,
   getAllCursorModelIds,
+  getAllGeminiModelIds,
+  DEFAULT_GEMINI_MODEL,
+  type GeminiModelId,
   migrateCursorModelIds,
   migratePhaseModelEntry,
   type GlobalSettings,
@@ -680,6 +683,19 @@ export function hydrateStoreFromSettings(settings: GlobalSettings): void {
   }
 
   const sanitizedKnownCursorModelIds = settings.knownCursorModelIds ?? current.knownCursorModelIds;
+  const sanitizedKnownGeminiModelIds = settings.knownGeminiModelIds ?? current.knownGeminiModelIds;
+
+  // Gemini: keep persisted selections, including ids discovered from the Gemini API
+  const staticGeminiModelIds = new Set<string>(getAllGeminiModelIds());
+  const isValidGeminiId = (id: string): id is GeminiModelId =>
+    staticGeminiModelIds.has(id) || /^gemini-[a-zA-Z0-9._-]+$/.test(id);
+  const sanitizedEnabledGeminiModels = (
+    settings.enabledGeminiModels ?? current.enabledGeminiModels
+  ).filter(isValidGeminiId);
+  const incomingGeminiDefault = settings.geminiDefaultModel ?? current.geminiDefaultModel;
+  const sanitizedGeminiDefaultModel = isValidGeminiId(incomingGeminiDefault)
+    ? incomingGeminiDefault
+    : DEFAULT_GEMINI_MODEL;
 
   const validOpencodeModelIds = new Set(getAllOpencodeModelIds());
   const incomingEnabledOpencodeModels =
@@ -803,6 +819,9 @@ export function hydrateStoreFromSettings(settings: GlobalSettings): void {
         : allStaticCursorModels,
     cursorDefaultModel: sanitizedCursorDefaultModel,
     knownCursorModelIds: sanitizedKnownCursorModelIds,
+    knownGeminiModelIds: sanitizedKnownGeminiModelIds,
+    enabledGeminiModels: sanitizedEnabledGeminiModels,
+    geminiDefaultModel: sanitizedGeminiDefaultModel,
     enabledOpencodeModels: sanitizedEnabledOpencodeModels,
     opencodeDefaultModel: sanitizedOpencodeDefaultModel,
     enabledDynamicModelIds: sanitizedDynamicModelIds,

@@ -20,6 +20,7 @@ import type {
   PipelineStep,
   ModelDefinition,
   CursorModelId,
+  GeminiModelId,
   CodexModelId,
   ServerLogLevel,
   ParsedTask,
@@ -325,6 +326,7 @@ const initialState: AppState = {
   cursorDefaultModel: 'cursor-auto',
   dynamicCursorModels: [],
   knownCursorModelIds: [],
+  knownGeminiModelIds: [],
   enabledCodexModels: getAllCodexModelIds(),
   codexDefaultModel: 'codex-gpt-5.2-codex',
   codexAutoLoadAgents: false,
@@ -1460,9 +1462,51 @@ export const useAppStore = create<AppState & AppActions>()((set, get) => ({
   toggleGeminiModel: (model, enabled) =>
     set((state) => ({
       enabledGeminiModels: enabled
-        ? [...state.enabledGeminiModels, model]
+        ? [...new Set([...state.enabledGeminiModels, model])]
         : state.enabledGeminiModels.filter((m) => m !== model),
+      // Seed with the built-in catalog the first time so a single toggle never
+      // marks the rest of the catalog as "new" for a later discovery.
+      knownGeminiModelIds: [
+        ...new Set([
+          ...(state.knownGeminiModelIds.length > 0
+            ? state.knownGeminiModelIds
+            : (getAllGeminiModelIds() as string[])),
+          model,
+        ]),
+      ],
     })),
+  syncGeminiModelsDiscovery: async (models) => {
+    const allIds = models.map((m) => m.id);
+    const currentEnabled = get().enabledGeminiModels;
+    // Existing installs have no known list yet: treat the built-in catalog as
+    // already seen so earlier opt-outs are not silently re-enabled.
+    const storedKnown = get().knownGeminiModelIds;
+    const currentKnown: string[] =
+      storedKnown.length > 0 ? storedKnown : (getAllGeminiModelIds() as string[]);
+    const trulyNew = allIds.filter((id) => !currentKnown.includes(id));
+    const updatedEnabled: GeminiModelId[] =
+      trulyNew.length > 0
+        ? [...new Set([...currentEnabled, ...(trulyNew as GeminiModelId[])])]
+        : currentEnabled;
+    const updatedKnown = [...new Set([...currentKnown, ...allIds])];
+
+    set({
+      enabledGeminiModels: updatedEnabled,
+      knownGeminiModelIds: updatedKnown,
+    });
+
+    if (trulyNew.length > 0) {
+      try {
+        const httpApi = getHttpApiClient();
+        await httpApi.settings.updateGlobal({
+          enabledGeminiModels: updatedEnabled,
+          knownGeminiModelIds: updatedKnown,
+        });
+      } catch (error) {
+        logger.error('Failed to sync Gemini model discovery:', error);
+      }
+    }
+  },
 
   // Copilot SDK Settings actions
   setEnabledCopilotModels: (models) => set({ enabledCopilotModels: models }),

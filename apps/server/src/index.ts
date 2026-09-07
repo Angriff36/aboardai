@@ -501,7 +501,7 @@ app.use('/api', requireJsonContentType);
 // Mount API routes - health, auth, and setup are unauthenticated
 app.use('/api/health', createHealthRoutes());
 app.use('/api/auth', createAuthRoutes());
-app.use('/api/setup', createSetupRoutes());
+app.use('/api/setup', createSetupRoutes(settingsService));
 
 // Apply authentication to all other routes
 app.use('/api', authMiddleware);

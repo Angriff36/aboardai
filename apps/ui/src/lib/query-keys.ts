@@ -122,6 +122,10 @@ export const queryKeys = {
     opencodeProviders: () => ['models', 'opencode', 'providers'] as const,
     /** Cursor models */
     cursor: () => ['models', 'cursor'] as const,
+    /** Claude models discovered from the Anthropic API */
+    claude: () => ['models', 'claude'] as const,
+    /** Gemini models discovered from the Gemini API */
+    gemini: () => ['models', 'gemini'] as const,
     /** Provider status */
     providers: () => ['models', 'providers'] as const,
   },
