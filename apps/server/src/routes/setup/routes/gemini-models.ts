@@ -55,7 +55,7 @@ export function createGetGeminiModelsHandler(settingsService: SettingsService) {
       let models: ModelDefinition[];
       let cached = true;
 
-      if (forceRefresh || !provider.hasCachedModels()) {
+      if (forceRefresh || !provider.hasCachedModels() || provider.isModelCacheStale()) {
         models = await provider.refreshModels(await resolveGeminiApiKey(settingsService));
         cached = false;
       } else {

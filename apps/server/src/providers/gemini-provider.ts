@@ -28,6 +28,7 @@ import {
   getCachedGeminiModels,
   getStaticGeminiModelDefinitions,
   hasCachedGeminiModels,
+  isGeminiModelCacheStale,
   refreshGeminiModels,
 } from './gemini-model-discovery.js';
 import { createLogger, isAbortError } from '@aboardai/utils';
@@ -904,6 +905,10 @@ export class GeminiProvider extends CliProvider {
 
   hasCachedModels(): boolean {
     return hasCachedGeminiModels();
+  }
+
+  isModelCacheStale(): boolean {
+    return isGeminiModelCacheStale();
   }
 
   clearModelCache(): void {

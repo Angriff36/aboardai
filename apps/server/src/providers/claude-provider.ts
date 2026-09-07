@@ -19,6 +19,7 @@ import {
   clearClaudeModelCache,
   getCachedClaudeModels,
   hasCachedClaudeModels,
+  isClaudeModelCacheStale,
   refreshClaudeModels,
 } from './claude-model-discovery.js';
 import { classifyError, getUserFriendlyErrorMessage, createLogger } from '@aboardai/utils';
@@ -743,6 +744,10 @@ export class ClaudeProvider extends BaseProvider {
 
   hasCachedModels(): boolean {
     return hasCachedClaudeModels();
+  }
+
+  isModelCacheStale(): boolean {
+    return isClaudeModelCacheStale();
   }
 
   clearModelCache(): void {

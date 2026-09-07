@@ -9,6 +9,7 @@
 
 import type { Request, Response } from 'express';
 import type { ApiKeySource, ClaudeCompatibleProviderType, ProviderModel } from '@aboardai/types';
+import { CLAUDE_PROVIDER_TEMPLATES } from '@aboardai/types';
 import {
   fetchClaudeCompatibleModels,
   toProviderModels,
@@ -31,29 +32,60 @@ interface DiscoverModelsResponse {
   error?: string;
 }
 
+function normalizeBaseUrl(url: string): string {
+  return url.trim().replace(/\/+$/, '').toLowerCase();
+}
+
+/**
+ * Server-held keys (credentials file, env, saved providers) may only be sent to
+ * endpoints the user already configured or the built-in templates. The setup
+ * routes are unauthenticated, so an arbitrary baseUrl must never receive them.
+ */
+export function isTrustedBaseUrl(
+  baseUrl: string,
+  savedProviders: ReadonlyArray<{ baseUrl: string }>
+): boolean {
+  const target = normalizeBaseUrl(baseUrl);
+  if (!target) return false;
+  return (
+    savedProviders.some((p) => normalizeBaseUrl(p.baseUrl) === target) ||
+    CLAUDE_PROVIDER_TEMPLATES.some((t) => normalizeBaseUrl(t.baseUrl) === target)
+  );
+}
+
+const UNTRUSTED_URL_ERROR =
+  'Enter the API key in the form to fetch models from a custom URL. Server-stored keys are only sent to saved providers or built-in templates.';
+
 /** Resolve the key the same way the provider env builder does, plus saved-provider and z.ai fallbacks. */
 async function resolveCompatibleApiKey(
   body: DiscoverModelsBody,
+  baseUrl: string,
   settingsService: SettingsService
-): Promise<string | undefined> {
+): Promise<{ apiKey?: string; error?: string }> {
+  // A key typed into the form belongs to the caller; no server secret is involved.
   const source = body.apiKeySource ?? 'inline';
-  if (source === 'env') return process.env.ANTHROPIC_API_KEY || undefined;
+  if (source === 'inline' && body.apiKey?.trim()) return { apiKey: body.apiKey.trim() };
+
+  const settings = await settingsService.getGlobalSettings().catch(() => null);
+  const savedProviders = settings?.claudeCompatibleProviders ?? [];
+  if (!isTrustedBaseUrl(baseUrl, savedProviders)) return { error: UNTRUSTED_URL_ERROR };
+
+  if (source === 'env') return { apiKey: process.env.ANTHROPIC_API_KEY || undefined };
 
   const credentials = await settingsService.getCredentials().catch(() => null);
-  if (source === 'credentials') return credentials?.apiKeys.anthropic || undefined;
-
-  if (body.apiKey?.trim()) return body.apiKey.trim();
+  if (source === 'credentials') return { apiKey: credentials?.apiKeys.anthropic || undefined };
 
   if (body.providerId) {
-    const settings = await settingsService.getGlobalSettings().catch(() => null);
-    const saved = settings?.claudeCompatibleProviders?.find((p) => p.id === body.providerId);
-    if (saved?.apiKey) return saved.apiKey;
+    const saved = savedProviders.find((p) => p.id === body.providerId);
+    if (saved?.apiKey) return { apiKey: saved.apiKey };
   }
 
   // The z.ai key stored for usage tracking also works for GLM discovery.
-  if (body.providerType === 'glm' && credentials?.apiKeys.zai) return credentials.apiKeys.zai;
+  if (body.providerType === 'glm' && credentials?.apiKeys.zai) {
+    return { apiKey: credentials.apiKeys.zai };
+  }
 
-  return undefined;
+  return {};
 }
 
 export function createDiscoverClaudeCompatibleModelsHandler(settingsService: SettingsService) {
@@ -68,7 +100,11 @@ export function createDiscoverClaudeCompatibleModelsHandler(settingsService: Set
         return;
       }
 
-      const apiKey = await resolveCompatibleApiKey(body, settingsService);
+      const { apiKey, error } = await resolveCompatibleApiKey(body, baseUrl, settingsService);
+      if (error) {
+        res.status(403).json({ success: false, error } satisfies DiscoverModelsResponse);
+        return;
+      }
       if (!apiKey) {
         res.status(400).json({
           success: false,

@@ -53,7 +53,7 @@ export function createGetClaudeModelsHandler(settingsService: SettingsService) {
       let models: ModelDefinition[];
       let cached = true;
 
-      if (forceRefresh || !provider.hasCachedModels()) {
+      if (forceRefresh || !provider.hasCachedModels() || provider.isModelCacheStale()) {
         models = await provider.refreshModels(await resolveAnthropicApiKey(settingsService));
         cached = false;
       } else {

@@ -7,6 +7,7 @@ import {
   parseCompatibleModelsResponse,
   toProviderModels,
 } from '../../../src/providers/claude-compatible-model-discovery.js';
+import { isTrustedBaseUrl } from '../../../src/routes/setup/routes/claude-compatible-models.js';
 
 describe('claude-model-discovery', () => {
   it('parses the Anthropic /v1/models payload and dedupes ids', () => {
@@ -131,6 +132,16 @@ describe('claude-compatible-model-discovery', () => {
     expect(inferClaudeAlias('anthropic/claude-opus-4.8')).toBe('opus');
     expect(inferClaudeAlias('google/gemini-2.5-flash')).toBe('haiku');
     expect(inferClaudeAlias('GLM-5')).toBe('sonnet');
+  });
+
+  it('only trusts saved-provider and template base URLs for server-held keys', () => {
+    const saved = [{ baseUrl: 'https://my-proxy.example.com/anthropic/' }];
+    expect(isTrustedBaseUrl('https://my-proxy.example.com/anthropic', saved)).toBe(true);
+    expect(isTrustedBaseUrl('https://api.z.ai/api/anthropic', [])).toBe(true);
+    expect(isTrustedBaseUrl('https://openrouter.ai/api', [])).toBe(true);
+    expect(isTrustedBaseUrl('https://attacker.example.com/v1', saved)).toBe(false);
+    expect(isTrustedBaseUrl('http://169.254.169.254', saved)).toBe(false);
+    expect(isTrustedBaseUrl('', saved)).toBe(false);
   });
 
   it('converts discovered models to ProviderModel entries', () => {

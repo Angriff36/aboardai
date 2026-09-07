@@ -702,14 +702,14 @@ export async function refreshSettingsFromServer(): Promise<boolean> {
       sanitizedEnabledOpencodeModels.push(sanitizedOpencodeDefaultModel);
     }
 
-    // Sanitize Gemini models
+    // Sanitize Gemini models — allow dynamic gemini-* IDs discovered from the Gemini API
     const validGeminiModelIds = new Set(getAllGeminiModelIds());
+    const isValidGeminiId = (id: string): id is GeminiModelId =>
+      validGeminiModelIds.has(id as GeminiModelId) || /^gemini-[a-zA-Z0-9._-]+$/.test(id);
     const sanitizedEnabledGeminiModels = (serverSettings.enabledGeminiModels ?? []).filter(
-      (id): id is GeminiModelId => validGeminiModelIds.has(id as GeminiModelId)
+      isValidGeminiId
     );
-    const sanitizedGeminiDefaultModel = validGeminiModelIds.has(
-      serverSettings.geminiDefaultModel as GeminiModelId
-    )
+    const sanitizedGeminiDefaultModel = isValidGeminiId(serverSettings.geminiDefaultModel ?? '')
       ? (serverSettings.geminiDefaultModel as GeminiModelId)
       : DEFAULT_GEMINI_MODEL;
 
