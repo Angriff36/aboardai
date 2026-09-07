@@ -101,28 +101,35 @@ export async function fetchClaudeCompatibleModels(
   options: CompatibleDiscoveryOptions
 ): Promise<DiscoveredCompatibleModel[]> {
   const url = `${options.baseUrl.trim().replace(/\/+$/, '')}/v1/models`;
-  const response = await fetch(url, {
-    headers: {
-      'x-api-key': options.apiKey,
-      Authorization: `Bearer ${options.apiKey}`,
-      'anthropic-version': '2023-06-01',
-    },
-    signal: AbortSignal.timeout(20_000),
-  });
+  const authHeaders: Record<string, string> = {
+    'x-api-key': options.apiKey,
+    Authorization: `Bearer ${options.apiKey}`,
+  };
 
-  let payload: unknown;
-  try {
-    payload = await response.json();
-  } catch {
-    throw new Error(`Model list request failed: HTTP ${response.status} (response was not JSON)`);
+  const request = async (headers: Record<string, string>) => {
+    const response = await fetch(url, { headers, signal: AbortSignal.timeout(20_000) });
+    let payload: unknown;
+    try {
+      payload = await response.json();
+    } catch {
+      throw new Error(`Model list request failed: HTTP ${response.status} (response was not JSON)`);
+    }
+    return { status: response.status, payload, models: parseCompatibleModelsResponse(payload) };
+  };
+
+  // Plain request first: OpenRouter answers `anthropic-version` + key with a
+  // trimmed Anthropic-compat listing instead of its full catalog. Endpoints
+  // that require the version header get a second try with it.
+  let result = await request(authHeaders);
+  if (!result.models) {
+    result = await request({ ...authHeaders, 'anthropic-version': '2023-06-01' });
   }
 
-  const models = parseCompatibleModelsResponse(payload);
-  if (!models) {
-    const detail = extractProviderErrorMessage(payload) ?? `HTTP ${response.status}`;
+  if (!result.models) {
+    const detail = extractProviderErrorMessage(result.payload) ?? `HTTP ${result.status}`;
     throw new Error(`Provider did not return a model list: ${detail}`);
   }
-  return models;
+  return result.models;
 }
 
 const HAIKU_PATTERN = /(^|[-_/ .:])(haiku|flash|air|mini|lite|small|nano|fast)(?=$|[-_/ .:0-9])/i;
