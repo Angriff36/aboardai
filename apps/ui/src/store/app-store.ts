@@ -1464,7 +1464,16 @@ export const useAppStore = create<AppState & AppActions>()((set, get) => ({
       enabledGeminiModels: enabled
         ? [...new Set([...state.enabledGeminiModels, model])]
         : state.enabledGeminiModels.filter((m) => m !== model),
-      knownGeminiModelIds: [...new Set([...state.knownGeminiModelIds, model])],
+      // Seed with the built-in catalog the first time so a single toggle never
+      // marks the rest of the catalog as "new" for a later discovery.
+      knownGeminiModelIds: [
+        ...new Set([
+          ...(state.knownGeminiModelIds.length > 0
+            ? state.knownGeminiModelIds
+            : (getAllGeminiModelIds() as string[])),
+          model,
+        ]),
+      ],
     })),
   syncGeminiModelsDiscovery: async (models) => {
     const allIds = models.map((m) => m.id);

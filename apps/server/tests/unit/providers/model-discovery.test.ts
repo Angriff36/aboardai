@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { parseAnthropicModelsResponse } from '../../../src/providers/claude-model-discovery.js';
 import { parseGeminiModelsResponse } from '../../../src/providers/gemini-model-discovery.js';
 import {
+  buildModelsUrl,
   extractProviderErrorMessage,
   inferClaudeAlias,
   parseCompatibleModelsResponse,
@@ -204,6 +205,19 @@ describe('claude-compatible-model-discovery', () => {
     expect(sanitizeProviderMessage('x'.repeat(500)).length).toBeLessThanOrEqual(201);
     expect(sanitizeProviderMessage('login fail: carry the API key')).toBe(
       'login fail: carry the API key'
+    );
+  });
+
+  it('does not double the version segment when the base URL already ends in /v1', () => {
+    expect(buildModelsUrl('https://api.z.ai/api/anthropic/')).toBe(
+      'https://api.z.ai/api/anthropic/v1/models'
+    );
+    expect(buildModelsUrl('https://openrouter.ai/api')).toBe('https://openrouter.ai/api/v1/models');
+    expect(buildModelsUrl('https://custom.example.com/v1')).toBe(
+      'https://custom.example.com/v1/models'
+    );
+    expect(buildModelsUrl('https://custom.example.com/V1/')).toBe(
+      'https://custom.example.com/V1/models'
     );
   });
 

@@ -96,11 +96,20 @@ export function extractProviderErrorMessage(payload: unknown): string | undefine
   return undefined;
 }
 
+/**
+ * Build the models URL. Base URLs are stored without a version (`…/anthropic`,
+ * `…/api`), but some users enter `…/v1`; do not double the version segment.
+ */
+export function buildModelsUrl(baseUrl: string): string {
+  const base = baseUrl.trim().replace(/\/+$/, '');
+  return /\/v\d+$/i.test(base) ? `${base}/models` : `${base}/v1/models`;
+}
+
 /** Fetch models from a Claude-compatible endpoint. Throws with the provider's message on failure. */
 export async function fetchClaudeCompatibleModels(
   options: CompatibleDiscoveryOptions
 ): Promise<DiscoveredCompatibleModel[]> {
-  const url = `${options.baseUrl.trim().replace(/\/+$/, '')}/v1/models`;
+  const url = buildModelsUrl(options.baseUrl);
   const authHeaders: Record<string, string> = {
     'x-api-key': options.apiKey,
     Authorization: `Bearer ${options.apiKey}`,

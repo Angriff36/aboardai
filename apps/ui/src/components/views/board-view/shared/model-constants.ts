@@ -213,7 +213,10 @@ export function getAvailableGeminiModels(
     hasThinking: model.hasReasoning,
   }));
 
-  const allModels = dynamicOptions.length > 0 ? dynamicOptions : GEMINI_MODELS;
+  // Union, not replace: the Gemini CLI (OAuth) may run models the discovery
+  // key cannot list, so built-in entries stay selectable.
+  const seen = new Set(dynamicOptions.map((model) => model.id));
+  const allModels = [...dynamicOptions, ...GEMINI_MODELS.filter((model) => !seen.has(model.id))];
 
   if (enabledGeminiModels.length === 0) {
     return allModels;
