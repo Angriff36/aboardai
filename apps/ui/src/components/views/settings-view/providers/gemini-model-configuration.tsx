@@ -47,8 +47,6 @@ export function GeminiModelConfiguration({
     [dynamicModels]
   );
 
-  const isDynamic = dynamicModels.length > 0;
-
   return (
     <BaseModelConfiguration<GeminiModelId>
       providerName="Gemini"
@@ -61,11 +59,7 @@ export function GeminiModelConfiguration({
       isSaving={isSaving}
       onDefaultModelChange={onDefaultModelChange}
       onModelToggle={onModelToggle}
-      description={
-        isDynamic
-          ? `Models discovered from the Gemini API (${models.length} available)`
-          : 'Built-in Gemini catalog. Add a Gemini API key to discover models automatically.'
-      }
+      description={`${models.length} Gemini models available. Refresh pulls the live list from the Gemini API when a Gemini API key is set.`}
       headerAction={
         onRefreshModels ? (
           <Button

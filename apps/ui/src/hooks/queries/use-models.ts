@@ -129,6 +129,9 @@ export function useClaudeModels(refresh = false) {
       if (!result.success) {
         throw new Error(result.error || 'Failed to fetch Claude models');
       }
+      // Only a real API listing extends the catalog; the static fallback is
+      // already covered by the canonical alias entries in the UI.
+      if (result.source !== 'api') return [];
       return (result.models ?? []) as ModelDefinition[];
     },
     staleTime: STALE_TIMES.MODELS,
@@ -152,6 +155,8 @@ export function useGeminiModels(refresh = false) {
       if (!result.success) {
         throw new Error(result.error || 'Failed to fetch Gemini models');
       }
+      // Static fallback equals the built-in GEMINI_MODELS list the UI already has.
+      if (result.source !== 'api') return [];
       return (result.models ?? []) as ModelDefinition[];
     },
     staleTime: STALE_TIMES.MODELS,
