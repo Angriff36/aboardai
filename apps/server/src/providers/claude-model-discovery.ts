@@ -130,29 +130,38 @@ export async function refreshClaudeModels(
 ): Promise<DiscoveredClaudeModel[]> {
   if (inFlight) return inFlight;
 
-  let auth: ClaudeDiscoveryAuth | undefined;
-  if (apiKey) {
-    auth = { apiKey };
-  } else {
-    const oauthToken = await readClaudeOAuthToken();
-    if (oauthToken) auth = { oauthToken };
-  }
-  if (!auth) {
-    logger.debug('No Anthropic API key or Claude Code login found; keeping static Claude catalog');
-    return cachedModels ?? [];
-  }
-
-  inFlight = fetchClaudeModelsFromApi(auth)
-    .then((models) => {
+  // The credential read is inside the shared promise so concurrent callers coalesce.
+  inFlight = (async () => {
+    try {
+      let models: DiscoveredClaudeModel[];
+      if (apiKey) {
+        // API-key failures propagate so the settings UI can show the reason.
+        models = await fetchClaudeModelsFromApi({ apiKey });
+      } else {
+        const oauthToken = await readClaudeOAuthToken();
+        if (!oauthToken) {
+          logger.debug('No Anthropic API key or Claude Code login found; keeping static catalog');
+          return cachedModels ?? [];
+        }
+        try {
+          // The subscription token is only ever sent to Anthropic itself —
+          // never to an ANTHROPIC_BASE_URL override.
+          models = await fetchClaudeModelsFromApi({ oauthToken }, DEFAULT_ANTHROPIC_BASE_URL);
+        } catch (error) {
+          // Expired login or network trouble must not break the catalog.
+          logger.debug(`Claude subscription model discovery failed; keeping catalog: ${error}`);
+          return cachedModels ?? [];
+        }
+      }
       if (models.length > 0) {
         cachedModels = models;
         cacheExpiry = Date.now() + CLAUDE_MODEL_CACHE_DURATION_MS;
         logger.debug(`Cached ${models.length} models from the Anthropic API`);
       }
       return cachedModels ?? [];
-    })
-    .finally(() => {
+    } finally {
       inFlight = null;
-    });
+    }
+  })();
   return inFlight;
 }
