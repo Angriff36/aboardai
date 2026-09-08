@@ -5,9 +5,48 @@
  * creates a new one per call) sees the same discovered list.
  */
 
+import { readFile } from 'node:fs/promises';
+import { getClaudeCredentialPaths } from '@aboardai/platform';
 import { createLogger } from '@aboardai/utils';
 
 const logger = createLogger('ClaudeModelDiscovery');
+
+/** Beta header that lets a Claude Code OAuth token call the Anthropic API. */
+const OAUTH_BETA_HEADER = 'oauth-2025-04-20';
+
+/** Either an API key or a Claude Code (subscription) OAuth access token. */
+export type ClaudeDiscoveryAuth = { apiKey: string } | { oauthToken: string };
+
+/** Headers for `GET /v1/models` for the given auth method. */
+export function buildClaudeModelsHeaders(auth: ClaudeDiscoveryAuth): Record<string, string> {
+  if ('apiKey' in auth) {
+    return { 'x-api-key': auth.apiKey, 'anthropic-version': '2023-06-01' };
+  }
+  return {
+    Authorization: `Bearer ${auth.oauthToken}`,
+    'anthropic-version': '2023-06-01',
+    'anthropic-beta': OAUTH_BETA_HEADER,
+  };
+}
+
+/**
+ * Read the Claude Code CLI OAuth access token (Claude Max / Pro subscription
+ * login) from the CLI credentials file, if present.
+ */
+export async function readClaudeOAuthToken(): Promise<string | undefined> {
+  for (const credentialPath of getClaudeCredentialPaths()) {
+    try {
+      const parsed = JSON.parse(await readFile(credentialPath, 'utf8')) as {
+        claudeAiOauth?: { accessToken?: unknown };
+      };
+      const token = parsed.claudeAiOauth?.accessToken;
+      if (typeof token === 'string' && token.trim()) return token.trim();
+    } catch {
+      // Missing or unreadable file — try the next path
+    }
+  }
+  return undefined;
+}
 
 /** Cache duration for dynamic model fetching (30 minutes) */
 export const CLAUDE_MODEL_CACHE_DURATION_MS = 30 * 60 * 1000;
@@ -44,16 +83,13 @@ export function parseAnthropicModelsResponse(payload: unknown): DiscoveredClaude
 
 /** Fetch the model list from the Anthropic API. Throws on HTTP or network failure. */
 export async function fetchClaudeModelsFromApi(
-  apiKey: string,
+  auth: ClaudeDiscoveryAuth,
   baseUrl: string = process.env.ANTHROPIC_BASE_URL || DEFAULT_ANTHROPIC_BASE_URL
 ): Promise<DiscoveredClaudeModel[]> {
   const url = `${baseUrl.replace(/\/+$/, '')}/v1/models?limit=1000`;
   const response = await fetch(url, {
-    headers: {
-      'x-api-key': apiKey,
-      'anthropic-version': '2023-06-01',
-    },
-    redirect: 'manual', // never carry the key to a redirected host
+    headers: buildClaudeModelsHeaders(auth),
+    redirect: 'manual', // never carry the credential to a redirected host
     signal: AbortSignal.timeout(15_000),
   });
   if (!response.ok) {
@@ -85,19 +121,28 @@ export function clearClaudeModelCache(): void {
 }
 
 /**
- * Refresh the cache from the API. Without an API key (Claude Max / OAuth users)
+ * Refresh the cache from the API. Uses the API key when one is configured,
+ * otherwise the Claude Code subscription (OAuth) token. With neither,
  * discovery is skipped and the existing cache is returned.
  */
 export async function refreshClaudeModels(
   apiKey: string | undefined
 ): Promise<DiscoveredClaudeModel[]> {
   if (inFlight) return inFlight;
-  if (!apiKey) {
-    logger.debug('No Anthropic API key available; keeping static Claude catalog');
+
+  let auth: ClaudeDiscoveryAuth | undefined;
+  if (apiKey) {
+    auth = { apiKey };
+  } else {
+    const oauthToken = await readClaudeOAuthToken();
+    if (oauthToken) auth = { oauthToken };
+  }
+  if (!auth) {
+    logger.debug('No Anthropic API key or Claude Code login found; keeping static Claude catalog');
     return cachedModels ?? [];
   }
 
-  inFlight = fetchClaudeModelsFromApi(apiKey)
+  inFlight = fetchClaudeModelsFromApi(auth)
     .then((models) => {
       if (models.length > 0) {
         cachedModels = models;
