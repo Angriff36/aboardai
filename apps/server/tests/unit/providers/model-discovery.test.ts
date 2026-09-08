@@ -1,5 +1,8 @@
 import { describe, it, expect } from 'vitest';
-import { parseAnthropicModelsResponse } from '../../../src/providers/claude-model-discovery.js';
+import {
+  buildClaudeModelsHeaders,
+  parseAnthropicModelsResponse,
+} from '../../../src/providers/claude-model-discovery.js';
 import { parseGeminiModelsResponse } from '../../../src/providers/gemini-model-discovery.js';
 import {
   buildModelsUrl,
@@ -32,6 +35,18 @@ describe('claude-model-discovery', () => {
       { id: 'claude-opus-4-8', displayName: 'Claude Opus 4.8' },
       { id: 'claude-sonnet-4-6', displayName: 'claude-sonnet-4-6' },
     ]);
+  });
+
+  it('uses x-api-key for API keys and Bearer + oauth beta for subscription tokens', () => {
+    expect(buildClaudeModelsHeaders({ apiKey: 'sk-ant-test' })).toEqual({
+      'x-api-key': 'sk-ant-test',
+      'anthropic-version': '2023-06-01',
+    });
+    expect(buildClaudeModelsHeaders({ oauthToken: 'oauth-test' })).toEqual({
+      Authorization: 'Bearer oauth-test',
+      'anthropic-version': '2023-06-01',
+      'anthropic-beta': 'oauth-2025-04-20',
+    });
   });
 
   it('returns an empty list for payloads without data', () => {
