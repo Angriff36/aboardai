@@ -148,6 +148,22 @@ describe('codex-provider.ts', () => {
       expect(toolResult.message?.content[0].content).toBe('file1\nfile2');
     });
 
+    it('ends the job at turn.completed even when the Codex process stays alive', async () => {
+      vi.mocked(spawnJSONLProcess).mockReturnValue(
+        (async function* () {
+          yield { type: 'turn.completed', result: 'done' };
+          // Codex kept running (e.g. a dev server it started holds a handle open).
+          await new Promise(() => {});
+        })()
+      );
+
+      const results = await collectAsyncGenerator<ProviderMessage>(
+        provider.executeQuery({ prompt: 'Build it', model: 'gpt-5.2', cwd: '/tmp' })
+      );
+
+      expect(results).toEqual([{ type: 'result', subtype: 'success', result: 'done' }]);
+    });
+
     it('adds output schema and max turn overrides when configured', async () => {
       // Note: With full-permissions always on, these flags are no longer used
       // This test now only verifies the basic CLI structure

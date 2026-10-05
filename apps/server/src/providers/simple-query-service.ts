@@ -227,6 +227,8 @@ export async function simpleQuery(options: SimpleQueryOptions): Promise<SimpleQu
             if (msg.structured_output) {
               structuredOutput = msg.structured_output;
             }
+            // The turn is done; do not wait for a CLI that stays alive afterwards.
+            break;
           } else if (msg.subtype === 'error_max_turns') {
             if (!responseText.trim()) {
               throw new Error('Provider ended before producing text (error_max_turns)');
@@ -336,6 +338,8 @@ export async function streamingQuery(options: StreamingQueryOptions): Promise<Si
             if (msg.structured_output) {
               structuredOutput = msg.structured_output;
             }
+            // The turn is done; do not wait for a CLI that stays alive afterwards.
+            break;
           } else if (msg.subtype === 'error_max_turns') {
             // Max turns reached - return what we have
             break;

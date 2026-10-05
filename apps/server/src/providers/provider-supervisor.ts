@@ -402,6 +402,15 @@ export async function* superviseQuery(
         // NOTE: if the consumer breaks its for-await here, a return completion
         // unwinds through the attempt-level finally below.
         yield msg;
+
+        // A successful result ends the turn. Stop reading: some CLIs stay alive
+        // afterwards (e.g. a dev server they started holds a handle open), and
+        // waiting for them would leave the job stuck forever. Closing the
+        // iterator kills the leftover process tree.
+        if (msg.type === 'result' && msg.subtype === 'success') {
+          outcome = 'completed';
+          break messageLoop;
+        }
       }
     } catch (err: unknown) {
       // Iterator threw an error — the generator has already finished

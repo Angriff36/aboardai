@@ -985,7 +985,9 @@ export class CodexProvider extends BaseProvider {
         if (eventType === CODEX_EVENT_TYPES.turnCompleted) {
           const resultText = extractText(event.result) || undefined;
           yield { type: 'result', subtype: 'success', result: resultText };
-          continue;
+          // The turn is done. Codex can stay alive afterwards (e.g. a dev server it
+          // started keeps a handle open), so stop here; the subprocess is killed.
+          return;
         }
 
         // Safe no-ops for lifecycle events that carry no UI-relevant payload.

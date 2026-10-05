@@ -279,6 +279,11 @@ export async function* spawnJSONLProcess(options: SubprocessOptions): AsyncGener
         clearTimeout(timeoutHandle);
       }
       cleanupAbortListener();
+      // The consumer stopped early (e.g. the CLI reported its final event but
+      // never exited): do not leave the process tree running.
+      if (!streamEnded && !processExited) {
+        killProcessTree(childProcess);
+      }
     }
   } else {
     // No stdout - still need to cleanup abort listener when process exits
