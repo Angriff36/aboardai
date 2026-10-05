@@ -79,9 +79,31 @@ export function accountKey(provider: BaseProvider, options: ExecuteOptions): str
       : 'unknown';
 }
 
-export function markAccountUnavailable(key: string, reason: string): void {
+const ACCOUNT_WIDE_TYPES = new Set([
+  ErrorType.AUTHENTICATION,
+  ErrorType.BILLING,
+  ErrorType.CLI_NOT_FOUND,
+]);
+const ACCOUNT_WIDE_TEXT =
+  /disconnected from the app|not logged in|not authenticated|api_error_status=40[13]/i;
+
+/**
+ * Remember a failure that affects the whole account (out of usage, auth,
+ * billing, missing CLI) so later jobs skip it. Model-specific or short
+ * failures (unsupported model, rate limit) only move the current job.
+ */
+export function noteAccountFailure(key: string, error: unknown): void {
+  const text = errorText(error);
+  const accountWide =
+    isOutOfUsage(error) ||
+    ACCOUNT_WIDE_TEXT.test(text) ||
+    ACCOUNT_WIDE_TYPES.has(classifyError(new Error(text)).type);
+  if (!accountWide) {
+    logger.warn(`Moving this job off ${key}: ${text.slice(0, 300)}`);
+    return;
+  }
   unavailableUntil.set(key, Date.now() + PROVIDER_COOLDOWN_MS);
-  logger.warn(`Skipping ${key} for 30 minutes: ${reason.slice(0, 300)}`);
+  logger.warn(`Skipping ${key} for 30 minutes: ${text.slice(0, 300)}`);
 }
 
 export function clearAccountUnavailable(key: string): void {
@@ -120,13 +142,27 @@ export interface FallbackTarget {
   account: string;
 }
 
+const CONTINUATION_NOTE =
+  'NOTE: Another AI model started this task and stopped partway (its account ran out of usage or became unavailable). ' +
+  'The working directory may already contain its partial changes. Inspect the current state first ' +
+  '(for example git status and git diff), keep the work that is correct, and continue the task from there. ' +
+  'Do not redo or duplicate work that is already done.\n\n';
+
+function withContinuationNote(prompt: ExecuteOptions['prompt']): ExecuteOptions['prompt'] {
+  if (typeof prompt === 'string') return CONTINUATION_NOTE + prompt;
+  return [{ type: 'text', text: CONTINUATION_NOTE }, ...prompt];
+}
+
 /**
  * Next model on an account that has not failed in this job and is not
- * cooling down. Returns undefined when every account is out.
+ * cooling down. Returns undefined when every account is out. When the failed
+ * model already produced output, the new model is told to continue the work
+ * in place instead of starting over.
  */
 export async function nextFallback(
   options: ExecuteOptions,
-  triedAccounts: ReadonlySet<string>
+  triedAccounts: ReadonlySet<string>,
+  continuing = false
 ): Promise<FallbackTarget | undefined> {
   // Loaded on demand: the factory pulls in every provider, which the supervisor must not.
   const { ProviderFactory } = await import('./provider-factory.js');
@@ -146,6 +182,7 @@ export async function nextFallback(
       account,
       options: {
         ...options,
+        prompt: continuing ? withContinuationNote(options.prompt) : options.prompt,
         model: stripProviderPrefix(resolved),
         originalModel: resolved,
         sdkSessionId: undefined,

@@ -19,7 +19,7 @@ import type { BaseProvider } from './base-provider.js';
 import {
   accountKey,
   isModelAccessError,
-  markAccountUnavailable,
+  noteAccountFailure,
   nextFallback,
 } from './model-fallback.js';
 import type {
@@ -114,9 +114,11 @@ async function runWithModelFallback<T>(
   provider: BaseProvider,
   providerOptions: ExecuteOptions,
   allowFallback: boolean,
-  run: (provider: BaseProvider, providerOptions: ExecuteOptions) => Promise<T>
+  run: (provider: BaseProvider, providerOptions: ExecuteOptions) => Promise<T>,
+  hasStreamedOutput: () => boolean = () => false
 ): Promise<T> {
   const tried = new Set<string>();
+  const originalOptions = providerOptions;
   let account = accountKey(provider, providerOptions);
   while (true) {
     tried.add(account);
@@ -131,8 +133,8 @@ async function runWithModelFallback<T>(
       ) {
         throw error;
       }
-      markAccountUnavailable(account, error instanceof Error ? error.message : String(error));
-      const next = await nextFallback(providerOptions, tried);
+      noteAccountFailure(account, error);
+      const next = await nextFallback(originalOptions, tried, hasStreamedOutput());
       if (!next) throw error;
       provider = next.provider;
       providerOptions = next.options;
@@ -280,11 +282,17 @@ export async function streamingQuery(options: StreamingQueryOptions): Promise<Si
     credentials: options.credentials, // Pass credentials for resolving 'credentials' apiKeySource
   };
 
+  // Text already streamed by a model that then ran out of usage. A backup model
+  // continues the work, so the caller receives both parts.
+  let carriedText = '';
+  let streamedText = '';
   return runWithModelFallback(
     provider,
     providerOptions,
     !options.noFallback,
     async (provider, providerOptions) => {
+      carriedText += streamedText;
+      streamedText = '';
       let responseText = '';
       let structuredOutput: Record<string, unknown> | undefined;
       for await (const msg of provider.executeQuery(providerOptions)) {
@@ -299,6 +307,7 @@ export async function streamingQuery(options: StreamingQueryOptions): Promise<Si
           for (const block of msg.message.content) {
             if (block.type === 'text' && block.text) {
               responseText += block.text;
+              streamedText += block.text;
               options.onText?.(block.text);
             } else if (block.type === 'tool_use' && block.name) {
               options.onToolUse?.(block.name, block.input);
@@ -328,7 +337,8 @@ export async function streamingQuery(options: StreamingQueryOptions): Promise<Si
         }
       }
 
-      return { text: responseText, structured_output: structuredOutput };
-    }
+      return { text: carriedText + responseText, structured_output: structuredOutput };
+    },
+    () => carriedText.length + streamedText.length > 0
   );
 }

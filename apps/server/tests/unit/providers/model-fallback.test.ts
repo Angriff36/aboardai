@@ -86,4 +86,36 @@ describe('model fallback', () => {
       simpleQuery({ prompt: 'Plan', model: 'cursor-gpt-5.6-sol', cwd: 'C:\\p' })
     ).rejects.toThrow(/cannot read file/);
   });
+
+  it('tells the backup model to continue in place when work had already started', async () => {
+    const partial = fakeProvider('cursor', async function* () {
+      yield text('edited two files');
+      yield { type: 'error', error: USAGE_LIMIT };
+    });
+    for await (const _msg of superviseQueryWithFallback(partial as never, {
+      prompt: 'Build it',
+      model: 'gpt-5.6-sol',
+      cwd: 'C:\\project',
+    })) {
+      // drain
+    }
+
+    const backupPrompt = claude.executeQuery.mock.calls[0]?.[0]?.prompt as string;
+    expect(backupPrompt).toMatch(/^NOTE: Another AI model started this task/);
+    expect(backupPrompt).toContain('Build it');
+  });
+
+  it('moves the job but does not put the account aside for a short rate limit', async () => {
+    const limited = fakeProvider('cursor', async function* () {
+      yield { type: 'error', error: '429 Too Many Requests: rate limit' };
+    });
+    vi.mocked(ProviderFactory.getProviderForModel).mockImplementation(
+      (model: string) => (model.startsWith('cursor') ? limited : claude) as never
+    );
+
+    const result = await simpleQuery({ prompt: 'Plan', model: 'cursor-gpt-5.6-sol', cwd: 'C:\\p' });
+
+    expect(result.text).toBe('done by backup');
+    expect(isAccountUnavailable('cursor')).toBe(false);
+  });
 });

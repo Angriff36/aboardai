@@ -34,7 +34,7 @@ import {
   isAccountUnavailable,
   isModelAccessError,
   isOutOfUsage,
-  markAccountUnavailable,
+  noteAccountFailure,
   nextFallback,
 } from './model-fallback.js';
 
@@ -172,6 +172,8 @@ export async function* superviseQueryWithFallback(
   let currentOptions = options;
   let account = accountKey(provider, options);
   const tried = new Set<string>();
+  // Once the job has produced output, a backup model continues it in place.
+  let produced = false;
 
   while (true) {
     tried.add(account);
@@ -186,6 +188,7 @@ export async function* superviseQueryWithFallback(
             failure = new Error(msg.error);
             break;
           }
+          if (msg.type !== ('supervisor_status' as ProviderMessage['type'])) produced = true;
           yield msg;
         }
         if (failure === undefined) return;
@@ -193,10 +196,10 @@ export async function* superviseQueryWithFallback(
         if (options.abortController?.signal.aborted || !isModelAccessError(err)) throw err;
         failure = err;
       }
-      markAccountUnavailable(account, failure instanceof Error ? failure.message : String(failure));
+      noteAccountFailure(account, failure);
     }
 
-    const next = await nextFallback(options, tried);
+    const next = await nextFallback(options, tried, produced);
     if (!next) {
       if (skipped) {
         // Every other account is out too: try the cooled-down one again.
