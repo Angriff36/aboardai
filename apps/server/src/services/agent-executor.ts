@@ -11,7 +11,7 @@ import {
 } from '@aboardai/types';
 import { buildPromptWithImages, createLogger, isAuthenticationError } from '@aboardai/utils';
 import { getFeatureDir } from '@aboardai/platform';
-import { superviseQuery } from '../providers/provider-supervisor.js';
+import { superviseQueryWithFallback } from '../providers/provider-supervisor.js';
 import * as secureFs from '../lib/secure-fs.js';
 import { TypedEventBus } from './typed-event-bus.js';
 import { FeatureStateManager } from './feature-state-manager.js';
@@ -246,7 +246,11 @@ export class AgentExecutor {
     let mainStreamSummary: string | undefined;
 
     try {
-      const stream = superviseQuery(provider, executeOptions, DEFAULT_SUPERVISOR_POLICY);
+      const stream = superviseQueryWithFallback(
+        provider,
+        executeOptions,
+        DEFAULT_SUPERVISOR_POLICY
+      );
       try {
         streamLoop: for await (const msg of stream) {
           if (msg.session_id && msg.session_id !== options.sdkSessionId) {
@@ -290,6 +294,12 @@ export class AgentExecutor {
                 featureId,
                 branchName,
                 content: `Resumed stream successfully`,
+              });
+            } else if (sv.status === 'model_switched') {
+              this.eventBus.emitAutoModeEvent('auto_mode_progress', {
+                featureId,
+                branchName,
+                content: sv.detail ?? 'Switched to a backup model',
               });
             }
             continue;
@@ -599,7 +609,7 @@ export class AgentExecutor {
         `[executeTasksLoop] Feature ${featureId}, task ${task.id} (${taskIndex + 1}/${tasks.length}): ` +
           `maxTurns=${taskMaxTurns} (sdkOptions.maxTurns=${sdkOptions?.maxTurns ?? 'undefined'})`
       );
-      const taskStream = superviseQuery(
+      const taskStream = superviseQueryWithFallback(
         provider,
         this.buildExecOpts(options, taskPrompt, taskMaxTurns),
         DEFAULT_SUPERVISOR_POLICY
@@ -681,6 +691,12 @@ export class AgentExecutor {
                 featureId,
                 branchName,
                 content: `Resumed stream successfully`,
+              });
+            } else if (sv.status === 'model_switched') {
+              this.eventBus.emitAutoModeEvent('auto_mode_progress', {
+                featureId,
+                branchName,
+                content: sv.detail ?? 'Switched to a backup model',
               });
             }
             continue;
@@ -892,7 +908,7 @@ export class AgentExecutor {
             featureId,
           });
           try {
-            for await (const msg of superviseQuery(
+            for await (const msg of superviseQueryWithFallback(
               provider,
               this.buildExecOpts(options, revPrompt, sdkOptions?.maxTurns ?? DEFAULT_MAX_TURNS),
               DEFAULT_SUPERVISOR_POLICY
@@ -1038,7 +1054,7 @@ export class AgentExecutor {
     let responseText = initialResponseText;
     const contNormStream = new NormalizedEventStream({ provider: providerName, featureId });
     try {
-      for await (const msg of superviseQuery(
+      for await (const msg of superviseQueryWithFallback(
         provider,
         this.buildExecOpts(options, contPrompt, options.sdkOptions?.maxTurns ?? DEFAULT_MAX_TURNS),
         DEFAULT_SUPERVISOR_POLICY

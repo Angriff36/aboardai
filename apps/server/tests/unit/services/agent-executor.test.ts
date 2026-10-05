@@ -16,6 +16,13 @@ import type { BaseProvider } from '../../../src/providers/base-provider.js';
 import { SupervisorExhaustedError } from '@aboardai/types';
 import { FakeProvider } from '../supervisor/fake-provider.js';
 import type { FakeRun } from '../supervisor/fake-provider.js';
+import { resetModelFallbackState } from '../../../src/providers/model-fallback.js';
+
+// These tests cover one provider; never switch to a real backup model.
+vi.mock('../../../src/providers/model-fallback.js', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('../../../src/providers/model-fallback.js')>()),
+  nextFallback: vi.fn(async () => undefined),
+}));
 
 /**
  * Unit tests for AgentExecutor
@@ -38,6 +45,7 @@ describe('AgentExecutor', () => {
   let mockSettingsService: SettingsService | null;
 
   beforeEach(() => {
+    resetModelFallbackState();
     // Reset mocks
     // Note: emit() added here because agent-executor now calls eventBus.emit('feature:event', ...)
     // for normalized pipeline events. Existing outcome assertions are unchanged.

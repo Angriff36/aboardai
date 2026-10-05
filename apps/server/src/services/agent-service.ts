@@ -17,7 +17,7 @@ import {
   classifyError,
 } from '@aboardai/utils';
 import { ProviderFactory } from '../providers/provider-factory.js';
-import { superviseQuery } from '../providers/provider-supervisor.js';
+import { superviseQueryWithFallback } from '../providers/provider-supervisor.js';
 import { DEFAULT_SUPERVISOR_POLICY, SupervisorExhaustedError } from '@aboardai/types';
 import { createChatOptions, validateWorkingDirectory } from '../lib/sdk-options.js';
 import type { SettingsService } from './settings-service.js';
@@ -584,7 +584,7 @@ export class AgentService {
       options.prompt = promptContent;
 
       // Execute via supervised provider (fault-tolerant: retries stalls, network errors, rate limits)
-      const stream = superviseQuery(provider, options, DEFAULT_SUPERVISOR_POLICY);
+      const stream = superviseQueryWithFallback(provider, options, DEFAULT_SUPERVISOR_POLICY);
 
       let currentAssistantMessage: Message | null = null;
       let responseText = '';

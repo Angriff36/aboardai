@@ -15,12 +15,20 @@
  */
 
 import { ProviderFactory } from './provider-factory.js';
+import type { BaseProvider } from './base-provider.js';
+import {
+  accountKey,
+  isModelAccessError,
+  markAccountUnavailable,
+  nextFallback,
+} from './model-fallback.js';
 import type {
   ThinkingLevel,
   ReasoningEffort,
   ClaudeApiProfile,
   ClaudeCompatibleProvider,
   Credentials,
+  ExecuteOptions,
 } from '@aboardai/types';
 import { stripProviderPrefix } from '@aboardai/types';
 
@@ -67,6 +75,8 @@ export interface SimpleQueryOptions {
   claudeCompatibleProvider?: ClaudeCompatibleProvider;
   /** Credentials for resolving 'credentials' apiKeySource in Claude API profiles/providers */
   credentials?: Credentials;
+  /** Fail instead of moving to another model when this one is out of usage (access probes). */
+  noFallback?: boolean;
 }
 
 /**
@@ -97,6 +107,41 @@ export interface StreamingQueryOptions extends SimpleQueryOptions {
 const DEFAULT_MODEL = 'claude-sonnet-4-6';
 
 /**
+ * Run a query, moving to the next account with usage when the model's account
+ * is out of usage, unauthenticated, or unavailable.
+ */
+async function runWithModelFallback<T>(
+  provider: BaseProvider,
+  providerOptions: ExecuteOptions,
+  allowFallback: boolean,
+  run: (provider: BaseProvider, providerOptions: ExecuteOptions) => Promise<T>
+): Promise<T> {
+  const tried = new Set<string>();
+  let account = accountKey(provider, providerOptions);
+  while (true) {
+    tried.add(account);
+    try {
+      return await run(provider, providerOptions);
+    } catch (error) {
+      if (
+        !allowFallback ||
+        process.env.ABOARDAI_MOCK_AGENT === 'true' ||
+        providerOptions.abortController?.signal.aborted ||
+        !isModelAccessError(error)
+      ) {
+        throw error;
+      }
+      markAccountUnavailable(account, error instanceof Error ? error.message : String(error));
+      const next = await nextFallback(providerOptions, tried);
+      if (!next) throw error;
+      provider = next.provider;
+      providerOptions = next.options;
+      account = next.account;
+    }
+  }
+}
+
+/**
  * Execute a simple query and return the text result
  *
  * Use this for simple, non-streaming queries where you just need
@@ -120,11 +165,8 @@ export async function simpleQuery(options: SimpleQueryOptions): Promise<SimpleQu
   const provider = ProviderFactory.getProviderForModel(model);
   const bareModel = stripProviderPrefix(model);
 
-  let responseText = '';
-  let structuredOutput: Record<string, unknown> | undefined;
-
   // Build provider options
-  const providerOptions = {
+  const providerOptions: ExecuteOptions = {
     prompt: options.prompt,
     model: bareModel,
     originalModel: model,
@@ -144,46 +186,55 @@ export async function simpleQuery(options: SimpleQueryOptions): Promise<SimpleQu
     credentials: options.credentials, // Pass credentials for resolving 'credentials' apiKeySource
   };
 
-  for await (const msg of provider.executeQuery(providerOptions)) {
-    // Handle error messages
-    if (msg.type === 'error') {
-      const errorMessage = msg.error || 'Provider returned an error';
-      throw new Error(errorMessage);
-    }
+  return runWithModelFallback(
+    provider,
+    providerOptions,
+    !options.noFallback,
+    async (provider, providerOptions) => {
+      let responseText = '';
+      let structuredOutput: Record<string, unknown> | undefined;
+      for await (const msg of provider.executeQuery(providerOptions)) {
+        // Handle error messages
+        if (msg.type === 'error') {
+          const errorMessage = msg.error || 'Provider returned an error';
+          throw new Error(errorMessage);
+        }
 
-    // Extract text from assistant messages
-    if (msg.type === 'assistant' && msg.message?.content) {
-      for (const block of msg.message.content) {
-        if (block.type === 'text' && block.text) {
-          responseText += block.text;
+        // Extract text from assistant messages
+        if (msg.type === 'assistant' && msg.message?.content) {
+          for (const block of msg.message.content) {
+            if (block.type === 'text' && block.text) {
+              responseText += block.text;
+            }
+          }
+        }
+
+        // Handle result messages
+        if (msg.type === 'result') {
+          if (msg.subtype === 'success') {
+            // Use result text if longer than accumulated text
+            if (msg.result && msg.result.length > responseText.length) {
+              responseText = msg.result;
+            }
+            // Capture structured output if present
+            if (msg.structured_output) {
+              structuredOutput = msg.structured_output;
+            }
+          } else if (msg.subtype === 'error_max_turns') {
+            if (!responseText.trim()) {
+              throw new Error('Provider ended before producing text (error_max_turns)');
+            }
+            // Max turns reached after producing text - return the partial response.
+            break;
+          } else if (msg.subtype === 'error_max_structured_output_retries') {
+            throw new Error('Could not produce valid structured output after retries');
+          }
         }
       }
-    }
 
-    // Handle result messages
-    if (msg.type === 'result') {
-      if (msg.subtype === 'success') {
-        // Use result text if longer than accumulated text
-        if (msg.result && msg.result.length > responseText.length) {
-          responseText = msg.result;
-        }
-        // Capture structured output if present
-        if (msg.structured_output) {
-          structuredOutput = msg.structured_output;
-        }
-      } else if (msg.subtype === 'error_max_turns') {
-        if (!responseText.trim()) {
-          throw new Error('Provider ended before producing text (error_max_turns)');
-        }
-        // Max turns reached after producing text - return the partial response.
-        break;
-      } else if (msg.subtype === 'error_max_structured_output_retries') {
-        throw new Error('Could not produce valid structured output after retries');
-      }
+      return { text: responseText, structured_output: structuredOutput };
     }
-  }
-
-  return { text: responseText, structured_output: structuredOutput };
+  );
 }
 
 /**
@@ -209,11 +260,8 @@ export async function streamingQuery(options: StreamingQueryOptions): Promise<Si
   const provider = ProviderFactory.getProviderForModel(model);
   const bareModel = stripProviderPrefix(model);
 
-  let responseText = '';
-  let structuredOutput: Record<string, unknown> | undefined;
-
   // Build provider options
-  const providerOptions = {
+  const providerOptions: ExecuteOptions = {
     prompt: options.prompt,
     model: bareModel,
     originalModel: model,
@@ -232,46 +280,55 @@ export async function streamingQuery(options: StreamingQueryOptions): Promise<Si
     credentials: options.credentials, // Pass credentials for resolving 'credentials' apiKeySource
   };
 
-  for await (const msg of provider.executeQuery(providerOptions)) {
-    // Handle error messages
-    if (msg.type === 'error') {
-      const errorMessage = msg.error || 'Provider returned an error';
-      throw new Error(errorMessage);
-    }
+  return runWithModelFallback(
+    provider,
+    providerOptions,
+    !options.noFallback,
+    async (provider, providerOptions) => {
+      let responseText = '';
+      let structuredOutput: Record<string, unknown> | undefined;
+      for await (const msg of provider.executeQuery(providerOptions)) {
+        // Handle error messages
+        if (msg.type === 'error') {
+          const errorMessage = msg.error || 'Provider returned an error';
+          throw new Error(errorMessage);
+        }
 
-    // Extract content from assistant messages
-    if (msg.type === 'assistant' && msg.message?.content) {
-      for (const block of msg.message.content) {
-        if (block.type === 'text' && block.text) {
-          responseText += block.text;
-          options.onText?.(block.text);
-        } else if (block.type === 'tool_use' && block.name) {
-          options.onToolUse?.(block.name, block.input);
-        } else if (block.type === 'thinking' && block.thinking) {
-          options.onThinking?.(block.thinking);
+        // Extract content from assistant messages
+        if (msg.type === 'assistant' && msg.message?.content) {
+          for (const block of msg.message.content) {
+            if (block.type === 'text' && block.text) {
+              responseText += block.text;
+              options.onText?.(block.text);
+            } else if (block.type === 'tool_use' && block.name) {
+              options.onToolUse?.(block.name, block.input);
+            } else if (block.type === 'thinking' && block.thinking) {
+              options.onThinking?.(block.thinking);
+            }
+          }
+        }
+
+        // Handle result messages
+        if (msg.type === 'result') {
+          if (msg.subtype === 'success') {
+            // Use result text if longer than accumulated text
+            if (msg.result && msg.result.length > responseText.length) {
+              responseText = msg.result;
+            }
+            // Capture structured output if present
+            if (msg.structured_output) {
+              structuredOutput = msg.structured_output;
+            }
+          } else if (msg.subtype === 'error_max_turns') {
+            // Max turns reached - return what we have
+            break;
+          } else if (msg.subtype === 'error_max_structured_output_retries') {
+            throw new Error('Could not produce valid structured output after retries');
+          }
         }
       }
-    }
 
-    // Handle result messages
-    if (msg.type === 'result') {
-      if (msg.subtype === 'success') {
-        // Use result text if longer than accumulated text
-        if (msg.result && msg.result.length > responseText.length) {
-          responseText = msg.result;
-        }
-        // Capture structured output if present
-        if (msg.structured_output) {
-          structuredOutput = msg.structured_output;
-        }
-      } else if (msg.subtype === 'error_max_turns') {
-        // Max turns reached - return what we have
-        break;
-      } else if (msg.subtype === 'error_max_structured_output_retries') {
-        throw new Error('Could not produce valid structured output after retries');
-      }
+      return { text: responseText, structured_output: structuredOutput };
     }
-  }
-
-  return { text: responseText, structured_output: structuredOutput };
+  );
 }

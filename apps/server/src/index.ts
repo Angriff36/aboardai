@@ -67,6 +67,7 @@ import { createCodexRoutes } from './routes/codex/index.js';
 import { CodexUsageService } from './services/codex-usage-service.js';
 import { CodexAppServerService } from './services/codex-app-server-service.js';
 import { CodexModelCacheService } from './services/codex-model-cache-service.js';
+import { setCodexFallbackModelSource } from './providers/model-fallback.js';
 import { createZaiRoutes } from './routes/zai/index.js';
 import { ZaiUsageService } from './services/zai-usage-service.js';
 import { createGeminiRoutes } from './routes/gemini/index.js';
@@ -357,6 +358,12 @@ const groupService = new GroupService(
 const claudeUsageService = new ClaudeUsageService();
 const codexAppServerService = new CodexAppServerService();
 const codexModelCacheService = new CodexModelCacheService(DATA_DIR, codexAppServerService);
+// Jobs whose model runs out of usage move to another account; Codex choices come from the live list.
+setCodexFallbackModelSource(async () =>
+  [...(await codexModelCacheService.getModels())]
+    .sort((left, right) => Number(right.isDefault) - Number(left.isDefault))
+    .map((model) => model.id)
+);
 const codexUsageService = new CodexUsageService(codexAppServerService);
 const zaiUsageService = new ZaiUsageService();
 const geminiUsageService = new GeminiUsageService();

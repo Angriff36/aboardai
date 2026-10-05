@@ -28,6 +28,15 @@ import {
   ErrorType,
 } from '../lib/error-handler.js';
 import { StreamActivity } from './stream-activity.js';
+import {
+  accountKey,
+  clearAccountUnavailable,
+  isAccountUnavailable,
+  isModelAccessError,
+  isOutOfUsage,
+  markAccountUnavailable,
+  nextFallback,
+} from './model-fallback.js';
 
 export type SupervisorStatusCallback = (status: SupervisorStatusMessage) => void;
 
@@ -144,8 +153,75 @@ const ABORT_ERR = '__ABORT__';
 // ---------------------------------------------------------------------------
 
 /**
- * Supervise a provider query with fault-tolerance.
+ * Supervise a provider query with fault-tolerance. When the model's account
+ * cannot run the job (usage limit, quota, auth, missing CLI), the job moves to
+ * the next account that still has usage. It stops only when every account is out.
  */
+export async function* superviseQueryWithFallback(
+  provider: BaseProvider,
+  options: ExecuteOptions,
+  policy: SupervisorPolicy = DEFAULT_SUPERVISOR_POLICY,
+  onStatus?: SupervisorStatusCallback
+): AsyncGenerator<ProviderMessage> {
+  if (process.env.ABOARDAI_MOCK_AGENT === 'true') {
+    yield* superviseQuery(provider, options, policy, onStatus);
+    return;
+  }
+
+  let currentProvider = provider;
+  let currentOptions = options;
+  let account = accountKey(provider, options);
+  const tried = new Set<string>();
+
+  while (true) {
+    tried.add(account);
+    let failure: unknown;
+    const skipped = isAccountUnavailable(account);
+    if (skipped) {
+      failure = new Error(`${account} recently ran out of usage`);
+    } else {
+      try {
+        for await (const msg of superviseQuery(currentProvider, currentOptions, policy, onStatus)) {
+          if (msg.type === 'error' && isModelAccessError(msg.error)) {
+            failure = new Error(msg.error);
+            break;
+          }
+          yield msg;
+        }
+        if (failure === undefined) return;
+      } catch (err) {
+        if (options.abortController?.signal.aborted || !isModelAccessError(err)) throw err;
+        failure = err;
+      }
+      markAccountUnavailable(account, failure instanceof Error ? failure.message : String(failure));
+    }
+
+    const next = await nextFallback(options, tried);
+    if (!next) {
+      if (skipped) {
+        // Every other account is out too: try the cooled-down one again.
+        clearAccountUnavailable(account);
+        tried.delete(account);
+        continue;
+      }
+      throw failure;
+    }
+
+    const reason = failure instanceof Error ? failure.message : String(failure);
+    const status: SupervisorStatusMessage = {
+      type: 'supervisor_status',
+      status: 'model_switched',
+      detail: `${account} cannot run this job (${reason.slice(0, 200)}). Continuing with ${next.model}.`,
+    };
+    onStatus?.(status);
+    yield makeStatusMsg(status);
+    currentProvider = next.provider;
+    currentOptions = next.options;
+    account = next.account;
+  }
+}
+
+/** Supervise a provider query on one model with stall/retry/resume handling. */
 export async function* superviseQuery(
   provider: BaseProvider,
   options: ExecuteOptions,
@@ -327,8 +403,8 @@ export async function* superviseQuery(
 
       const classification = classifyError(err);
 
-      // Fatal types — rethrow immediately
-      if (FATAL_TYPES.has(classification.type)) {
+      // Fatal types and out-of-usage accounts — rethrow so the caller can switch models
+      if (FATAL_TYPES.has(classification.type) || isOutOfUsage(err)) {
         yield* emitStatus({ type: 'supervisor_status', status: 'fatal', attempt });
         throw err;
       }

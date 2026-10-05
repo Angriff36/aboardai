@@ -39,7 +39,7 @@ import {
 import { extractXmlElements, extractImplementedFeatures } from '../lib/xml-extractor.js';
 import { createLogger, loadContextFiles, isAbortError } from '@aboardai/utils';
 import { ProviderFactory } from '../providers/provider-factory.js';
-import { superviseQuery } from '../providers/provider-supervisor.js';
+import { superviseQueryWithFallback } from '../providers/provider-supervisor.js';
 import { DEFAULT_SUPERVISOR_POLICY } from '@aboardai/types';
 import type { SettingsService } from './settings-service.js';
 import type { FeatureLoader } from './feature-loader.js';
@@ -264,7 +264,11 @@ export class IdeationService {
         credentials, // Pass credentials for resolving 'credentials' apiKeySource
       };
 
-      const stream = superviseQuery(provider, executeOptions, DEFAULT_SUPERVISOR_POLICY);
+      const stream = superviseQueryWithFallback(
+        provider,
+        executeOptions,
+        DEFAULT_SUPERVISOR_POLICY
+      );
 
       let responseText = '';
       const assistantMessage: IdeationMessage = {
@@ -761,7 +765,11 @@ export class IdeationService {
         credentials, // Pass credentials for resolving 'credentials' apiKeySource
       };
 
-      const stream = superviseQuery(provider, executeOptions, DEFAULT_SUPERVISOR_POLICY);
+      const stream = superviseQueryWithFallback(
+        provider,
+        executeOptions,
+        DEFAULT_SUPERVISOR_POLICY
+      );
 
       let responseText = '';
       for await (const msg of stream) {

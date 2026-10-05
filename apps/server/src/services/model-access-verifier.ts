@@ -79,6 +79,7 @@ export async function verifyModelAccess(
         allowedTools: [],
         readOnly: true,
         settingSources: [],
+        noFallback: true,
         abortController,
         thinkingLevel: candidate.thinkingLevel,
         reasoningEffort: candidate.reasoningEffort,

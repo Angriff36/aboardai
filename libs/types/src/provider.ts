@@ -316,7 +316,8 @@ export interface SupervisorStatusMessage {
     | 'resumed'
     | 'rate_limited'
     | 'interrupted'
-    | 'fatal';
+    | 'fatal'
+    | 'model_switched';
   detail?: string;
   attempt?: number;
   retryAfterMs?: number;
