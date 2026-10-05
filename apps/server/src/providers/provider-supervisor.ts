@@ -199,7 +199,7 @@ export async function* superviseQueryWithFallback(
       noteAccountFailure(account, failure);
     }
 
-    const next = await nextFallback(options, tried, produced);
+    const next = await nextFallback(options, tried, { workStarted: produced });
     if (!next) {
       if (skipped) {
         // Every other account is out too: try the cooled-down one again.

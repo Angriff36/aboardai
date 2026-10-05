@@ -21,6 +21,7 @@ import {
   isModelAccessError,
   noteAccountFailure,
   nextFallback,
+  type FallbackContinuation,
 } from './model-fallback.js';
 import type {
   ThinkingLevel,
@@ -115,7 +116,7 @@ async function runWithModelFallback<T>(
   providerOptions: ExecuteOptions,
   allowFallback: boolean,
   run: (provider: BaseProvider, providerOptions: ExecuteOptions) => Promise<T>,
-  hasStreamedOutput: () => boolean = () => false
+  continuation: () => FallbackContinuation
 ): Promise<T> {
   const tried = new Set<string>();
   const originalOptions = providerOptions;
@@ -134,7 +135,7 @@ async function runWithModelFallback<T>(
         throw error;
       }
       noteAccountFailure(account, error);
-      const next = await nextFallback(originalOptions, tried, hasStreamedOutput());
+      const next = await nextFallback(originalOptions, tried, continuation());
       if (!next) throw error;
       provider = next.provider;
       providerOptions = next.options;
@@ -188,6 +189,8 @@ export async function simpleQuery(options: SimpleQueryOptions): Promise<SimpleQu
     credentials: options.credentials, // Pass credentials for resolving 'credentials' apiKeySource
   };
 
+  // A tool call may have changed files before an access failure.
+  let workStarted = false;
   return runWithModelFallback(
     provider,
     providerOptions,
@@ -207,6 +210,8 @@ export async function simpleQuery(options: SimpleQueryOptions): Promise<SimpleQu
           for (const block of msg.message.content) {
             if (block.type === 'text' && block.text) {
               responseText += block.text;
+            } else if (block.type === 'tool_use') {
+              workStarted = true;
             }
           }
         }
@@ -235,7 +240,8 @@ export async function simpleQuery(options: SimpleQueryOptions): Promise<SimpleQu
       }
 
       return { text: responseText, structured_output: structuredOutput };
-    }
+    },
+    () => ({ workStarted })
   );
 }
 
@@ -286,6 +292,7 @@ export async function streamingQuery(options: StreamingQueryOptions): Promise<Si
   // continues the work, so the caller receives both parts.
   let carriedText = '';
   let streamedText = '';
+  let workStarted = false;
   return runWithModelFallback(
     provider,
     providerOptions,
@@ -310,6 +317,7 @@ export async function streamingQuery(options: StreamingQueryOptions): Promise<Si
               streamedText += block.text;
               options.onText?.(block.text);
             } else if (block.type === 'tool_use' && block.name) {
+              workStarted = true;
               options.onToolUse?.(block.name, block.input);
             } else if (block.type === 'thinking' && block.thinking) {
               options.onThinking?.(block.thinking);
@@ -339,6 +347,6 @@ export async function streamingQuery(options: StreamingQueryOptions): Promise<Si
 
       return { text: carriedText + responseText, structured_output: structuredOutput };
     },
-    () => carriedText.length + streamedText.length > 0
+    () => ({ workStarted, partialResponse: carriedText + streamedText })
   );
 }

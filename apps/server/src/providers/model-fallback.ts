@@ -85,7 +85,7 @@ const ACCOUNT_WIDE_TYPES = new Set([
   ErrorType.CLI_NOT_FOUND,
 ]);
 const ACCOUNT_WIDE_TEXT =
-  /disconnected from the app|not logged in|not authenticated|api_error_status=40[13]/i;
+  /disconnected from the app|not logged in|not authenticated|api_error_status=401/i;
 
 /**
  * Remember a failure that affects the whole account (out of usage, auth,
@@ -148,21 +148,40 @@ const CONTINUATION_NOTE =
   '(for example git status and git diff), keep the work that is correct, and continue the task from there. ' +
   'Do not redo or duplicate work that is already done.\n\n';
 
-function withContinuationNote(prompt: ExecuteOptions['prompt']): ExecuteOptions['prompt'] {
-  if (typeof prompt === 'string') return CONTINUATION_NOTE + prompt;
-  return [{ type: 'text', text: CONTINUATION_NOTE }, ...prompt];
+/** What the failed model already did, so the backup continues instead of restarting. */
+export interface FallbackContinuation {
+  /** The failed model used tools or produced job output: files may have changed. */
+  workStarted?: boolean;
+  /** Text the failed model already streamed to the caller. */
+  partialResponse?: string;
+}
+
+function withContinuationNote(
+  prompt: ExecuteOptions['prompt'],
+  continuation: FallbackContinuation
+): ExecuteOptions['prompt'] {
+  let note = continuation.workStarted ? CONTINUATION_NOTE : '';
+  if (continuation.partialResponse) {
+    note +=
+      'NOTE: Another AI model already sent the start of the answer below and then stopped. ' +
+      'Continue the answer exactly where it stops. Output only the remaining part; do not repeat any of it.\n' +
+      `<<<PARTIAL ANSWER\n${continuation.partialResponse}\nPARTIAL ANSWER>>>\n\n`;
+  }
+  if (!note) return prompt;
+  if (typeof prompt === 'string') return note + prompt;
+  return [{ type: 'text', text: note }, ...prompt];
 }
 
 /**
  * Next model on an account that has not failed in this job and is not
  * cooling down. Returns undefined when every account is out. When the failed
- * model already produced output, the new model is told to continue the work
+ * model already did work or streamed text, the new model is told to continue
  * in place instead of starting over.
  */
 export async function nextFallback(
   options: ExecuteOptions,
   triedAccounts: ReadonlySet<string>,
-  continuing = false
+  continuation: FallbackContinuation = {}
 ): Promise<FallbackTarget | undefined> {
   // Loaded on demand: the factory pulls in every provider, which the supervisor must not.
   const { ProviderFactory } = await import('./provider-factory.js');
@@ -182,7 +201,7 @@ export async function nextFallback(
       account,
       options: {
         ...options,
-        prompt: continuing ? withContinuationNote(options.prompt) : options.prompt,
+        prompt: withContinuationNote(options.prompt, continuation),
         model: stripProviderPrefix(resolved),
         originalModel: resolved,
         sdkSessionId: undefined,
