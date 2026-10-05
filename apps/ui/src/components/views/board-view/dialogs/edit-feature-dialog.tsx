@@ -1,5 +1,5 @@
 // @ts-nocheck - form state management with partial feature updates and validation
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -161,7 +161,13 @@ export function EditFeatureDialog({
     feature?.excludedPipelineSteps ?? []
   );
 
+  // Load the form only when a different feature opens. Board refreshes (auto mode
+  // updates every card) must not wipe unsaved edits such as manual role choices.
+  const loadedFeatureIdRef = useRef<string | null>(null);
   useEffect(() => {
+    const featureId = feature?.id ?? null;
+    if (featureId !== null && featureId === loadedFeatureIdRef.current) return;
+    loadedFeatureIdRef.current = featureId;
     setEditingFeature(feature);
     if (feature) {
       setPlanningMode(feature.planningMode ?? 'skip');

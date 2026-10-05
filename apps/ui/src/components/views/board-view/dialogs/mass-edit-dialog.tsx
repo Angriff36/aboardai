@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -179,8 +179,13 @@ export function MassEditDialog({
   // Calculate mixed values
   const mixedValues = useMemo(() => getMixedValues(selectedFeatures), [selectedFeatures]);
 
-  // Reset state when dialog opens with new features
+  // Reset state when dialog opens with new features. Board refreshes (auto mode
+  // updates every card) must not wipe unsaved edits while the dialog is open.
+  const loadedSelectionRef = useRef<string | null>(null);
   useEffect(() => {
+    const selectionKey = open ? selectedFeatures.map((feature) => feature.id).join(',') : null;
+    if (selectionKey === loadedSelectionRef.current) return;
+    loadedSelectionRef.current = selectionKey;
     if (open && selectedFeatures.length > 0) {
       setApplyState({
         model: false,
