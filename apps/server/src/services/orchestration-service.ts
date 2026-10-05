@@ -144,7 +144,7 @@ export class OrchestrationService {
       const unavailable = verification?.filter((result) => result.status !== 'verified') ?? [];
       if (unavailable.length > 0) {
         throw new Error(
-          `Orchestration model access failed: ${unavailable.map((result) => result.error ?? result.key).join(', ')}`
+          `Orchestration model access failed: ${unavailable.map((result) => `${result.key}: ${result.error ?? 'unavailable'}`).join(', ')}`
         );
       }
 

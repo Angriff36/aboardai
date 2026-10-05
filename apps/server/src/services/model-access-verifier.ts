@@ -28,6 +28,7 @@ function safeProviderError(error: unknown): string {
   if (/billing|subscription|payment|quota/.test(message)) {
     return 'Subscription or billing access unavailable';
   }
+  if (/usage limit|spend limit/.test(message)) return 'Usage limit reached';
   if (/429|rate.?limit/.test(message)) return 'Rate limit reached';
   if (/abort|timed?\s*out|timeout/.test(message)) return 'Verification timed out';
   return 'Provider request failed';

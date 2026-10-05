@@ -144,6 +144,18 @@ describe('verifyModelAccess', () => {
     expect(probe).toHaveBeenNthCalledWith(2, expect.objectContaining({ model: 'claude-fable-5' }));
   });
 
+  it('reports a provider usage limit as its own reason', async () => {
+    const probe = vi.fn().mockRejectedValue(new Error("You've hit your usage limit"));
+
+    const results = await verifyModelAccess([claudeFable], 'C:\project', {} as SettingsService, {
+      probe,
+    });
+
+    expect(results).toEqual([
+      { key: claudeFable.key, status: 'unavailable', error: 'Usage limit reached' },
+    ]);
+  });
+
   it('does not verify a model when the provider returns an empty probe response', async () => {
     const probe = vi.fn().mockResolvedValue({ text: '   ' });
 

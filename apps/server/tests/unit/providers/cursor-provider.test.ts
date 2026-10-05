@@ -114,6 +114,18 @@ describe('cursor-provider.ts', () => {
       expect(msg!.error).toBe('Rate limit exceeded');
     });
 
+    it('passes through subprocess failures such as a usage limit', () => {
+      const msg = provider.normalizeEvent({
+        type: 'error',
+        error: "ActionRequiredError: You've hit your usage limit",
+      });
+
+      expect(msg).toEqual({
+        type: 'error',
+        error: "ActionRequiredError: You've hit your usage limit",
+      });
+    });
+
     it('falls back to resultEvent.result when error field is empty and is_error=true', () => {
       const event = {
         type: 'result',

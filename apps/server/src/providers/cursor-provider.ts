@@ -488,6 +488,12 @@ export class CursorProvider extends CliProvider {
   normalizeEvent(event: unknown): ProviderMessage | null {
     const cursorEvent = event as CursorStreamEvent;
 
+    // Subprocess failures (non-zero exit, e.g. usage limit) arrive as { type: 'error' }
+    const subprocessError = event as { type?: string; error?: string };
+    if (subprocessError.type === 'error') {
+      return { type: 'error', error: subprocessError.error || 'Cursor agent failed' };
+    }
+
     switch (cursorEvent.type) {
       case 'system':
         // System init - we capture session_id but don't yield a message
