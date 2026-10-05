@@ -21,7 +21,9 @@ export interface OrchestrationServiceDependencies {
   runWorkhorse: (assignment: OrchestrationModelAssignment, prompt: string) => Promise<void>;
   runPipeline: (assignment: OrchestrationModelAssignment) => Promise<void>;
   collectEvidence: () => Promise<string>;
-  finalizeApproved?: () => Promise<void>;
+  /** Models to try, in order, when an assigned role fails its access check. */
+  backupAssignments?: () => OrchestrationModelAssignment[];
+  finalizeApproved?: (workhorse: OrchestrationModelAssignment) => Promise<void>;
   writeArtifact: (filename: string, content: string) => Promise<void>;
   saveRun: (record: OrchestrationRunRecord) => Promise<void>;
   now?: () => string;
@@ -85,6 +87,17 @@ function requireAssignments(feature: Feature): {
   };
 }
 
+type RoleName = 'lead' | 'workhorse' | 'reviewer';
+const ROLE_NAMES: readonly RoleName[] = ['lead', 'workhorse', 'reviewer'];
+
+function sameModel(left: OrchestrationModelAssignment, right: OrchestrationModelAssignment) {
+  return (
+    left.providerKey === right.providerKey &&
+    left.model === right.model &&
+    left.providerId === right.providerId
+  );
+}
+
 function leadPlanPrompt(feature: Feature, basePrompt: string): string {
   return `You are the lead orchestrator for this feature. Analyze the requirements and produce a precise implementation brief for another coding agent. Identify architecture, affected areas, invariants, tests, and likely failure modes. Do not edit files.\n\n${basePrompt}\n\nFeature ID: ${feature.id}`;
 }
@@ -118,7 +131,13 @@ export class OrchestrationService {
 
   async execute(input: OrchestrationExecutionInput): Promise<OrchestrationExecutionResult> {
     const { feature, basePrompt } = input;
-    const { lead, workhorse, reviewer, maxReviewRounds } = requireAssignments(feature);
+    const assigned = requireAssignments(feature);
+    const { maxReviewRounds } = assigned;
+    const roles: Record<RoleName, OrchestrationModelAssignment> = {
+      lead: assigned.lead,
+      workhorse: assigned.workhorse,
+      reviewer: assigned.reviewer,
+    };
     const now = this.dependencies.now ?? (() => new Date().toISOString());
     const startedAt = now();
     const run: OrchestrationRunRecord = {
@@ -129,7 +148,7 @@ export class OrchestrationService {
       updatedAt: startedAt,
       currentRound: 0,
       maxReviewRounds,
-      assignments: { lead, workhorse, reviewer },
+      assignments: roles,
       reviews: [],
     };
 
@@ -140,13 +159,9 @@ export class OrchestrationService {
     await persist();
 
     try {
-      const verification = await this.dependencies.verifyAssignments([lead, workhorse, reviewer]);
-      const unavailable = verification?.filter((result) => result.status !== 'verified') ?? [];
-      if (unavailable.length > 0) {
-        throw new Error(
-          `Orchestration model access failed: ${unavailable.map((result) => `${result.key}: ${result.error ?? 'unavailable'}`).join(', ')}`
-        );
-      }
+      await this.replaceUnavailableRoles(roles);
+      const { lead, workhorse, reviewer } = roles;
+      await persist();
 
       run.phase = 'planning';
       await persist();
@@ -200,7 +215,7 @@ export class OrchestrationService {
 
         if (parsed.verdict === 'approve') {
           if (this.dependencies.finalizeApproved) {
-            await this.dependencies.finalizeApproved();
+            await this.dependencies.finalizeApproved(workhorse);
           }
           run.phase = 'approved';
           run.completedAt = now();
@@ -242,5 +257,63 @@ export class OrchestrationService {
       await persist();
       return { approved: false, failed: true, run };
     }
+  }
+
+  /**
+   * Check every role. A role that fails (usage limit, auth, outage) is swapped
+   * for a working model: another role's model or a configured backup. Lead and
+   * reviewer stay on different providers. Throws only when nothing works.
+   */
+  private async replaceUnavailableRoles(roles: Record<RoleName, OrchestrationModelAssignment>) {
+    const verification = await this.dependencies.verifyAssignments(ROLE_NAMES.map((r) => roles[r]));
+    const failed = ROLE_NAMES.map((role, index) => ({
+      role,
+      result: verification?.[index],
+    })).filter(({ result }) => result && result.status !== 'verified');
+    if (failed.length === 0) return;
+
+    const failedModels = failed.map(({ role }) => roles[role]);
+    const working = ROLE_NAMES.filter((role) => !failed.some((item) => item.role === role)).map(
+      (role) => roles[role]
+    );
+    const backups = (this.dependencies.backupAssignments?.() ?? []).filter(
+      (backup) =>
+        !failedModels.some((model) => sameModel(model, backup)) &&
+        !working.some((model) => sameModel(model, backup))
+    );
+    // Strong configured backups first; another role's model is the last resort.
+    const verifiedBackups: OrchestrationModelAssignment[] = [];
+    if (backups.length > 0) {
+      const backupResults = await this.dependencies.verifyAssignments(backups);
+      backups.forEach((backup, index) => {
+        if (!backupResults || backupResults[index]?.status === 'verified')
+          verifiedBackups.push(backup);
+      });
+    }
+
+    const notes: string[] = [];
+    for (const { role, result } of failed) {
+      const replacement = [...verifiedBackups, ...working].find((candidate) =>
+        role === 'lead'
+          ? candidate.providerKey !== roles.reviewer.providerKey
+          : role === 'reviewer'
+            ? candidate.providerKey !== roles.lead.providerKey
+            : true
+      );
+      const reason = `${result?.key ?? roles[role].model}: ${result?.error ?? 'unavailable'}`;
+      if (!replacement) {
+        throw new Error(
+          `Orchestration model access failed and no backup works for ${role}: ${reason}`
+        );
+      }
+      notes.push(
+        `- ${role}: ${roles[role].displayName ?? roles[role].model} failed (${reason}); using ${replacement.displayName ?? replacement.model}`
+      );
+      roles[role] = replacement;
+    }
+    await this.dependencies.writeArtifact(
+      'model-backups.md',
+      `# Backup models used\n\n${notes.join('\n')}\n`
+    );
   }
 }

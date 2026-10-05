@@ -400,10 +400,13 @@ export class ExecutionService {
           JSON.stringify(run, null, 2),
           'utf-8'
         ),
-      finalizeApproved: async () => {
+      backupAssignments: () => [
+        { providerKey: 'claude', model: 'claude-opus', displayName: 'Claude Opus' },
+        { providerKey: 'codex', model: DEFAULT_MODELS.codex, displayName: DEFAULT_MODELS.codex },
+        { providerKey: 'claude', model: 'claude-sonnet', displayName: 'Claude Sonnet' },
+      ],
+      finalizeApproved: async (workhorse) => {
         if (!feature.branchName || !this.finalizePipelineFn) return;
-        const workhorse = feature.orchestration?.workhorse;
-        if (!workhorse) throw new Error('Workhorse assignment is unavailable during merge');
         const context = await getPipelineContext(workhorse);
         const result = await this.finalizePipelineFn({ ...context, deferMerge: false });
         if (!result.success) {

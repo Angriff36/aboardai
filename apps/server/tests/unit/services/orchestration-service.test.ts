@@ -151,3 +151,69 @@ describe('OrchestrationService', () => {
     expect(result.run.terminalReason).toMatch(/empty implementation brief/i);
   });
 });
+
+describe('OrchestrationService backup models', () => {
+  const opus: OrchestrationModelAssignment = { model: 'claude-opus', providerKey: 'claude' };
+  const cursorLead: OrchestrationModelAssignment = {
+    candidateKey: 'cursor:sol',
+    model: 'cursor-gpt-5.6-sol',
+    providerKey: 'cursor',
+  };
+  const approve = JSON.stringify({ verdict: 'approve', summary: 'Ready', findings: [] });
+
+  function backupHarness(failingModels: string[], backups: OrchestrationModelAssignment[]) {
+    const leadModels: string[] = [];
+    const service = new OrchestrationService({
+      verifyAssignments: vi.fn(async (assignments) =>
+        assignments.map((assignment) =>
+          failingModels.includes(assignment.model)
+            ? {
+                key: assignment.model,
+                status: 'unavailable' as const,
+                error: 'Usage limit reached',
+              }
+            : { key: assignment.model, status: 'verified' as const }
+        )
+      ),
+      queryRole: vi.fn(async (role, assignment) => {
+        if (role === 'lead-plan') leadModels.push(assignment.model);
+        return role === 'reviewer' ? approve : 'Implementation brief';
+      }),
+      runWorkhorse: vi.fn(async () => undefined),
+      runPipeline: vi.fn(async () => undefined),
+      collectEvidence: vi.fn(async () => 'diff'),
+      backupAssignments: () => backups,
+      writeArtifact: vi.fn(async () => undefined),
+      saveRun: vi.fn(async () => undefined),
+      now: () => '2026-10-04T00:00:00.000Z',
+    });
+    return { service, leadModels };
+  }
+
+  const cursorLeadFeature: Feature = {
+    ...feature,
+    orchestration: { ...feature.orchestration!, lead: cursorLead },
+  };
+
+  it('swaps a failed lead for a working backup on a different provider than the reviewer', async () => {
+    const { service, leadModels } = backupHarness(['cursor-gpt-5.6-sol'], [opus]);
+
+    const result = await service.execute({ feature: cursorLeadFeature, basePrompt: 'Build it' });
+
+    expect(result.approved).toBe(true);
+    expect(leadModels).toEqual(['claude-opus']);
+    expect(result.run.assignments.lead.model).toBe('claude-opus');
+  });
+
+  it('fails only when no backup works', async () => {
+    const { service } = backupHarness(
+      ['cursor-gpt-5.6-sol', 'cursor-composer-2.5', 'claude-opus'],
+      [opus]
+    );
+
+    const result = await service.execute({ feature: cursorLeadFeature, basePrompt: 'Build it' });
+
+    expect(result.failed).toBe(true);
+    expect(result.run.terminalReason).toContain('no backup works for lead');
+  });
+});
