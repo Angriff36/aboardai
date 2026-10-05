@@ -19,8 +19,6 @@ const branchSlug = (title?: string): string => {
   return slug || 'feature';
 };
 
-const FEATURE_INTEGRATION_BRANCH = 'main';
-
 export function createFeatureBranchName(featureId: string, title?: string): string {
   const identity = createHash('sha256').update(featureId).digest('hex').slice(0, 8);
   return `feature/${branchSlug(title)}-${identity}`;
@@ -28,7 +26,7 @@ export function createFeatureBranchName(featureId: string, title?: string): stri
 
 export function buildDefaultWorktreeAssignment(
   feature: Pick<Feature, 'id' | 'title' | 'worktreeMode' | 'branchName' | 'worktreeBaseBranch'>,
-  _baseBranch?: string | null
+  baseBranch?: string | null
 ): FeatureWorktreeAssignment {
   if (feature.worktreeMode === 'shared') {
     return {
@@ -41,40 +39,44 @@ export function buildDefaultWorktreeAssignment(
   return {
     worktreeMode: 'isolated',
     branchName: createFeatureBranchName(feature.id, feature.title),
-    // Feature isolation is never allowed to turn the currently selected
-    // worktree into a long-lived integration branch. All feature branches
-    // start from and ultimately merge back into literal main.
-    worktreeBaseBranch: FEATURE_INTEGRATION_BRANCH,
+    // Feature branches start from and merge back into the project's
+    // integration branch (the branch checked out in the project folder).
+    // It is resolved at run time when not known yet.
+    worktreeBaseBranch: baseBranch ?? undefined,
   };
 }
 
 export function normalizeFeatureWorktreeAssignment(
   feature: Pick<Feature, 'id' | 'title' | 'worktreeMode' | 'branchName' | 'worktreeBaseBranch'>,
-  _primaryBranch: string
+  integrationBranch: string
 ): FeatureWorktreeAssignment {
   if (feature.worktreeMode === 'shared') {
-    return buildDefaultWorktreeAssignment(feature, FEATURE_INTEGRATION_BRANCH);
+    return buildDefaultWorktreeAssignment(feature, integrationBranch);
   }
 
   if (feature.worktreeMode === 'isolated') {
-    if (feature.worktreeBaseBranch !== FEATURE_INTEGRATION_BRANCH) {
+    // A branch built from an older base is brought onto the integration
+    // branch by the pre-run refresh and the pre-merge sync; it is not an error.
+    if (
+      !feature.branchName ||
+      feature.branchName === 'main' ||
+      feature.branchName === 'master' ||
+      feature.branchName === integrationBranch
+    ) {
       throw new Error(
-        `Legacy isolated feature branch "${feature.branchName ?? '(missing)'}" is based on "${feature.worktreeBaseBranch ?? '(unknown)'}", not main. Rebase or migrate it onto main before execution.`
+        'An isolated feature must use its own feature branch, not the integration branch.'
       );
-    }
-    if (!feature.branchName || feature.branchName === 'main' || feature.branchName === 'master') {
-      throw new Error('An isolated feature must use its own feature branch, not main or master.');
     }
     return {
       worktreeMode: 'isolated',
       branchName: feature.branchName,
-      worktreeBaseBranch: FEATURE_INTEGRATION_BRANCH,
+      worktreeBaseBranch: integrationBranch,
     };
   }
 
   return {
     worktreeMode: 'isolated',
     branchName: createFeatureBranchName(feature.id, feature.title),
-    worktreeBaseBranch: FEATURE_INTEGRATION_BRANCH,
+    worktreeBaseBranch: integrationBranch,
   };
 }

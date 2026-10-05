@@ -22,23 +22,36 @@ describe('feature worktree assignment', () => {
     expect(first).toEqual({
       worktreeMode: 'isolated',
       branchName: createFeatureBranchName('feature-one', 'Build Login'),
-      worktreeBaseBranch: 'main',
+      worktreeBaseBranch: 'develop',
     });
     expect(second.branchName).not.toBe(first.branchName);
   });
 
-  it('rejects an isolated branch whose recorded base is not main', () => {
-    expect(() =>
+  it('moves an isolated branch recorded on another base onto the integration branch', () => {
+    expect(
       normalizeFeatureWorktreeAssignment(
         feature({
           title: 'A New Title',
           worktreeMode: 'isolated',
           branchName: 'feature/build-login-existing',
-          worktreeBaseBranch: 'develop',
+          worktreeBaseBranch: 'main',
         }),
-        'main'
+        'dev'
       )
-    ).toThrow(/develop.*main/i);
+    ).toEqual({
+      worktreeMode: 'isolated',
+      branchName: 'feature/build-login-existing',
+      worktreeBaseBranch: 'dev',
+    });
+  });
+
+  it('rejects an isolated feature that uses the integration branch itself', () => {
+    expect(() =>
+      normalizeFeatureWorktreeAssignment(
+        feature({ worktreeMode: 'isolated', branchName: 'dev' }),
+        'dev'
+      )
+    ).toThrow(/integration branch/);
   });
 
   it('does not adopt a caller-selected branch for a new isolated feature', () => {
@@ -54,7 +67,7 @@ describe('feature worktree assignment', () => {
     expect(assignment).toEqual({
       worktreeMode: 'isolated',
       branchName: createFeatureBranchName('feature-one', 'Build Login'),
-      worktreeBaseBranch: 'main',
+      worktreeBaseBranch: 'develop',
     });
   });
 

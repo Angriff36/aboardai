@@ -29,6 +29,7 @@ import type { ConcurrencyManager } from './concurrency-manager.js';
 import { pipelineService } from './pipeline-service.js';
 import type { TestRunnerService, TestRunStatus } from './test-runner-service.js';
 import { performMerge } from './merge-service.js';
+import { execGitCommand } from '@aboardai/git-utils';
 import type {
   PipelineContext,
   PipelineStatusInfo,
@@ -582,17 +583,45 @@ export class PipelineOrchestrator {
 
     logger.info(`Attempting auto-merge for feature ${featureId} (branch: ${branchName})`);
     try {
-      // Call merge service directly instead of HTTP fetch
-      const result = await performMerge(
+      const mergeWorkDir = worktreePath || projectPath;
+      // Merge into the project's integration branch. When the target conflicts
+      // with this branch, the feature's agent resolves the conflicts in its own
+      // worktree and the merge is retried; the target moving on in the meantime
+      // just means another round.
+      let result = await performMerge(
         projectPath,
         branchName,
-        worktreePath || projectPath,
-        'main',
+        mergeWorkDir,
+        undefined,
         {
           deleteWorktreeAndBranch: feature.worktreeMode === 'isolated',
+          resolveConflictsInWorktree: true,
         },
         this.eventBus.getUnderlyingEmitter()
       );
+      while (!result.success && result.conflictsInWorktree) {
+        if (context.abortController.signal.aborted) break;
+        const resolved = await this.resolveMergeConflicts(context, mergeWorkDir, result);
+        if (!resolved) {
+          await execGitCommand(['merge', '--abort'], mergeWorkDir).catch(() => {});
+          result = {
+            ...result,
+            error: `${result.error} The agent could not resolve the conflicts.`,
+          };
+          break;
+        }
+        result = await performMerge(
+          projectPath,
+          branchName,
+          mergeWorkDir,
+          undefined,
+          {
+            deleteWorktreeAndBranch: feature.worktreeMode === 'isolated',
+            resolveConflictsInWorktree: true,
+          },
+          this.eventBus.getUnderlyingEmitter()
+        );
+      }
 
       if (!result.success) {
         await this.updateFeatureStatusFn(projectPath, featureId, 'merge_conflict');
@@ -636,6 +665,68 @@ export class PipelineOrchestrator {
       });
       return { success: false, needsAgentResolution: true, error: errorMessage };
     }
+  }
+
+  /**
+   * Run the feature's agent in its worktree to finish a conflicted merge of the
+   * integration branch into the feature branch. Returns true when no conflict
+   * remains and the merge is committed.
+   */
+  private async resolveMergeConflicts(
+    context: PipelineContext,
+    workDir: string,
+    conflict: { conflictFiles?: string[] }
+  ): Promise<boolean> {
+    const { projectPath, featureId, abortController, feature } = context;
+    const files = (conflict.conflictFiles ?? []).map((file) => `- ${file}`).join('\n');
+    this.eventBus.emitAutoModeEvent('auto_mode_progress', {
+      featureId,
+      branchName: context.branchName,
+      content: `Resolving merge conflicts with the integration branch (${conflict.conflictFiles?.length ?? 0} file(s))`,
+      projectPath,
+    });
+    const prompt =
+      `## Resolve merge conflicts\n\nThe latest integration branch was merged into this feature branch and git reported conflicts in:\n${files}\n\n` +
+      'Resolve every conflict so that both the integration branch changes and this feature work are kept. ' +
+      'Remove all conflict markers, make sure the code builds and the relevant tests pass, then stage the files ' +
+      'and conclude the merge with `git commit --no-edit`. Do not abort the merge and do not discard either side.';
+    await this.runAgentFn(
+      workDir,
+      featureId,
+      prompt,
+      abortController,
+      projectPath,
+      undefined,
+      undefined,
+      {
+        projectPath,
+        planningMode: 'skip',
+        requirePlanApproval: false,
+        useClaudeCodeSystemPrompt: context.useClaudeCodeSystemPrompt,
+        autoLoadClaudeMd: context.autoLoadClaudeMd,
+        thinkingLevel: feature.thinkingLevel,
+        reasoningEffort: feature.reasoningEffort,
+        status: feature.status,
+        providerId: feature.providerId,
+      }
+    );
+
+    const remaining = (
+      await execGitCommand(['diff', '--name-only', '--diff-filter=U'], workDir).catch(() => '')
+    ).trim();
+    if (remaining) return false;
+    // The agent may have resolved the files without concluding the merge.
+    const mergeInProgress = await execGitCommand(
+      ['rev-parse', '-q', '--verify', 'MERGE_HEAD'],
+      workDir
+    )
+      .then(() => true)
+      .catch(() => false);
+    if (mergeInProgress) {
+      await execGitCommand(['add', '-A'], workDir);
+      await execGitCommand(['commit', '--no-edit'], workDir);
+    }
+    return true;
   }
 
   /** Shared helper to parse test output lines and extract failure information */

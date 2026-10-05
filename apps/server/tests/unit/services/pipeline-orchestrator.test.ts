@@ -486,7 +486,7 @@ describe('PipelineOrchestrator', () => {
       vi.mocked(performMerge).mockReset();
     });
 
-    it('always asks the merge service to target main even when another branch is checked out', async () => {
+    it("lets the merge service target the project's integration branch", async () => {
       vi.mocked(performMerge).mockResolvedValue({ success: true });
       vi.mocked(mockWorktreeResolver.getCurrentBranch).mockResolvedValue('temp-feature');
 
@@ -497,9 +497,41 @@ describe('PipelineOrchestrator', () => {
         '/test/project',
         'feature/test-1',
         '/test/worktree',
-        'main',
-        { deleteWorktreeAndBranch: true },
+        undefined,
+        { deleteWorktreeAndBranch: true, resolveConflictsInWorktree: true },
         expect.anything()
+      );
+    });
+
+    it('has the agent resolve conflicts in its worktree and then retries the merge', async () => {
+      vi.mocked(performMerge)
+        .mockResolvedValueOnce({
+          success: false,
+          hasConflicts: true,
+          conflictsInWorktree: true,
+          conflictFiles: ['src/app.ts'],
+          error: 'Merge CONFLICT',
+        })
+        .mockResolvedValueOnce({ success: true });
+
+      const result = await orchestrator.attemptMerge(createMergeContext());
+
+      expect(result.success).toBe(true);
+      expect(performMerge).toHaveBeenCalledTimes(2);
+      expect(mockRunAgentFn).toHaveBeenCalledWith(
+        '/test/worktree',
+        'feature-1',
+        expect.stringContaining('src/app.ts'),
+        expect.anything(),
+        '/test/project',
+        undefined,
+        undefined,
+        expect.anything()
+      );
+      expect(mockUpdateFeatureStatusFn).not.toHaveBeenCalledWith(
+        '/test/project',
+        'feature-1',
+        'merge_conflict'
       );
     });
 
@@ -514,8 +546,8 @@ describe('PipelineOrchestrator', () => {
         '/test/project',
         'feature/test-1',
         '/test/worktree',
-        'main',
-        { deleteWorktreeAndBranch: false },
+        undefined,
+        { deleteWorktreeAndBranch: false, resolveConflictsInWorktree: true },
         expect.anything()
       );
     });
@@ -912,8 +944,8 @@ describe('PipelineOrchestrator', () => {
         '/test/project',
         'feature/test-1',
         '/test/project', // Falls back to projectPath when worktreePath is null
-        'main',
-        { deleteWorktreeAndBranch: true },
+        undefined,
+        { deleteWorktreeAndBranch: true, resolveConflictsInWorktree: true },
         expect.anything()
       );
     });
@@ -966,8 +998,8 @@ describe('PipelineOrchestrator', () => {
           '/test/project',
           'feature/test-1',
           '/test/custom-worktree',
-          'main',
-          { deleteWorktreeAndBranch: true },
+          undefined,
+          { deleteWorktreeAndBranch: true, resolveConflictsInWorktree: true },
           expect.anything()
         );
       });
@@ -983,8 +1015,8 @@ describe('PipelineOrchestrator', () => {
           '/test/project',
           'feature/custom-branch',
           '/test/worktree',
-          'main',
-          { deleteWorktreeAndBranch: true },
+          undefined,
+          { deleteWorktreeAndBranch: true, resolveConflictsInWorktree: true },
           expect.anything()
         );
       });

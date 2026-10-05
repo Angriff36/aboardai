@@ -33,6 +33,7 @@ import { verifyModelAccess } from './model-access-verifier.js';
 import { simpleQuery } from '../providers/simple-query-service.js';
 import { OrchestrationService, type OrchestrationQueryRole } from './orchestration-service.js';
 import { normalizeFeatureWorktreeAssignment } from './feature-worktree-assignment.js';
+import { getIntegrationBranch } from '../lib/integration-branch.js';
 import { workspaceLeaseManager } from './workspace-lease-manager.js';
 
 // Re-export callback types from execution-types.ts for backward compatibility
@@ -522,10 +523,9 @@ ${feature.spec}
       feature = await this.loadFeatureFn(projectPath, featureId);
       if (!feature) throw new Error(`Feature ${featureId} not found`);
 
-      // Isolated feature work is always based on and finalized into main.
-      // The branch currently checked out at projectPath is a UI/workspace concern,
-      // not an integration target.
-      const primaryBranch = 'main';
+      // Isolated feature work starts from and merges back into the project's
+      // integration branch: the branch checked out in the project folder.
+      const primaryBranch = await getIntegrationBranch(projectPath);
       const assignment = normalizeFeatureWorktreeAssignment(feature, primaryBranch);
       const assignmentChanged =
         feature.worktreeMode !== assignment.worktreeMode ||

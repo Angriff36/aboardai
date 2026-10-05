@@ -329,8 +329,9 @@ describe('feature-loader.ts', () => {
       expect(result).toMatchObject({
         worktreeMode: 'isolated',
         branchName: expect.stringMatching(/^feature\/ship-it-[a-f0-9]{8}$/),
-        worktreeBaseBranch: 'main',
       });
+      // The base is the project's integration branch, resolved when the feature runs.
+      expect(result.worktreeBaseBranch).toBeUndefined();
     });
 
     it('should preserve explicit shared branch assignments', async () => {
@@ -392,7 +393,7 @@ describe('feature-loader.ts', () => {
       expect(result.worktreeMode).toBe('isolated');
       expect(result.branchName).toMatch(/^feature\/build-login-[a-f0-9]{8}$/);
       expect(result.branchName).not.toBe('release/shared');
-      expect(result.worktreeBaseBranch).toBe('main');
+      expect(result.worktreeBaseBranch).toBeUndefined();
     });
 
     it('keeps an existing main-based isolated feature on main on every update', async () => {
@@ -420,7 +421,7 @@ describe('feature-loader.ts', () => {
       expect(result.worktreeBaseBranch).toBe('main');
     });
 
-    it('rejects updates to a legacy isolated feature based on another branch', async () => {
+    it('allows updates to an isolated feature based on another branch', async () => {
       vi.mocked(fs.readFile).mockResolvedValue(
         JSON.stringify({
           id: 'feature-123',
@@ -433,10 +434,14 @@ describe('feature-loader.ts', () => {
         })
       );
 
-      await expect(
-        loader.update(testProjectPath, 'feature-123', { description: 'New description' })
-      ).rejects.toThrow(/develop.*main/i);
-      expect(fs.writeFile).not.toHaveBeenCalled();
+      vi.mocked(fs.writeFile).mockResolvedValue(undefined);
+
+      const result = await loader.update(testProjectPath, 'feature-123', {
+        description: 'New description',
+      });
+
+      expect(result.description).toBe('New description');
+      expect(result.worktreeBaseBranch).toBe('develop');
     });
 
     it('clears the isolated base branch when switching to a shared checkout', async () => {

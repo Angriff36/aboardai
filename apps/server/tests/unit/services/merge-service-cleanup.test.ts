@@ -45,49 +45,43 @@ afterEach(async () => {
 });
 
 describe('performMerge clean-only worktree cleanup', () => {
-  it('merges into main without changing the branch checked out at the project path', async () => {
+  it('merges into the branch checked out at the project path by default', async () => {
     const repository = await createRepository();
-    await git(repository.projectPath, 'checkout', '-b', 'temp-feature');
-    await writeFile(path.join(repository.projectPath, 'temp-only.txt'), 'do not merge here\n');
-    await git(repository.projectPath, 'add', 'temp-only.txt');
-    await git(repository.projectPath, 'commit', '-m', 'temp branch work');
+    await git(repository.projectPath, 'checkout', '-b', 'dev');
+    await writeFile(path.join(repository.projectPath, 'dev-only.txt'), 'dev work\n');
+    await git(repository.projectPath, 'add', 'dev-only.txt');
+    await git(repository.projectPath, 'commit', '-m', 'dev branch work');
+
+    const result = await performMerge(
+      repository.projectPath,
+      repository.branchName,
+      repository.worktreePath
+    );
+
+    expect(result).toMatchObject({ success: true, targetBranch: 'dev' });
+    expect(await git(repository.projectPath, 'branch', '--show-current')).toBe('dev');
+    expect(await git(repository.projectPath, 'ls-files', 'feature.txt')).toBe('feature.txt');
+    expect(await git(repository.projectPath, 'ls-tree', '-r', '--name-only', 'main')).not.toContain(
+      'feature.txt'
+    );
+  }, 15000);
+
+  it('merges into an explicit target branch through a temporary workspace', async () => {
+    const repository = await createRepository();
+    await git(repository.projectPath, 'checkout', '-b', 'dev');
 
     const result = await performMerge(
       repository.projectPath,
       repository.branchName,
       repository.worktreePath,
-      'temp-feature'
+      'main'
     );
 
     expect(result).toMatchObject({ success: true, targetBranch: 'main' });
-    expect(await git(repository.projectPath, 'branch', '--show-current')).toBe('temp-feature');
+    expect(await git(repository.projectPath, 'branch', '--show-current')).toBe('dev');
     expect(await git(repository.projectPath, 'ls-tree', '-r', '--name-only', 'main')).toContain(
       'feature.txt'
     );
-    expect(
-      await git(repository.projectPath, 'ls-tree', '-r', '--name-only', 'temp-feature')
-    ).not.toContain('feature.txt');
-  }, 15000);
-
-  it('fails instead of merging into another branch when main does not exist', async () => {
-    const repository = await createRepository();
-    await git(repository.projectPath, 'branch', '-m', 'main', 'develop');
-    await git(repository.projectPath, 'tag', 'main', 'develop');
-
-    const result = await performMerge(
-      repository.projectPath,
-      repository.branchName,
-      repository.worktreePath,
-      'develop'
-    );
-
-    expect(result).toMatchObject({
-      success: false,
-      error: expect.stringContaining('main'),
-    });
-    expect(
-      await git(repository.projectPath, 'ls-tree', '-r', '--name-only', 'develop')
-    ).not.toContain('feature.txt');
   }, 15000);
 
   it('aborts conflicts and leaves both main and the feature branch clean', async () => {
@@ -115,9 +109,40 @@ describe('performMerge clean-only worktree cleanup', () => {
     );
   }, 15000);
 
-  it('refuses to integrate when the main checkout contains an untracked file', async () => {
+  it('leaves the conflicted merge in the feature worktree when asked to resolve it there', async () => {
+    const repository = await createRepository();
+    await writeFile(path.join(repository.projectPath, 'README.md'), 'main change\n');
+    await git(repository.projectPath, 'add', 'README.md');
+    await git(repository.projectPath, 'commit', '-m', 'change main');
+    await writeFile(path.join(repository.worktreePath, 'README.md'), 'feature change\n');
+    await git(repository.worktreePath, 'add', 'README.md');
+    await git(repository.worktreePath, 'commit', '-m', 'change feature');
+
+    const result = await performMerge(
+      repository.projectPath,
+      repository.branchName,
+      repository.worktreePath,
+      'main',
+      { resolveConflictsInWorktree: true }
+    );
+
+    expect(result).toMatchObject({
+      success: false,
+      hasConflicts: true,
+      conflictsInWorktree: true,
+      conflictFiles: ['README.md'],
+    });
+    // The target checkout is untouched; the conflict waits in the feature worktree.
+    expect(await git(repository.projectPath, 'status', '--porcelain')).toBe('');
+    expect(await git(repository.worktreePath, 'diff', '--name-only', '--diff-filter=U')).toBe(
+      'README.md'
+    );
+  }, 15000);
+
+  it('integrates into a target checkout with other uncommitted work and keeps that work', async () => {
     const repository = await createRepository();
     await writeFile(path.join(repository.projectPath, 'untracked-local.txt'), 'keep me\n');
+    await writeFile(path.join(repository.projectPath, 'README.md'), 'local edit\n');
 
     const result = await performMerge(
       repository.projectPath,
@@ -126,8 +151,11 @@ describe('performMerge clean-only worktree cleanup', () => {
       'main'
     );
 
-    expect(result).toMatchObject({ success: false, error: expect.stringMatching(/dirty.*main/i) });
-    expect(await git(repository.projectPath, 'ls-files', 'feature.txt')).toBe('');
+    expect(result).toMatchObject({ success: true, targetBranch: 'main' });
+    expect(await git(repository.projectPath, 'ls-files', 'feature.txt')).toBe('feature.txt');
+    const status = await git(repository.projectPath, 'status', '--porcelain');
+    expect(status).toContain('untracked-local.txt');
+    expect(status).toContain('README.md');
   }, 15000);
 
   it('allows AboardAI metadata directories to remain untracked on main', async () => {
