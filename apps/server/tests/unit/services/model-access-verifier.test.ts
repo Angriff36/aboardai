@@ -140,7 +140,7 @@ describe('verifyModelAccess', () => {
       { key: claudeOpus.key, status: 'verified' },
       { key: claudeFable.key, status: 'verified' },
     ]);
-    expect(probe).toHaveBeenNthCalledWith(1, expect.objectContaining({ model: 'claude-opus-4-8' }));
+    expect(probe).toHaveBeenNthCalledWith(1, expect.objectContaining({ model: 'claude-opus-5-5' }));
     expect(probe).toHaveBeenNthCalledWith(2, expect.objectContaining({ model: 'claude-fable-5' }));
   });
 

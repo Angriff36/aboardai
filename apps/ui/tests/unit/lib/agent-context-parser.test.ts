@@ -13,8 +13,8 @@ import type { ClaudeCompatibleProvider, ProviderModel } from '@aboardai/types';
 
 describe('agent-context-parser.ts', () => {
   describe('DEFAULT_MODEL', () => {
-    it('should be claude-opus-4-8', () => {
-      expect(DEFAULT_MODEL).toBe('claude-opus-4-8');
+    it('should be claude-opus-5-5', () => {
+      expect(DEFAULT_MODEL).toBe('claude-opus-5-5');
     });
   });
 
@@ -219,8 +219,8 @@ describe('agent-context-parser.ts', () => {
         expect(formatModelName('claude-opus-4-8')).toBe('Opus 4.8');
       });
 
-      it('should format claude-opus (canonical) as Opus 4.8', () => {
-        expect(formatModelName('claude-opus')).toBe('Opus 4.8');
+      it('should format claude-opus (canonical) as Opus 5.5', () => {
+        expect(formatModelName('claude-opus')).toBe('Opus 5.5');
       });
 
       it('should format claude-opus-4-6 as Opus 4.6', () => {

@@ -104,8 +104,8 @@ interface ModelCapability {
  */
 const MODEL_CAPABILITIES: readonly ModelCapability[] = [
   {
-    id: 'claude-opus-4-8',
-    name: 'Claude Opus 4.8',
+    id: 'claude-opus-5-5',
+    name: 'Claude Opus 5.5',
     contextWindow: 1_000_000,
     maxOutputTokens: 128_000,
     tier: 'premium',
@@ -113,6 +113,16 @@ const MODEL_CAPABILITIES: readonly ModelCapability[] = [
     adaptiveThinking: true,
     supportsEffort: true,
     default: true,
+  },
+  {
+    id: 'claude-opus-4-8',
+    name: 'Claude Opus 4.8',
+    contextWindow: 1_000_000,
+    maxOutputTokens: 128_000,
+    tier: 'premium',
+    description: 'Previous-generation Opus. Adaptive thinking with effort control.',
+    adaptiveThinking: true,
+    supportsEffort: true,
   },
   {
     id: 'claude-sonnet-4-6',

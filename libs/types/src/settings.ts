@@ -343,6 +343,7 @@ export function getThinkingTokenBudget(level: ThinkingLevel | undefined): number
  */
 export function isAdaptiveThinkingModel(model: string): boolean {
   return (
+    model.includes('opus-5') ||
     model.includes('opus-4-8') ||
     model.includes('opus-4-6') ||
     model === 'claude-opus' ||

@@ -256,7 +256,7 @@ export class IdeationService {
         model: bareModel,
         originalModel: modelId,
         cwd: projectPath,
-        systemPrompt: sdkOptions.systemPrompt,
+        systemPrompt: sdkOptions.systemPrompt as ExecuteOptions['systemPrompt'],
         maxTurns: 1, // Single turn for ideation
         abortController: activeSession.abortController!,
         conversationHistory: conversationHistory.length > 0 ? conversationHistory : undefined,
@@ -749,7 +749,9 @@ export class IdeationService {
         model: bareModel,
         originalModel: modelId,
         cwd: projectPath,
-        systemPrompt: sdkOptions.systemPrompt,
+        // createChatOptions only builds a string or the claude_code preset; the SDK
+        // type also allows a 'custom' variant that never occurs here.
+        systemPrompt: sdkOptions.systemPrompt as ExecuteOptions['systemPrompt'],
         maxTurns: 1,
         // Disable all tools - we just want text generation, not codebase analysis
         allowedTools: [],

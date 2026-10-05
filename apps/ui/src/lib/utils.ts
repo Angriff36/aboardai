@@ -118,6 +118,7 @@ export function getModelDisplayName(model: ModelAlias | string): string {
     // Claude full model IDs (returned by server) — current
     'claude-haiku-4-5-20251001': 'Claude Haiku',
     'claude-sonnet-4-6': 'Claude Sonnet',
+    'claude-opus-5-5': 'Claude Opus',
     'claude-opus-4-8': 'Claude Opus',
     'claude-fable-5': 'Claude Fable 5',
     // Claude full model IDs — previous versions (kept for back-compat)

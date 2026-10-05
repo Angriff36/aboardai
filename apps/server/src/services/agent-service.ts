@@ -556,7 +556,7 @@ export class AgentService {
         model: bareModel, // Bare model ID (e.g., "gpt-5.1-codex-max", "composer-1")
         originalModel: effectiveModel, // Original with prefix for logging (e.g., "codex-gpt-5.1-codex-max")
         cwd: effectiveWorkDir,
-        systemPrompt: sdkOptions.systemPrompt,
+        systemPrompt: sdkOptions.systemPrompt as ExecuteOptions['systemPrompt'],
         maxTurns: maxTurns,
         allowedTools: allowedTools,
         abortController: session.abortController!,

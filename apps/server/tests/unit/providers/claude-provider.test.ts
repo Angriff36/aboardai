@@ -790,7 +790,7 @@ describe('claude-provider.ts', () => {
   describe('getAvailableModels', () => {
     it('should return 6 Claude models', () => {
       const models = provider.getAvailableModels();
-      expect(models).toHaveLength(6);
+      expect(models).toHaveLength(7);
     });
 
     it('should include Claude Fable 5 but never as a default', () => {
@@ -801,11 +801,11 @@ describe('claude-provider.ts', () => {
       expect(fable?.default).toBeFalsy();
     });
 
-    it('should include Claude Opus 4.8 as the default', () => {
+    it('should include Claude Opus 5.5 as the default', () => {
       const models = provider.getAvailableModels();
-      const opus = models.find((m) => m.id === 'claude-opus-4-8');
+      const opus = models.find((m) => m.id === 'claude-opus-5-5');
       expect(opus).toBeDefined();
-      expect(opus?.name).toBe('Claude Opus 4.8');
+      expect(opus?.name).toBe('Claude Opus 5.5');
       expect(opus?.provider).toBe('anthropic');
       expect(opus?.default).toBe(true);
       expect(opus?.contextWindow).toBe(1_000_000);
@@ -847,7 +847,7 @@ describe('claude-provider.ts', () => {
       const models = provider.getAvailableModels();
       const defaults = models.filter((m) => m.default === true);
       expect(defaults).toHaveLength(1);
-      expect(defaults[0].id).toBe('claude-opus-4-8');
+      expect(defaults[0].id).toBe('claude-opus-5-5');
     });
 
     it('should all support vision and tools', () => {

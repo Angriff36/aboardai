@@ -20,6 +20,7 @@ import type {
   ThinkingLevel,
   ReasoningEffort,
   AgentDefinition,
+  SystemPromptPreset,
 } from '@aboardai/types';
 import {
   DEFAULT_MAX_CONCURRENCY,
@@ -398,7 +399,7 @@ export class AutoModeServiceFacade {
             sdkOptions: {
               maxTurns: sdkOpts.maxTurns,
               allowedTools: sdkOpts.allowedTools as string[] | undefined,
-              systemPrompt: sdkOpts.systemPrompt,
+              systemPrompt: sdkOpts.systemPrompt as string | SystemPromptPreset | undefined,
               settingSources: sdkOpts.settingSources as
                 | Array<'user' | 'project' | 'local'>
                 | undefined,
