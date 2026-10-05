@@ -103,6 +103,7 @@ describe('model fallback', () => {
     const backupPrompt = claude.executeQuery.mock.calls[0]?.[0]?.prompt as string;
     expect(backupPrompt).toMatch(/^NOTE: Another AI model started this task/);
     expect(backupPrompt).toContain('Build it');
+    expect(backupPrompt).toContain('edited two files');
   });
 
   it('moves the job but does not put the account aside for a short rate limit', async () => {

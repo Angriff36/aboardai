@@ -174,6 +174,8 @@ export async function* superviseQueryWithFallback(
   const tried = new Set<string>();
   // Once the job has produced output, a backup model continues it in place.
   let produced = false;
+  // Text already delivered to the caller; a backup continues it instead of repeating.
+  let deliveredText = '';
 
   while (true) {
     tried.add(account);
@@ -189,6 +191,11 @@ export async function* superviseQueryWithFallback(
             break;
           }
           if (msg.type !== ('supervisor_status' as ProviderMessage['type'])) produced = true;
+          if (msg.type === 'assistant') {
+            for (const block of msg.message?.content ?? []) {
+              if (block.type === 'text' && block.text) deliveredText += block.text;
+            }
+          }
           yield msg;
         }
         if (failure === undefined) return;
@@ -199,7 +206,11 @@ export async function* superviseQueryWithFallback(
       noteAccountFailure(account, failure);
     }
 
-    const next = await nextFallback(options, tried, { workStarted: produced });
+    const next = await nextFallback(options, tried, {
+      workStarted: produced,
+      // Long jobs can stream a lot; the tail is what the backup must continue from.
+      partialResponse: deliveredText.slice(-20_000),
+    });
     if (!next) {
       if (skipped) {
         // Every other account is out too: try the cooled-down one again.
